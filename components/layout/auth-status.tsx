@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePrivy } from "@privy-io/react-auth";
 import { isPrivyConfigured } from "@/lib/privy/config";
+import { useSafeLogin } from "@/lib/privy/use-safe-login";
 import { shortenAddress } from "@/lib/utils";
 
 function DemoBadge() {
@@ -14,7 +15,8 @@ function DemoBadge() {
 }
 
 function PrivyStatus() {
-  const { ready, authenticated, user, login } = usePrivy();
+  const { ready, authenticated, user } = usePrivy();
+  const { start: startLogin, error } = useSafeLogin();
 
   if (!ready) {
     return <span className="skeleton h-9 w-24 rounded-pill" />;
@@ -23,10 +25,11 @@ function PrivyStatus() {
     return (
       <button
         type="button"
-        onClick={() => login()}
+        onClick={startLogin}
+        title={error ?? undefined}
         className="rounded-pill bg-cta px-4 py-2.5 text-[13px] font-semibold text-ink-invert"
       >
-        Masuk
+        {error ? "Coba lagi" : "Masuk"}
       </button>
     );
   }
