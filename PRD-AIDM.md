@@ -304,6 +304,7 @@ Kredit AI berdiri terpisah sepenuhnya: **uang → kredit → biaya AI.** Dua rel
 | Backend | Next.js route handlers + worker antrian (BullMQ + Redis, atau Supabase Edge Functions + cron) | Query riset = job async + streaming status |
 | Database | Supabase Postgres + pgvector + Storage | Skema §10; RLS aktif |
 | AI | Claude API (model kelas Sonnet untuk agen; model ringan untuk klasifikasi/moderasi) dengan tool use + streaming | Prompt sistem §17 |
+| Embedding | **Gemini `text-embedding-004`** (768 dim) | Dipakai HANYA untuk cache vektor & korpus tren (§7.2 alur #4 / §7.8) — kolom `vector(768)` di §10. **Otak agen riset tetap Claude API**, tidak berubah. Tanpa `GEMINI_API_KEY` cache vektor mati dan setiap query jadi riset segar |
 | Chain | **opBNB**: `IDMReborn`, `IDMX`, `MissionRewards`, `IDMXSwapPool` | Gas fee sangat murah → syarat aktivitas UAW/transaksi terjangkau untuk ranking DappBay; viem di backend. **Sponsor treasury hanya untuk klaim misi**; tukar & withdraw dibayar user |
 | AI SDK on-chain | **BNB Chain AI SDK** sebagai lapisan pemanggilan/orkestrasi on-chain | Model di baliknya tetap Claude API, GPT, dan Gemini sesuai kebutuhan tugas |
 | Pembayaran | Midtrans ATAU Xendit (QRIS, VA) + Google Play Billing + Apple StoreKit | Verifikasi server-side semua kanal |
@@ -415,11 +416,11 @@ research_queries(id, user_id fk, mode text check (mode in ('chat','wizard')),
 research_results(id, query_id fk, user_id fk, summary text, body jsonb,  -- skema §17
       sources jsonb,            -- [{tool, url?, fetched_at, note}]
       confidence smallint check (confidence between 1 and 3),
-      embedding vector(1536))
+      embedding vector(768))
 
 trend_corpus(id, result_id fk, kategori_id fk, sub_kategori text, kota text nullable,
       topik text, ringkas text, sources jsonb, confidence smallint,
-      embedding vector(1536), expires_hint date)   -- anonim, tanpa user_id
+      embedding vector(768), expires_hint date)   -- anonim, tanpa user_id
 
 -- Konten
 content_generations(id, user_id fk, source_result_id fk nullable,

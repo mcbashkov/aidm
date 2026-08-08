@@ -23,7 +23,7 @@ create table if not exists research_results (
   body jsonb,                          -- skema §17
   sources jsonb,                       -- [{tool, url?, fetched_at, note}]
   confidence smallint check (confidence between 1 and 3),
-  embedding vector(1536),
+  embedding vector(768),               -- Gemini text-embedding-004 (§9.1)
   created_at timestamptz not null default now()
 );
 
@@ -38,7 +38,7 @@ create table if not exists trend_corpus (
   ringkas text,
   sources jsonb,
   confidence smallint check (confidence between 1 and 3),
-  embedding vector(1536),
+  embedding vector(768),               -- Gemini text-embedding-004 (§9.1)
   expires_hint date,
   created_at timestamptz not null default now()
 );

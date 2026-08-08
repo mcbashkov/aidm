@@ -4,7 +4,7 @@
 -- Cek cache: hasil riset serupa < max_age_days (lintas user; hanya body yang
 -- disajikan — identitas penanya tidak pernah ikut).
 create or replace function match_research_results(
-  query_embedding vector(1536),
+  query_embedding vector(768),
   match_count int default 1,
   max_age_days int default 7,
   min_similarity float default 0.85
@@ -32,7 +32,7 @@ $$;
 
 -- Tool corpus_search milik agen (§9.3 #5): cari korpus tren internal.
 create or replace function match_trend_corpus(
-  query_embedding vector(1536),
+  query_embedding vector(768),
   match_count int default 5,
   max_age_days int default 7
 )
