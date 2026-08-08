@@ -69,34 +69,70 @@ async function moderate(client: Anthropic, question: string): Promise<boolean> {
 
 /* ── Cek cache vektor (§7.2 alur #4) ────────────────────────────────────── */
 
+/**
+ * Ambang kemiripan cache. Angka 0,85 diwarisi dari embedding OpenAI 1536 dim;
+ * sebaran skor Gemini 768 dim belum tentu sama, jadi bisa disetel lewat env
+ * tanpa deploy ulang sambil dikalibrasi dari log `[cache]` di bawah.
+ */
+const CACHE_MIN_SIMILARITY =
+  Number(process.env.AIDM_CACHE_MIN_SIMILARITY) || 0.85;
+
 async function checkCache(
+  question: string,
   embedding: number[] | null,
   maxAgeDays: number,
 ): Promise<{ body: ResearchBody; confidence: 1 | 2 | 3; ageDays: number } | null> {
-  if (!embedding) return null;
+  const q = question.slice(0, 80).replace(/\s+/g, " ");
+  if (!embedding) {
+    console.log(`[cache] verdict=OFF q="${q}" (embedding nonaktif)`);
+    return null;
+  }
   try {
     const supa = createSupabaseAdminClient();
+    // Ambil kandidat terbaik APA PUN skornya (min_similarity 0), lalu terapkan
+    // ambang di sini — supaya miss pun punya skor yang bisa dikalibrasi.
     const { data, error } = await supa.rpc("match_research_results", {
       query_embedding: toVectorLiteral(embedding),
       match_count: 1,
       max_age_days: maxAgeDays,
-      min_similarity: 0.85,
+      min_similarity: 0,
     });
-    if (error || !data) return null;
-    const rows = data as {
+    if (error) {
+      console.log(`[cache] verdict=ERROR q="${q}" msg=${error.message}`);
+      return null;
+    }
+    const rows = (data ?? []) as {
       body: ResearchBody | null;
+      summary: string | null;
       confidence: number | null;
       created_at: string;
+      similarity: number | null;
     }[];
     const hit = rows[0];
-    if (!hit?.body) return null;
+    if (!hit?.body) {
+      console.log(`[cache] verdict=EMPTY q="${q}" (belum ada kandidat)`);
+      return null;
+    }
+
+    const sim = Number(hit.similarity ?? 0);
     const ageDays = Math.max(
       0,
       Math.floor((Date.now() - new Date(hit.created_at).getTime()) / 86400000),
     );
+    const pass = sim >= CACHE_MIN_SIMILARITY;
+    console.log(
+      `[cache] verdict=${pass ? "HIT" : "MISS"} sim=${sim.toFixed(4)} ` +
+        `threshold=${CACHE_MIN_SIMILARITY} age=${ageDays}d q="${q}" ` +
+        `match="${(hit.summary ?? "").slice(0, 80).replace(/\s+/g, " ")}"`,
+    );
+    if (!pass) return null;
+
     const conf = (hit.confidence ?? 1) as 1 | 2 | 3;
     return { body: hit.body, confidence: conf, ageDays };
-  } catch {
+  } catch (err) {
+    console.log(
+      `[cache] verdict=ERROR q="${q}" msg=${err instanceof Error ? err.message : "unknown"}`,
+    );
     return null;
   }
 }
@@ -152,7 +188,11 @@ export async function runResearchAgent(
   const embedding = await getEmbedding(question);
   if (!opts?.forceFresh) {
     emit({ type: "status", label: "Mengecek riset serupa…" });
-    const cached = await checkCache(embedding, params.cache_max_age_days);
+    const cached = await checkCache(
+      question,
+      embedding,
+      params.cache_max_age_days,
+    );
     if (cached) {
       emit({ type: "cache_hit", ageDays: cached.ageDays });
       return {
