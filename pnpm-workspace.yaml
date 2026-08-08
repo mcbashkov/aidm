@@ -1,0 +1,15 @@
+# Setting pnpm 11 tinggal di sini (bukan .npmrc — pnpm 11 mengabaikannya).
+autoInstallPeers: true
+strictPeerDependencies: false
+
+# Jangan auto-install/verify sebelum tiap script; deps di-install eksplisit
+# via `pnpm install`. Menghindari purge/reinstall tak terduga saat `pnpm dev`.
+verifyDepsBeforeRun: false
+
+# Semua build-script opsional sengaja tidak dijalankan.
+allowBuilds:
+  '@reown/appkit': false
+  bufferutil: false
+  sharp: false
+  unrs-resolver: false
+  utf-8-validate: false

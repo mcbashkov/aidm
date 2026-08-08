@@ -1,0 +1,229 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   AIDM — Sistem Desain (PRD §13, blok "Design token final")
+   Ivory hangat + near-black hangat, aksen emas, kartu "mengambang" (shadow
+   lembut, bukan border 1px). Judul/sapaan/pertanyaan/angka besar = Fraunces
+   (serif display); body/label/chip/nav = Plus Jakarta Sans.
+   Kartu gelap-emas HANYA untuk Wallet & Reward. Rasa: "Alma" (pola, bukan warna).
+   ========================================================================== */
+
+:root {
+  /* --- Token final §13 (nama sesuai PRD) --------------------------------- */
+  --bg: #faf7f0; /* ivory hangat (bukan #FAFAFA dingin) */
+  --surface: #ffffff; /* kartu utama */
+  --surface-warm: #f4efe6; /* chip & kartu sekunder */
+  --text: #211c15; /* near-black hangat (bukan hitam murni) */
+  --text-muted: #8a8175;
+  --gold: #f0b90b;
+  --gold-light: #fcd535;
+  --cta: #1b1b1b; /* pill full-width, teks putih */
+  --danger: #c0392b;
+
+  /* --- Alias internal (dipakai utilitas Tailwind yang sudah ada) --------- */
+  --ink: var(--text);
+  /* Body sekunder sengaja lebih gelap dari --text-muted agar lolos kontras
+     AA pada teks kecil; --text-muted dipakai untuk meta/label besar. */
+  --ink-muted: #6b6156;
+  --ink-subtle: var(--text-muted);
+  --ink-invert: #ffffff;
+  --charcoal: var(--cta);
+  --charcoal-soft: #2c2c2c;
+  --line: #ece5d8; /* pemisah halus saja — bukan border kartu */
+  --gold-deep: #d89e0a;
+  --gold-tint: #fdf3d7; /* latar lembut chip aktif / highlight */
+
+  /* Wallet & Reward — kartu gelap-emas premium (aksen Web3, dipertahankan) */
+  --wallet-bg: #14110b;
+  --wallet-card: #1e1a12;
+  --wallet-line: rgba(240, 185, 11, 0.22);
+  --wallet-ink: #f5efe0;
+  --wallet-muted: #b8a97e;
+
+  /* Status */
+  --success: #17864a;
+
+  /* Bentuk & elevasi (§13) */
+  --radius-card: 24px;
+  --shadow-card: 0 4px 24px rgba(33, 28, 21, 0.06);
+  --shadow-card-lg: 0 8px 40px rgba(33, 28, 21, 0.08);
+  --tap: 44px; /* target sentuh minimum (§12) */
+}
+
+* {
+  border-color: var(--line);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Latar ivory mengisi seluruh viewport, termasuk di layar lebar (§13) */
+  background: var(--bg);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-jakarta), system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  /* Ruang aman untuk perangkat dengan notch + PWA standalone */
+  min-height: 100dvh;
+}
+
+::selection {
+  background: var(--gold-tint);
+  color: var(--text);
+}
+
+/* Fokus keyboard yang terlihat & aksesibel (WCAG) */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+@layer base {
+  /* ------------------------------------------------------------------------
+     Tipografi global — SEMUA judul otomatis Fraunces. Halaman tidak perlu
+     menulis `font-serif` atau ukuran sendiri; cukup pakai h1/h2/h3.
+     Skala §13: H1 32→44px, H2 22→26px, judul kartu 18px, body 15px.
+     ---------------------------------------------------------------------- */
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-fraunces), Georgia, Cambria, serif;
+    font-optical-sizing: auto;
+    font-weight: 600;
+    color: var(--text);
+    text-wrap: balance;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 1.55rem + 2.2vw, 2.75rem);
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+  }
+
+  h2 {
+    font-size: clamp(1.375rem, 1.3rem + 0.5vw, 1.625rem);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+
+  h3 {
+    font-size: 1.125rem; /* 18px — judul kartu */
+    line-height: 1.25;
+  }
+
+  h4 {
+    font-size: 1rem;
+    line-height: 1.3;
+  }
+}
+
+@layer components {
+  /* Kartu putih "mengambang": radius 24px + shadow lembut, TANPA border 1px */
+  .card {
+    @apply rounded-card bg-surface shadow-card;
+  }
+
+  /* Kartu sekunder di atas ivory (tanpa elevasi) */
+  .card-warm {
+    @apply rounded-card bg-surface-warm;
+  }
+
+  /* Pill full-width charcoal — CTA utama (padanan tombol hijau tua Alma) */
+  .btn-primary {
+    @apply inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-pill
+           bg-cta px-6 text-[15px] font-semibold text-ink-invert
+           transition-[transform,opacity] active:scale-[0.985] disabled:opacity-50;
+  }
+
+  /* Tombol kirim bundar di kolom input — charcoal, emas saat hover (§13).
+     State nonaktif pakai emas lembut, BUKAN abu netral. */
+  .btn-send {
+    @apply grid h-11 w-11 shrink-0 place-items-center rounded-full bg-cta text-ink-invert
+           transition-colors hover:bg-gold hover:text-cta
+           disabled:bg-gold-tint disabled:text-gold-deep disabled:hover:bg-gold-tint;
+  }
+
+  /* Chip saran pertanyaan — padding lega (20px/12px), tanpa border abu */
+  .chip {
+    @apply inline-flex min-h-[44px] items-center gap-1.5 rounded-pill bg-surface-warm
+           px-5 py-3 text-[14px] font-medium text-ink-muted
+           transition-colors active:bg-gold-tint;
+  }
+
+  /* Chip terpilih/aktif */
+  .chip-active {
+    @apply bg-gold-tint text-ink;
+  }
+
+  /* Jarak antar-section 24–32px (§13) */
+  .section-stack > * + * {
+    @apply mt-section;
+  }
+
+  /* Target sentuh minimum 44px (§12) */
+  .tap {
+    @apply min-h-[var(--tap)] min-w-[var(--tap)];
+  }
+}
+
+@layer utilities {
+  /* Angka besar (skor/gauge/saldo) — serif display, bukan sans */
+  .num-display {
+    font-family: var(--font-fraunces), Georgia, Cambria, serif;
+    font-optical-sizing: auto;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Sembunyikan scrollbar untuk baris chip yang bisa digeser */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Angka & data pakai fitur tabular biar rata */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  /* Ruang aman iOS (bottom nav / sheet) */
+  .pb-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Skeleton loading (dipakai di semua layar data — §9.5) */
+  .skeleton {
+    @apply relative overflow-hidden rounded-xl bg-surface-warm;
+  }
+  .skeleton::after {
+    @apply absolute inset-0 -translate-x-full animate-shimmer content-[''];
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.65),
+      transparent
+    );
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
