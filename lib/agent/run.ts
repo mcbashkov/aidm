@@ -1,6 +1,6 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { getAnthropic } from "@/lib/ai/anthropic";
-import { AGENT_MODEL, LIGHT_MODEL } from "@/lib/ai/models";
+import { AGENT_MODEL, LIGHT_MODEL, AGENT_MAX_TOKENS } from "@/lib/ai/models";
 import { getAgentParams } from "@/lib/config";
 import { getEmbedding, toVectorLiteral } from "@/lib/ai/embeddings";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -188,7 +188,7 @@ export async function runResearchAgent(
       const response = await client.messages.create(
         {
           model: AGENT_MODEL,
-          max_tokens: 4096,
+          max_tokens: AGENT_MAX_TOKENS,
           system,
           tools,
           messages,
@@ -279,7 +279,7 @@ export async function runResearchAgent(
     const synthesis = await client.messages.create(
       {
         model: AGENT_MODEL,
-        max_tokens: 3000,
+        max_tokens: AGENT_MAX_TOKENS,
         system,
         messages,
         output_config: {
@@ -291,6 +291,16 @@ export async function runResearchAgent(
       },
       { signal: deadline },
     );
+    // Output terpotong = JSON tidak lengkap. Laporkan apa adanya, jangan
+    // biarkan jatuh ke JSON.parse dan muncul sebagai "gangguan" yang kabur.
+    if (synthesis.stop_reason === "max_tokens") {
+      return {
+        ok: false,
+        reason: "error",
+        message:
+          "Jawaban terpotong karena terlalu panjang. Kredit tidak terpotong — coba pertanyaan yang lebih spesifik.",
+      };
+    }
     const textBlock = synthesis.content.find((b) => b.type === "text");
     if (!textBlock || textBlock.type !== "text") {
       return {

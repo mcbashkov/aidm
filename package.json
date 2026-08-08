@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "icons": "bash scripts/generate-icons.sh"
+    "icons": "bash scripts/generate-icons.sh",
+    "db:migrate": "bash scripts/apply-migrations.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
