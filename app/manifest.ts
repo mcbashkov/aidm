@@ -43,17 +43,18 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: "maskable",
       },
     ],
+    // Shortcut v3.0: Catat & Laporan (§9.5) — menggantikan Riset & Misi.
     shortcuts: [
       {
-        name: "Riset Tren",
-        short_name: "Riset",
-        url: "/riset",
+        name: "Catat transaksi",
+        short_name: "Catat",
+        url: "/catat",
         icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }],
       },
       {
-        name: "Misi & Reward",
-        short_name: "Misi",
-        url: "/misi",
+        name: "Laporan keuangan",
+        short_name: "Laporan",
+        url: "/laporan",
         icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }],
       },
     ],

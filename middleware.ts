@@ -2,7 +2,18 @@ import { NextResponse, type NextRequest } from "next/server";
 import { isPrivyConfigured } from "@/lib/privy/config";
 import { SESSION_COOKIE } from "@/lib/auth/constants";
 
-const PROTECTED = ["/beranda", "/riset", "/konten", "/misi", "/akun"];
+const PROTECTED = [
+  "/beranda",
+  "/catat",
+  "/laporan",
+  "/riwayat",
+  "/premium",
+  "/misi",
+  "/akun",
+  // Rute lama v2.0 yang kini mengalihkan ke /premium (§7.8)
+  "/riset",
+  "/konten",
+];
 
 export function middleware(req: NextRequest) {
   // Mode placeholder (Privy belum dikonfigurasi) → izinkan demo UI.
@@ -26,9 +37,13 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     "/beranda/:path*",
-    "/riset/:path*",
-    "/konten/:path*",
+    "/catat/:path*",
+    "/laporan/:path*",
+    "/riwayat/:path*",
+    "/premium/:path*",
     "/misi/:path*",
     "/akun/:path*",
+    "/riset/:path*",
+    "/konten/:path*",
   ],
 };

@@ -44,6 +44,12 @@
 
   /* Status */
   --success: #17864a;
+  /* Latar lembut untuk petak ikon masuk/keluar. Nilainya = warna status pada
+     10% di atas putih, dihitung sekali di sini: modifier opasitas Tailwind
+     (`bg-success/10`) TIDAK bekerja pada warna berbasis var() dan gagal
+     diam-diam — latar hilang tanpa error di build. */
+  --success-tint: #e8f3ed;
+  --danger-tint: #f9ebea;
 
   /* Bentuk & elevasi (§13) */
   --radius-card: 24px;

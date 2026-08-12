@@ -47,8 +47,14 @@ const config: Config = {
           ink: "var(--wallet-ink)",
           muted: "var(--wallet-muted)",
         },
-        success: "var(--success)",
-        danger: "var(--danger)",
+        success: {
+          DEFAULT: "var(--success)",
+          tint: "var(--success-tint)",
+        },
+        danger: {
+          DEFAULT: "var(--danger)",
+          tint: "var(--danger-tint)",
+        },
       },
       fontFamily: {
         serif: ["var(--font-fraunces)", "Georgia", "Cambria", "serif"],
@@ -105,10 +111,22 @@ const config: Config = {
         shimmer: {
           "100%": { transform: "translateX(100%)" },
         },
+        // Sheet detail transaksi (§13 layar 5) — masuk dari bawah, tempat
+        // jempol berada; scrim menyusul dengan fade agar konteks tidak hilang.
+        "slide-up": {
+          from: { transform: "translateY(100%)" },
+          to: { transform: "translateY(0)" },
+        },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
       },
       animation: {
         "fade-up": "fade-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) both",
         shimmer: "shimmer 1.4s infinite",
+        "slide-up": "slide-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "fade-in": "fade-in 0.2s ease-out both",
       },
     },
   },

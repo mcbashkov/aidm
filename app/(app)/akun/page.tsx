@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   MessageSquare,
   Bell,
@@ -8,14 +9,21 @@ import {
   KeyRound,
   Trash2,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import { WalletCard } from "@/components/wallet/wallet-card";
 import { LogoutButton } from "@/components/account/logout-button";
+import { earnerLabel } from "@/lib/earner";
 import { cn } from "@/lib/utils";
 
 interface Me {
   authenticated: boolean;
-  user?: { role?: string; kota?: string } | null;
+  user?: {
+    role?: string;
+    earner_type?: string;
+    nama_usaha?: string;
+    kota?: string;
+  } | null;
   wallet?: { address?: string } | null;
   idmx?: number;
   idm?: number;
@@ -39,20 +47,22 @@ export default function AkunPage() {
       .catch(() => setMe({ authenticated: false }));
   }, []);
 
-  const role = me?.user?.role;
   const kota = me?.user?.kota;
-  const roleLabel = role
-    ? role === "umkm"
-      ? "Pemilik UMKM"
-      : "Calon wirausaha"
-    : "Mode demo";
+  const namaUsaha = me?.user?.nama_usaha;
+  // v3.0: identitas pengguna dibaca dari earner_type (§7.1); `role` lama hanya
+  // dipakai sebagai cadangan untuk akun yang dibuat sebelum pivot.
+  const peranLabel = me?.user?.earner_type
+    ? earnerLabel(me.user.earner_type)
+    : me?.user?.role
+      ? "Pemilik usaha"
+      : "Mode demo";
 
   return (
     <div className="space-y-section">
       <header>
-        <h1>Akun</h1>
+        <h1>{namaUsaha || "Akun"}</h1>
         <p className="mt-1 text-[13px] text-ink-subtle">
-          {roleLabel}
+          {peranLabel}
           {kota ? ` · ${kota}` : ""}
         </p>
       </header>
@@ -62,6 +72,25 @@ export default function AkunPage() {
         idmx={me?.idmx ?? 0}
         idm={me?.idm ?? 0}
       />
+
+      {/* Pintu masuk fitur premium — bukan bottom-nav lagi (§7.8 / §13 #10) */}
+      <Link
+        href="/premium"
+        className="card flex items-center gap-4 p-5 transition-shadow hover:shadow-float"
+      >
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gold-tint">
+          <Sparkles className="h-6 w-6 text-gold-deep" aria-hidden />
+        </span>
+        <span className="flex-1">
+          <span className="block font-serif text-card-title font-semibold text-ink">
+            Fitur premium
+          </span>
+          <span className="mt-0.5 block text-[13px] leading-snug text-ink-muted">
+            Riset tren, peluang usaha, dan generator konten.
+          </span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-ink-subtle" aria-hidden />
+      </Link>
 
       <section className="space-y-2">
         <h2 className="px-1">Pengaturan</h2>

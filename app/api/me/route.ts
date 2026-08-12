@@ -25,7 +25,9 @@ export async function GET() {
     const [{ data: user }, { data: wallet }] = await Promise.all([
       supa
         .from("users")
-        .select("id, role, kategori_id, sub_kategori, kota, provinsi, email, phone")
+        .select(
+          "id, role, earner_type, nama_usaha, kategori_id, sub_kategori, kota, provinsi, email, phone",
+        )
         .eq("id", uid)
         .single(),
       supa
@@ -65,6 +67,19 @@ export async function PATCH(req: Request) {
 
   const update: Record<string, unknown> = {};
   if (patch.role === "calon" || patch.role === "umkm") update.role = patch.role;
+  // v3.0 (§7.1): peran penghasilan menggantikan `role` di UI. Nilai divalidasi
+  // di sini karena kolomnya punya CHECK constraint — nilai asing akan ditolak
+  // Postgres dan menggagalkan seluruh update, bukan cuma field ini.
+  if (
+    typeof patch.earner_type === "string" &&
+    ["dagang", "ojol", "freelance", "online", "lainnya"].includes(
+      patch.earner_type,
+    )
+  ) {
+    update.earner_type = patch.earner_type;
+  }
+  if (typeof patch.nama_usaha === "string")
+    update.nama_usaha = patch.nama_usaha.slice(0, 120);
   if (typeof patch.kota === "string") update.kota = patch.kota;
   if (typeof patch.provinsi === "string") update.provinsi = patch.provinsi;
   if (typeof patch.sub_kategori === "string")

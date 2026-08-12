@@ -114,7 +114,7 @@ export function AnswerArticle({
       {/* Tombol lanjutan */}
       <div className="flex flex-wrap gap-2">
         <Link
-          href="/konten"
+          href="/premium/konten"
           className="inline-flex min-h-[44px] items-center gap-1.5 rounded-pill bg-cta px-5 text-[13px] font-semibold text-ink-invert"
         >
           <Sparkles className="h-4 w-4" aria-hidden />
