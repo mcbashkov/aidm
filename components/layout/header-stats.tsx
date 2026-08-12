@@ -15,21 +15,22 @@ function walletTail(address?: string | null): string {
 }
 
 /**
- * Satu segmen (Kredit/IDMX/Wallet). Mobile: tanpa kapsul, area sentuh
- * transparan ≥44px di sekitar ikon+angka kecil. Desktop/tablet (md:): jadi
- * bagian dari pill tunggal — padding lega, hover latar surface-warm, sudut
- * membulat hanya di segmen pertama/terakhir.
+ * Satu segmen (Kredit/IDMX/Wallet). Mobile & tablet (<1024px): tanpa kapsul,
+ * area sentuh transparan ≥44px di sekitar ikon+angka kecil. Desktop (lg:,
+ * ≥1024px — selaras dengan breakpoint TopNav di AppLayout): jadi bagian dari
+ * pill tunggal — padding lega, hover latar surface-warm, sudut membulat
+ * hanya di segmen pertama/terakhir.
  */
 const SEGMENT_CLASS =
   "flex min-h-11 min-w-11 items-center justify-center gap-1.5 transition-colors " +
-  "md:min-h-0 md:min-w-0 md:justify-start md:gap-2 md:px-4 md:py-2 " +
-  "md:hover:bg-surface-warm md:first:rounded-l-pill md:last:rounded-r-pill";
+  "lg:min-h-0 lg:min-w-0 lg:justify-start lg:gap-2 lg:px-4 lg:py-2 " +
+  "lg:hover:bg-surface-warm lg:first:rounded-l-pill lg:last:rounded-r-pill";
 
 function Divider() {
   return (
     <span
       aria-hidden
-      className="hidden self-center md:block md:h-[26px] md:w-px md:bg-[rgba(33,28,21,0.10)]"
+      className="hidden self-center lg:block lg:h-[26px] lg:w-px lg:bg-[rgba(33,28,21,0.10)]"
     />
   );
 }
@@ -48,7 +49,7 @@ function CreditSegment({ credits }: { credits: number }) {
       <span className="tnum text-[13px] font-semibold text-ink">
         {formatNumberID(credits)}
       </span>
-      <span className="hidden text-[13px] text-ink-muted md:inline">
+      <span className="hidden text-[13px] text-ink-muted lg:inline">
         kredit
       </span>
     </Link>
@@ -66,7 +67,7 @@ function IdmxSegment({ idmx }: { idmx: number }) {
       <span className="tnum text-[13px] font-semibold text-ink">
         {formatCompactID(idmx)}
       </span>
-      <span className="hidden text-[13px] text-ink-muted md:inline">
+      <span className="hidden text-[13px] text-ink-muted lg:inline">
         IDMX
       </span>
     </Link>
@@ -94,7 +95,7 @@ function PrivyWalletSegment() {
 
   if (!ready) {
     return (
-      <span className="flex min-h-11 min-w-11 items-center justify-center md:min-h-0 md:min-w-0 md:px-4 md:py-2">
+      <span className="flex min-h-11 min-w-11 items-center justify-center lg:min-h-0 lg:min-w-0 lg:px-4 lg:py-2">
         <span className="skeleton h-4 w-10 rounded-pill" />
       </span>
     );
@@ -134,9 +135,9 @@ function WalletSegment() {
 
 /**
  * Cluster status header — Kredit · IDMX · Wallet — satu komponen dipakai di
- * semua breakpoint. Mobile (<768px): baris ikon+angka polos, tanpa kapsul,
- * tanpa latar/border. Desktop/tablet (md:): satu pill bg-surface dengan
- * pemisah vertikal 1px antar segmen.
+ * semua breakpoint. Mobile & tablet (<1024px): baris ikon+angka polos, tanpa
+ * kapsul, tanpa latar/border. Desktop (lg:, ≥1024px): satu pill bg-surface
+ * dengan pemisah vertikal 1px antar segmen.
  */
 export function HeaderStats() {
   const me = useMe();
@@ -147,7 +148,7 @@ export function HeaderStats() {
     <div
       className={cn(
         "flex shrink-0 items-center gap-4",
-        "md:h-11 md:items-stretch md:gap-0 md:rounded-pill md:border md:border-[rgba(33,28,21,0.08)] md:bg-surface md:shadow-card",
+        "lg:h-11 lg:items-stretch lg:gap-0 lg:rounded-pill lg:border lg:border-[rgba(33,28,21,0.08)] lg:bg-surface lg:shadow-card",
       )}
     >
       <CreditSegment credits={credits} />

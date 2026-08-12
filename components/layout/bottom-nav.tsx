@@ -5,14 +5,17 @@ import { usePathname } from "next/navigation";
 import { NAV_ITEMS, isActivePath } from "./nav-items";
 import { cn } from "@/lib/utils";
 
-/** Bottom nav 5 tab untuk mobile (tanpa FAB tengah — §13). */
+/**
+ * Bottom nav 5 tab untuk mobile (tanpa FAB tengah — §13).
+ * Aktif di <1024px (pola mobile berlaku sampai tablet — lihat AppLayout).
+ */
 export function BottomNav() {
   const pathname = usePathname();
 
   return (
     <nav
       aria-label="Navigasi utama"
-      className="pb-safe fixed inset-x-0 bottom-0 z-40 bg-surface/95 shadow-nav backdrop-blur md:hidden"
+      className="pb-safe fixed inset-x-0 bottom-0 z-40 bg-surface/95 shadow-nav backdrop-blur lg:hidden"
     >
       <ul className="mx-auto flex max-w-lg items-stretch justify-around px-1">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
