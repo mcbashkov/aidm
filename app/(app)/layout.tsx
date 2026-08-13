@@ -12,10 +12,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <div className="min-h-dvh bg-bg">
         <TopNav right={<HeaderStats />} />
         <MobileTopBar />
-        {/* Kolom konten 860px (§13) — latar ivory mengisi sisa viewport.
-            Pola mobile (bottom-nav, padding lega) berlaku sampai <1024px;
-            top-nav desktop + kolom 860px baru aktif di ≥1024px. */}
-        <main className="mx-auto w-full max-w-2xl px-4 pb-28 pt-4 lg:max-w-[860px] lg:px-6 lg:pb-12 lg:pt-8">
+        {/* Kolom konten (§13) — latar ivory mengisi sisa viewport. Pola mobile
+            (bottom-nav, padding lega) berlaku sampai <1024px; kolom desktop
+            max-w-6xl (1152px) aktif di ≥1024px — sama persis dengan container
+            TopNav supaya logo/nav/HeaderStats sejajar dengan konten. */}
+        <main className="mx-auto w-full max-w-2xl px-4 pb-28 pt-4 lg:max-w-6xl lg:px-6 lg:pb-12 lg:pt-8">
           {children}
         </main>
         <BottomNav />
