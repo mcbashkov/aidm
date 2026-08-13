@@ -5,20 +5,41 @@ import { ArrowUp, CloudOff, MessageSquarePlus } from "lucide-react";
 import { MicButton } from "@/components/catat/mic-button";
 import { EntryCard } from "@/components/catat/entry-card";
 import { TransactionSheet } from "@/components/transaksi/transaction-sheet";
+import { useMe } from "@/components/providers/me-provider";
 import { catatChips, type EarnerType } from "@/lib/earner";
-import { parseFallback } from "@/lib/parse/fallback";
-import { MOCK_ANCHOR } from "@/lib/mock/finance";
+import { parseFallback, bacaNominalJawaban } from "@/lib/parse/fallback";
+import {
+  kirimCatat,
+  konfirmasiDraft,
+  ubahTransaksi,
+  hapusTransaksi,
+} from "@/lib/catat/client";
+import {
+  tambahAntrean,
+  bacaAntrean,
+  hapusAntrean,
+} from "@/lib/offline/antrean";
 import type { Transaction } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 
-/** Satu gelembung percakapan di tab Catat. */
+/** Satu gelembung percakapan di tab Catat. `qid` mengikat kartu pratinjau
+ *  offline ke item antrean IndexedDB-nya. */
 type Bubble =
   | { kind: "user"; id: string; text: string }
-  | { kind: "entry"; id: string; tx: Transaction; antre: boolean }
+  | { kind: "entry"; id: string; tx: Transaction; antre: boolean; qid?: string }
   | { kind: "agent"; id: string; text: string };
 
 let counter = 0;
 const nextId = () => `b${++counter}`;
+
+/** Tanggal hari ini WIB — dipakai parser pratinjau lokal (demo/offline). */
+function todayWibClient(): string {
+  return new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10);
+}
+
+/** Entri lokal (demo/offline) memakai id ber-prefiks — TIDAK boleh dikirim
+ *  ke PATCH/DELETE server. */
+const isLokalId = (id: string) => id.startsWith("local-");
 
 /** Tinggi maksimum kolom input sebelum isinya menggulir sendiri (§5). */
 const INPUT_MAX_H = 120;
@@ -50,16 +71,25 @@ interface CatatViewProps {
  * mobile `fixed` tepat di atas bottom-nav (atau di atas keyboard saat terbuka),
  * di desktop ikut lebar kolom konten.
  *
- * SEMENTARA: entri dibuat oleh parser aturan di klien (§7.2 fallback) dan
- * disimpan di state, belum ke `transactions`. Bentuk datanya sudah sama dengan
- * kontrak API §11 supaya penggantian ke POST /api/catat tidak menyentuh UI.
+ * Jalur data (§9.2): online → POST /api/catat (LLM + fallback server-side);
+ * offline → antrean IndexedDB + pratinjau parser lokal, sinkron otomatis;
+ * server belum dikonfigurasi (401/501) → mode demo dengan parser lokal.
  */
-export function CatatView({ earnerType = "dagang" }: CatatViewProps) {
+export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps) {
+  const me = useMe();
+  // Chip & parser lokal mengikuti peran dari profil begitu /api/me termuat.
+  const earnerType = (me?.user?.earner_type as EarnerType) ?? earnerProp;
+
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const [draft, setDraft] = useState("");
   const [interim, setInterim] = useState("");
   const [offline, setOffline] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
+  /** id draft server yang sedang menunggu jawaban nominal (§7.2 alur #6). */
+  const pendingDraftRef = useRef<string | null>(null);
+  /** true setelah server menjawab 401/501 — jalur demo lokal, hemat bolak-balik. */
+  const demoRef = useRef(false);
+  const sedangSinkronRef = useRef(false);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
@@ -226,27 +256,22 @@ export function CatatView({ earnerType = "dagang" }: CatatViewProps) {
     if (el) el.scrollTop = el.scrollHeight;
   }, [bubbles]);
 
-  const kirim = useCallback(
-    (teks: string) => {
-      const text = teks.trim();
-      if (!text) return;
-
+  /** Pratinjau lokal via parser fallback — jalur demo & offline. */
+  const parseLokal = useCallback(
+    (text: string, antre: boolean, qid?: string): Bubble[] => {
       const hasil = parseFallback(text, {
-        today: MOCK_ANCHOR,
+        today: todayWibClient(),
         earner: earnerType,
       });
-      const antre = offline;
-      const baru: Bubble[] = [{ kind: "user", id: nextId(), text }];
-
+      const baru: Bubble[] = [];
       for (const e of hasil.entries) {
-        // Entri tanpa nominal berstatus draft sampai pertanyaan terjawab
-        // (§7.2 alur #6) — tetap disimpan, tidak dibuang.
         baru.push({
           kind: "entry",
           id: nextId(),
           antre,
+          qid,
           tx: {
-            id: `tx-${nextId()}`,
+            id: `local-${nextId()}`,
             jenis: e.jenis,
             amount: e.amount ?? 0,
             kategori: e.kategori,
@@ -259,33 +284,254 @@ export function CatatView({ earnerType = "dagang" }: CatatViewProps) {
           },
         });
       }
-
       if (hasil.pertanyaan) {
         baru.push({ kind: "agent", id: nextId(), text: hasil.pertanyaan });
       }
       if (hasil.tidakDikenali) {
         baru.push({ kind: "agent", id: nextId(), text: hasil.tidakDikenali });
       }
-
-      setBubbles((prev) => [...prev, ...baru]);
-      setDraft("");
-      setInterim("");
+      return baru;
     },
-    [earnerType, offline],
+    [earnerType],
   );
 
+  /** Simpan teks ke antrean IndexedDB + tampilkan pratinjau "menunggu sinkron". */
+  const antrekan = useCallback(
+    async (text: string, source: "chat" | "voice") => {
+      const item = await tambahAntrean(text, source);
+      setBubbles((prev) => [...prev, ...parseLokal(text, true, item?.id)]);
+    },
+    [parseLokal],
+  );
+
+  const kirim = useCallback(
+    (teks: string, source: "chat" | "voice" = "chat") => {
+      const text = teks.trim();
+      if (!text) return;
+
+      setBubbles((prev) => [...prev, { kind: "user", id: nextId(), text }]);
+      setDraft("");
+      setInterim("");
+
+      void (async () => {
+        // Offline → antre di IndexedDB, kirim ulang saat online (§7.2 #6).
+        if (offline || !navigator.onLine) {
+          await antrekan(text, source);
+          return;
+        }
+        // Mode demo (server belum dikonfigurasi) → parser lokal.
+        if (demoRef.current) {
+          setBubbles((prev) => [...prev, ...parseLokal(text, false)]);
+          return;
+        }
+
+        // Sedang ada draft menunggu nominal & teks ini terbaca sebagai angka
+        // → jawaban klarifikasi, bukan catatan baru (§7.2 alur #6).
+        const draftId = pendingDraftRef.current;
+        if (draftId && bacaNominalJawaban(text) !== null) {
+          const res = await konfirmasiDraft(draftId, text);
+          if (res.ok && res.data.ok && res.data.entry) {
+            const entry = res.data.entry;
+            pendingDraftRef.current = null;
+            setBubbles((prev) =>
+              prev.map((b) =>
+                b.kind === "entry" && b.tx.id === entry.id
+                  ? { ...b, tx: entry }
+                  : b,
+              ),
+            );
+            return;
+          }
+          if (res.ok && !res.data.ok) {
+            setBubbles((prev) => [
+              ...prev,
+              {
+                kind: "agent",
+                id: nextId(),
+                text:
+                  res.data.pertanyaan ??
+                  "Aku masih belum menangkap angkanya — coba tulis nominalnya saja.",
+              },
+            ]);
+            return;
+          }
+          // Gagal jaringan/server: JANGAN jatuh ke alur catat biasa — angka
+          // telanjang akan terbaca sebagai transaksi BARU (catatan ganda).
+          setBubbles((prev) => [
+            ...prev,
+            {
+              kind: "agent",
+              id: nextId(),
+              text: "Jawabanmu belum sampai ke server. Coba kirim angkanya sekali lagi ya.",
+            },
+          ]);
+          return;
+        }
+
+        const res = await kirimCatat(text, source);
+        if (res.ok) {
+          const { entries, pertanyaan, tidak_dikenali } = res.data;
+          const baru: Bubble[] = entries.map((tx) => ({
+            kind: "entry" as const,
+            id: nextId(),
+            antre: false,
+            tx,
+          }));
+          const draftBaru = entries.find((t) => t.status === "draft");
+          if (pertanyaan && draftBaru) {
+            pendingDraftRef.current = draftBaru.id;
+            baru.push({ kind: "agent", id: nextId(), text: pertanyaan });
+          }
+          if (tidak_dikenali) {
+            baru.push({ kind: "agent", id: nextId(), text: tidak_dikenali });
+          }
+          setBubbles((prev) => [...prev, ...baru]);
+          return;
+        }
+        if (res.offline) {
+          setOffline(true);
+          await antrekan(text, source);
+          return;
+        }
+        if (res.demo) {
+          demoRef.current = true;
+          setBubbles((prev) => [...prev, ...parseLokal(text, false)]);
+          return;
+        }
+        // 429 / 500 — beri tahu apa adanya, jangan diam.
+        setBubbles((prev) => [
+          ...prev,
+          { kind: "agent", id: nextId(), text: res.error },
+        ]);
+      })();
+    },
+    [offline, antrekan, parseLokal],
+  );
+
+  /**
+   * Sinkron antrean offline: saat mount, saat kembali online, dan tiap 20
+   * detik selagi online (AC §7.2: tersinkron ≤30 dtk setelah online).
+   */
+  useEffect(() => {
+    let hidup = true;
+
+    async function drain() {
+      if (!hidup || sedangSinkronRef.current) return;
+      if (!navigator.onLine || demoRef.current) return;
+      sedangSinkronRef.current = true;
+      try {
+        const items = await bacaAntrean();
+        for (const it of items) {
+          if (!hidup) break;
+          const res = await kirimCatat(it.text, it.source);
+          if (res.ok) {
+            await hapusAntrean(it.id);
+            const serverEntries = res.data.entries;
+            setBubbles((prev) => {
+              // Kartu pratinjau qid ini ditukar dengan entri server.
+              const keluar: Bubble[] = [];
+              let sudahTukar = false;
+              for (const b of prev) {
+                if (b.kind === "entry" && b.qid === it.id) {
+                  if (!sudahTukar) {
+                    sudahTukar = true;
+                    keluar.push(
+                      ...serverEntries.map((tx) => ({
+                        kind: "entry" as const,
+                        id: nextId(),
+                        antre: false,
+                        tx,
+                      })),
+                    );
+                  }
+                } else {
+                  keluar.push(b);
+                }
+              }
+              return keluar;
+            });
+          } else if (res.demo) {
+            demoRef.current = true;
+            break;
+          } else if (res.offline || res.status === 429) {
+            break; // coba lagi nanti — item TIDAK dibuang
+          } else {
+            // 4xx permanen (teks kosong dsb.) — buang agar antrean tak macet.
+            await hapusAntrean(it.id);
+          }
+        }
+      } finally {
+        sedangSinkronRef.current = false;
+      }
+    }
+
+    void drain();
+    const onOnline = () => void drain();
+    window.addEventListener("online", onOnline);
+    const timer = setInterval(() => void drain(), 20_000);
+    return () => {
+      hidup = false;
+      window.removeEventListener("online", onOnline);
+      clearInterval(timer);
+    };
+  }, []);
+
   function simpanEdit(tx: Transaction) {
+    // Optimistic: kartu diperbarui dulu, server menyusul.
     setBubbles((prev) =>
       prev.map((b) =>
         b.kind === "entry" && b.tx.id === tx.id ? { ...b, tx } : b,
       ),
     );
+    if (isLokalId(tx.id) || demoRef.current) return;
+    void ubahTransaksi(tx.id, {
+      jenis: tx.jenis,
+      amount: tx.amount,
+      kategori: tx.kategori,
+      payment_method: tx.paymentMethod,
+      occurred_at: tx.occurredAt,
+      catatan: tx.catatan ?? null,
+    }).then((res) => {
+      if (res.ok) {
+        if (pendingDraftRef.current === tx.id) pendingDraftRef.current = null;
+        setBubbles((prev) =>
+          prev.map((b) =>
+            b.kind === "entry" && b.tx.id === tx.id
+              ? { ...b, tx: res.data.entry }
+              : b,
+          ),
+        );
+      } else if (!res.demo) {
+        setBubbles((prev) => [
+          ...prev,
+          {
+            kind: "agent",
+            id: nextId(),
+            text: `Perubahan belum tersimpan ke server: ${res.error}`,
+          },
+        ]);
+      }
+    });
   }
 
   function hapus(id: string) {
     setBubbles((prev) =>
       prev.filter((b) => !(b.kind === "entry" && b.tx.id === id)),
     );
+    if (pendingDraftRef.current === id) pendingDraftRef.current = null;
+    if (isLokalId(id) || demoRef.current) return;
+    void hapusTransaksi(id).then((res) => {
+      if (!res.ok && !res.demo && res.status !== 404) {
+        setBubbles((prev) => [
+          ...prev,
+          {
+            kind: "agent",
+            id: nextId(),
+            text: `Gagal menghapus di server: ${res.error}`,
+          },
+        ]);
+      }
+    });
   }
 
   /**
@@ -498,7 +744,10 @@ export function CatatView({ earnerType = "dagang" }: CatatViewProps) {
                 <ArrowUp className="h-5 w-5" aria-hidden />
               </button>
             ) : (
-              <MicButton onTranscript={kirim} onInterim={setInterim} />
+              <MicButton
+                onTranscript={(t) => kirim(t, "voice")}
+                onInterim={setInterim}
+              />
             )}
           </form>
         </div>

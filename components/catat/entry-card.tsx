@@ -53,9 +53,16 @@ export function EntryCard({ tx, onEdit, antre }: EntryCardProps) {
               {masuk ? "Masuk" : "Keluar"}
             </span>
           </p>
-          <p className="num-display text-[22px] leading-tight text-ink">
-            {formatRupiah(tx.amount)}
-          </p>
+          {tx.status === "draft" ? (
+            // Draft belum punya nominal — jangan tampilkan "Rp0" seolah fakta.
+            <p className="text-[15px] font-semibold italic text-ink-muted">
+              Menunggu nominal…
+            </p>
+          ) : (
+            <p className="num-display text-[22px] leading-tight text-ink">
+              {formatRupiah(tx.amount)}
+            </p>
+          )}
           <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[12px] text-ink-muted">
             <span>{kategoriLabel(tx.jenis, tx.kategori)}</span>
             <span aria-hidden>·</span>

@@ -2,55 +2,36 @@
 
 import { useEffect, useState } from "react";
 import { Check, CloudOff, MessageSquarePlus } from "lucide-react";
-
-const ANTREAN_KEY = "aidm:antrean-catat";
-
-interface Antre {
-  text: string;
-  createdAt: string;
-}
-
-function bacaAntrean(): Antre[] {
-  try {
-    const raw = localStorage.getItem(ANTREAN_KEY);
-    return raw ? (JSON.parse(raw) as Antre[]) : [];
-  } catch {
-    return [];
-  }
-}
+import {
+  tambahAntrean,
+  bacaAntrean,
+  type AntreanItem,
+} from "@/lib/offline/antrean";
 
 /**
  * Form catat offline (§9.5: "offline page wajib memuat form catat offline,
  * bukan hanya riwayat — ini fitur, bukan sekadar degradasi").
  *
- * SEMENTARA antrean disimpan di localStorage; produksi memakai IndexedDB +
- * background sync (§9.1). Kontrak datanya sengaja sederhana — teks mentah dan
- * waktu — supaya sinkronisasi nanti tinggal mengirimnya ke POST /api/catat.
+ * Antrean disimpan di IndexedDB yang SAMA dengan tab Catat
+ * (lib/offline/antrean) — begitu online dan aplikasi terbuka, sinkronisasi
+ * di CatatView mengirimkan semuanya ke POST /api/catat (AC §7.2 ≤30 dtk).
  */
 export function OfflineCatatForm() {
   const [text, setText] = useState("");
-  const [antrean, setAntrean] = useState<Antre[]>([]);
+  const [antrean, setAntrean] = useState<AntreanItem[]>([]);
   const [baruSaja, setBaruSaja] = useState(false);
 
   useEffect(() => {
-    setAntrean(bacaAntrean());
+    void bacaAntrean().then(setAntrean);
   }, []);
 
-  function simpan(e: React.FormEvent) {
+  async function simpan(e: React.FormEvent) {
     e.preventDefault();
     const isi = text.trim();
     if (!isi) return;
-    const next = [
-      ...bacaAntrean(),
-      { text: isi, createdAt: new Date().toISOString() },
-    ];
-    try {
-      localStorage.setItem(ANTREAN_KEY, JSON.stringify(next));
-    } catch {
-      // penyimpanan penuh / mode privat — beri tahu lewat UI, jangan diam
-      return;
-    }
-    setAntrean(next);
+    const item = await tambahAntrean(isi, "chat");
+    if (!item) return; // mode privat / storage penuh — jangan pura-pura sukses
+    setAntrean(await bacaAntrean());
     setText("");
     setBaruSaja(true);
     setTimeout(() => setBaruSaja(false), 2500);
@@ -97,13 +78,13 @@ export function OfflineCatatForm() {
           </p>
           <ul className="space-y-1">
             {antrean.slice(-3).map((a) => (
-              <li key={a.createdAt} className="truncate text-[12px] text-ink-muted">
+              <li key={a.id} className="truncate text-[12px] text-ink-muted">
                 {a.text}
               </li>
             ))}
           </ul>
           <p className="text-[11px] leading-relaxed text-ink-subtle">
-            Terkirim otomatis begitu internet kembali.
+            Terkirim otomatis begitu internet kembali dan tab Catat dibuka.
           </p>
         </div>
       ) : null}

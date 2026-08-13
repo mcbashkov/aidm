@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "test:parser": "node scripts/parser-test.mjs",
     "icons": "bash scripts/generate-icons.sh",
     "db:migrate": "bash scripts/apply-migrations.sh"
   },

@@ -1,0 +1,143 @@
+import { NextResponse } from "next/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { parseCatat } from "@/lib/parse";
+import { todayWib } from "@/lib/parse/validate";
+import {
+  CATAT_DAILY_LIMIT,
+  currentUserId,
+  entriDibuatHariIni,
+  getKategoriMaps,
+  rowToTx,
+  TX_COLUMNS,
+  type TxRow,
+} from "@/lib/catat/server";
+
+export const runtime = "nodejs";
+
+/**
+ * POST /api/catat (§11): {text, source} → {entries[], pertanyaan?}.
+ *
+ * Optimistic save (§7.2 prinsip #2): entri bernominal langsung `confirmed`;
+ * field wajib kosong → `draft` + satu pertanyaan klarifikasi.
+ *
+ * GRATIS — nol Kredit AI (§7.2 prinsip #5): route ini TIDAK menyentuh
+ * credit_ledger sama sekali. Jangan tambahkan pemotongan di sini.
+ */
+export async function POST(req: Request) {
+  const uid = currentUserId();
+  if (!uid) {
+    return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+  }
+
+  let text = "";
+  let source: "chat" | "voice" = "chat";
+  try {
+    const body = (await req.json()) as { text?: string; source?: string };
+    text = (body.text ?? "").trim().slice(0, 1000);
+    if (body.source === "voice") source = "voice";
+  } catch {
+    /* body kosong */
+  }
+  if (!text) {
+    return NextResponse.json({ error: "Teks kosong" }, { status: 400 });
+  }
+
+  let supa;
+  try {
+    supa = createSupabaseAdminClient();
+  } catch {
+    return NextResponse.json(
+      { error: "Supabase belum dikonfigurasi." },
+      { status: 501 },
+    );
+  }
+
+  try {
+    // Batas anti-abuse §7.2: 200 entri/user/hari.
+    const sudah = await entriDibuatHariIni(supa, uid);
+    if (sudah >= CATAT_DAILY_LIMIT) {
+      return NextResponse.json(
+        {
+          error:
+            "Batas 200 catatan per hari tercapai. Lanjut lagi besok ya — datamu hari ini aman tersimpan.",
+        },
+        { status: 429 },
+      );
+    }
+
+    // Konteks profil untuk parser (§7.2 alur #2).
+    const { data: profil } = await supa
+      .from("users")
+      .select("earner_type, kota, categories:kategori_id(nama)")
+      .eq("id", uid)
+      .maybeSingle();
+    const katRel = profil?.categories as
+      | { nama?: string }
+      | { nama?: string }[]
+      | null;
+    const kategoriUsaha = Array.isArray(katRel) ? katRel[0]?.nama : katRel?.nama;
+
+    const today = todayWib();
+    const hasil = await parseCatat(text, {
+      today,
+      earnerType: profil?.earner_type ?? null,
+      kategoriUsaha: kategoriUsaha ?? null,
+      kota: profil?.kota ?? null,
+    });
+
+    if (hasil.entries.length === 0) {
+      return NextResponse.json({
+        entries: [],
+        pertanyaan: null,
+        tidak_dikenali: hasil.tidakDikenali,
+        parsed_by: hasil.parsedBy,
+      });
+    }
+
+    // Kuota sisa hari ini membatasi jumlah entri yang boleh lahir dari satu
+    // kalimat — kelebihan dipotong, bukan ditolak seluruhnya.
+    const entries = hasil.entries.slice(0, CATAT_DAILY_LIMIT - sudah);
+
+    const maps = await getKategoriMaps(supa);
+    const fallbackKategoriId = maps.bySlug.get("lainnya") ?? null;
+    const rows = entries.map((e) => ({
+      user_id: uid,
+      jenis: e.jenis,
+      amount: e.amount,
+      kategori_id: maps.bySlug.get(e.kategori) ?? fallbackKategoriId,
+      sub_kategori: e.subKategori,
+      payment_method: e.paymentMethod,
+      catatan: e.catatan || null,
+      // Parser memberi tanggal saja; jam dipatok 12:00 WIB supaya tanggal
+      // WIB baris ini stabil dilihat dari timezone mana pun.
+      occurred_at: `${e.occurredAt}T12:00:00+07:00`,
+      source,
+      parsed_by: hasil.parsedBy,
+      raw_input: text,
+      status: e.status,
+    }));
+
+    const { data: inserted, error } = await supa
+      .from("transactions")
+      .insert(rows)
+      .select(TX_COLUMNS);
+    if (error || !inserted) {
+      return NextResponse.json(
+        { error: "Gagal menyimpan catatan." },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({
+      entries: (inserted as TxRow[]).map((r) => rowToTx(r, maps.byId)),
+      pertanyaan: hasil.pertanyaan,
+      tidak_dikenali: null,
+      parsed_by: hasil.parsedBy,
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Terjadi gangguan saat mencatat. Coba lagi ya." },
+      { status: 500 },
+    );
+  }
+}

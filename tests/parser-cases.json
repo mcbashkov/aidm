@@ -1,0 +1,4396 @@
+[
+ {
+  "id": "dagang-01",
+  "persona": "dagang",
+  "text": "dagangan hari ini laku 450rb alhamdulillah",
+  "note": "satu entri, format 45rb, penjualan harian warung",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 450000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-02",
+  "persona": "dagang",
+  "text": "beli gas elpiji 3kg 22k di agen",
+  "note": "satu entri, format 45k; 3kg = ukuran tabung bukan uang; gas warung ambigu operasional/bahan_baku",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 22000,
+     "kategori_ok": [
+      "operasional",
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-03",
+  "persona": "dagang",
+  "text": "bayar listrik warung 350.000",
+  "note": "satu entri, format titik ribuan 45.000, listrik -> operasional",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 350000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-04",
+  "persona": "dagang",
+  "text": "stok mie instan dari sales Rp540.000 langsung transfer",
+  "note": "satu entri, format Rp45.000 tanpa spasi, transfer disebut",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 540000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-05",
+  "persona": "dagang",
+  "text": "kasih gaji si udin Rp 1.200.000",
+  "note": "satu entri, format Rp 45.000 pakai spasi, gaji karyawan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 1200000,
+     "kategori_ok": [
+      "gaji"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-06",
+  "persona": "dagang",
+  "text": "belanja stok bulanan ke grosir habis 1,5jt",
+  "note": "satu entri, format 1,5jt = 1500000, belanja stok -> bahan_baku",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 1500000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-07",
+  "persona": "dagang",
+  "text": "hari ini toko rame bgt, total masuk 2 juta",
+  "note": "satu entri, format '2 juta' = 2000000",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 2000000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-08",
+  "persona": "dagang",
+  "text": "terima dp pesenan nasi kotak seratus ribu",
+  "note": "satu entri, angka terbilang 'seratus ribu' = 100000",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 100000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-09",
+  "persona": "dagang",
+  "text": "beli telur sama minyak goreng 250 ribu di pasar",
+  "note": "satu entri (satu pembayaran utk dua barang), format '250 ribu'",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 250000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-10",
+  "persona": "dagang",
+  "text": "ada yg borong sembako 275rb bayarnya pake gopay",
+  "note": "satu entri, gopay -> ewallet",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 275000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "ewallet",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-11",
+  "persona": "dagang",
+  "text": "servis kulkas etalase 85k bayar scan qris",
+  "note": "satu entri, servis -> operasional, scan/QRIS -> qris",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 85000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "qris",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-12",
+  "persona": "dagang",
+  "text": "langganan wifi warung 166.000 dipotong dr rekening",
+  "note": "satu entri, kata 'rekening' -> transfer, wifi -> operasional",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 166000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-13",
+  "persona": "dagang",
+  "text": "kemarin warung sepi, cuma dpt 210rb",
+  "note": "waktu relatif: kemarin -> 2026-08-11; typo dpt",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 210000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-11"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-14",
+  "persona": "dagang",
+  "text": "tadi pagi bli sayur kol sm wortel di pasar 95rb",
+  "note": "waktu relatif: tadi pagi -> hari ini; typo bli",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 95000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-15",
+  "persona": "dagang",
+  "text": "sabtu lalu bayar sewa kios 800rb ke pak haji",
+  "note": "waktu relatif: sabtu lalu -> 2026-08-08; sewa -> operasional",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 800000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-08"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-16",
+  "persona": "dagang",
+  "text": "minggu lalu beli rice cooker jumbo 350rb buat warung",
+  "note": "waktu relatif: minggu lalu (tanpa 'hari') -> 2026-08-05; alat masak -> peralatan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 350000,
+     "kategori_ok": [
+      "peralatan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-05"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-17",
+  "persona": "dagang",
+  "text": "2 hari lalu ada pelanggan bayar kasbon 120rb",
+  "note": "waktu relatif: 2 hari lalu -> 2026-08-10; pelunasan kasbon ambigu penjualan/lainnya",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 120000,
+     "kategori_ok": [
+      "penjualan",
+      "lainnya"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-10"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-18",
+  "persona": "dagang",
+  "text": "hari ini jualan dapet 620rb, belanja stok 240rb, bayar listrik 150rb",
+  "note": "multi-entri: 3 peristiwa (masuk + 2 keluar)",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 620000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 240000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 150000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-19",
+  "persona": "dagang",
+  "text": "tutup kasir dapet 480rb terus kasih gaji harian mbak yah 70rb",
+  "note": "multi-entri: omzet harian + gaji harian karyawan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 480000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 70000,
+     "kategori_ok": [
+      "gaji"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-20",
+  "persona": "dagang",
+  "text": "jual rokok satu slop 315rb dibayar tf, terus bayar ongkir kiriman barang 15rb",
+  "note": "multi-entri: masuk via TF (transfer) + keluar ongkir -> transportasi; 'satu slop' kuantitas",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 315000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 15000,
+     "kategori_ok": [
+      "transportasi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-21",
+  "persona": "dagang",
+  "text": "pagi kulakan tahu tempe 60rb, siangnya ada yg borong jajanan 200rb pake qris",
+  "note": "multi-entri: kulakan tunai + penjualan qris, keduanya hari ini",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 60000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "masuk",
+     "amount": 200000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "qris",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-22",
+  "persona": "dagang",
+  "text": "dapet komisi jualin kerupuk titipan 35rb sama hasil warung 390rb",
+  "note": "multi-entri: dua pemasukan beda kategori (komisi + penjualan)",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 35000,
+     "kategori_ok": [
+      "komisi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "masuk",
+     "amount": 390000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-23",
+  "persona": "dagang",
+  "text": "beli beras 5 liter di pasar buat stok",
+  "note": "tanpa nominal: '5 liter' kuantitas, bukan uang -> amount null + pertanyaan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": null,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-24",
+  "persona": "dagang",
+  "text": "tadi ada yg beli galon tp lupa nyatet dapet berapa",
+  "note": "tanpa nominal: penjualan terjadi tapi nominal tidak disebut",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": null,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-25",
+  "persona": "dagang",
+  "text": "bayar tukang benerin atap warung tadi sore",
+  "note": "tanpa nominal: perbaikan/servis -> operasional; tadi sore -> hari ini",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": null,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-26",
+  "persona": "dagang",
+  "text": "isi pulsa nomor warung dulu",
+  "note": "tanpa nominal: pulsa -> operasional, amount null",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": null,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-27",
+  "persona": "dagang",
+  "text": "hujan deres bener dr tadi pagi, semoga ga banjir",
+  "note": "bukan transaksi: komentar cuaca",
+  "expect": {
+   "entries": [],
+   "pertanyaan": false,
+   "tidak_dikenali": true
+  }
+ },
+ {
+  "id": "dagang-28",
+  "persona": "dagang",
+  "text": "bang besok warung libur ga kalo tanggal merah",
+  "note": "bukan transaksi: pertanyaan biasa, tidak ada peristiwa uang",
+  "expect": {
+   "entries": [],
+   "pertanyaan": false,
+   "tidak_dikenali": true
+  }
+ },
+ {
+  "id": "dagang-29",
+  "persona": "dagang",
+  "text": "duh pegel bgt seharian jaga warung sendirian",
+  "note": "bukan transaksi: curhat",
+  "expect": {
+   "entries": [],
+   "pertanyaan": false,
+   "tidak_dikenali": true
+  }
+ },
+ {
+  "id": "dagang-30",
+  "persona": "dagang",
+  "text": "blanja stok sabun sachet sm mie 445rb di grosir",
+  "note": "typo 'blanja'; stok dagangan kelontong -> bahan_baku",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 445000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-31",
+  "persona": "dagang",
+  "text": "byr bnsin motor buat kulakan 25rb",
+  "note": "typo 'byr' dan 'bnsin'; bensin -> operasional sesuai panduan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 25000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-32",
+  "persona": "dagang",
+  "text": "trima tf 130rb dp pesenan nasi box",
+  "note": "typo 'trima'; TF -> transfer; dp pesanan makanan -> penjualan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 130000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-33",
+  "persona": "dagang",
+  "text": "dodolan dino iki payu 380rb, lumayan",
+  "note": "bahasa jawa ringan: dodolan/payu/dino iki = jualan laku hari ini",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 380000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-34",
+  "persona": "dagang",
+  "text": "meser beas 25 kg 340rb kanggo warung",
+  "note": "bahasa sunda ringan: meser=beli, beas=beras; '25 kg' kuantitas bukan uang",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 340000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-35",
+  "persona": "dagang",
+  "text": "laku 8 bungkus nasi uduk 96rb tadi siang",
+  "note": "jebakan kuantitas: 8 bungkus = jumlah porsi, 96rb = uang; tadi siang -> hari ini",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 96000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "dagang-36",
+  "persona": "dagang",
+  "text": "beli 12 krat teh botol 420.000 bayarnya pake ovo",
+  "note": "jebakan kuantitas: 12 krat = jumlah barang, 420.000 = uang; ovo -> ewallet",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 420000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "ewallet",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-01",
+  "persona": "ojol",
+  "text": "narik seharian dapet 145rb lumayan lah",
+  "note": "satu entri masuk, format angka 'rb'",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 145000,
+     "kategori_ok": [
+      "ojek"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-02",
+  "persona": "ojol",
+  "text": "orderan gofood tadi rame, total argo 98k masuk gopay",
+  "note": "satu entri masuk, format 'k', ewallet (gopay), 'tadi' = hari ini",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 98000,
+     "kategori_ok": [
+      "ojek"
+     ],
+     "payment_method": "ewallet",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-03",
+  "persona": "ojol",
+  "text": "isi bensin full tank 35.000 di spbu",
+  "note": "satu entri keluar, format ribuan '35.000', bensin = operasional",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 35000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-04",
+  "persona": "ojol",
+  "text": "servis rutin motor di ahass abis Rp185.000",
+  "note": "satu entri keluar, format 'Rp45.000' tanpa spasi, servis = operasional",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 185000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-05",
+  "persona": "ojol",
+  "text": "bayar cicilan motor bulan ini Rp 950.000 via transfer",
+  "note": "satu entri keluar, format 'Rp 45.000' pakai spasi, transfer; cicilan motor ojol jujur ambigu",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 950000,
+     "kategori_ok": [
+      "operasional",
+      "pribadi",
+      "lainnya"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-06",
+  "persona": "ojol",
+  "text": "beli hp second buat narik 1,5jt",
+  "note": "satu entri keluar, format '1,5jt' = 1500000, hp untuk kerja = peralatan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 1500000,
+     "kategori_ok": [
+      "peralatan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-07",
+  "persona": "ojol",
+  "text": "setoran mingguan cair 2 juta langsung masuk rekening",
+  "note": "satu entri, format '2 juta'; setoran = MASUK untuk ojol, rekening = transfer",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 2000000,
+     "kategori_ok": [
+      "ojek"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-08",
+  "persona": "ojol",
+  "text": "beli jas hujan baru seratus ribu di pasar",
+  "note": "satu entri keluar, angka terbilang 'seratus ribu' = 100000, perlengkapan kerja = peralatan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 100000,
+     "kategori_ok": [
+      "peralatan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-09",
+  "persona": "ojol",
+  "text": "ganti oli sekalian kampas rem 250 ribu",
+  "note": "satu entri keluar (satu pembayaran servis), format '250 ribu'",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 250000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-10",
+  "persona": "ojol",
+  "text": "dapet bonus performa dari aplikasi 75rb cair ke dana",
+  "note": "satu entri masuk, ewallet (Dana sebagai penerima), bonus aplikasi ambigu ojek/komisi",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 75000,
+     "kategori_ok": [
+      "ojek",
+      "komisi"
+     ],
+     "payment_method": "ewallet",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-11",
+  "persona": "ojol",
+  "text": "isi kuota 25k biar bisa terima orderan",
+  "note": "satu entri keluar, format 'k', kuota = operasional",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 25000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-12",
+  "persona": "ojol",
+  "text": "penumpang tadi bayar pake qris 52.000",
+  "note": "satu entri masuk, format ribuan '52.000', qris",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 52000,
+     "kategori_ok": [
+      "ojek"
+     ],
+     "payment_method": "qris",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-13",
+  "persona": "ojol",
+  "text": "kemarin sepi banget cuma dapet 80rb",
+  "note": "waktu relatif: kemarin = 2026-08-11",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 80000,
+     "kategori_ok": [
+      "ojek"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-11"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-14",
+  "persona": "ojol",
+  "text": "tadi pagi isi bensin 30rb dulu sebelum narik",
+  "note": "waktu relatif: tadi pagi = hari ini 2026-08-12",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 30000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-15",
+  "persona": "ojol",
+  "text": "sabtu lalu rame bener, argo tembus 210rb",
+  "note": "waktu relatif: sabtu lalu = 2026-08-08",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 210000,
+     "kategori_ok": [
+      "ojek"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-08"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-16",
+  "persona": "ojol",
+  "text": "minggu lalu bayar pajak stnk motor 280rb",
+  "note": "waktu relatif: minggu lalu (tanpa 'hari') = 2026-08-05; pajak kendaraan ambigu operasional/lainnya",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 280000,
+     "kategori_ok": [
+      "operasional",
+      "lainnya"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-05"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-17",
+  "persona": "ojol",
+  "text": "2 hari lalu servis cvt habis 150rb",
+  "note": "waktu relatif: 2 hari lalu = 2026-08-10",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 150000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-10"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-18",
+  "persona": "ojol",
+  "text": "hari ini narik dapet 175rb tapi keluar bensin 30rb sama makan siang 15rb",
+  "note": "multi-entri: 1 masuk + 2 keluar; makan siang = pribadi",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 175000,
+     "kategori_ok": [
+      "ojek"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 30000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 15000,
+     "kategori_ok": [
+      "pribadi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-19",
+  "persona": "ojol",
+  "text": "orderan antar dokumen 60rb dibayar qris, abis itu beli pulsa 27rb",
+  "note": "multi-entri: masuk qris + keluar tunai (pulsa = operasional)",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 60000,
+     "kategori_ok": [
+      "ojek"
+     ],
+     "payment_method": "qris",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 27000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-20",
+  "persona": "ojol",
+  "text": "kemarin tf cicilan motor 850rb terus isi bensin 40rb",
+  "note": "multi-entri dengan waktu relatif kemarin; TF = transfer untuk cicilan, bensin tunai",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 850000,
+     "kategori_ok": [
+      "operasional",
+      "pribadi",
+      "lainnya"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-11"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 40000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-11"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-21",
+  "persona": "ojol",
+  "text": "dikasih tip 10rb sama penumpang, terus dapet orderan jauh argo 48rb",
+  "note": "multi-entri: dua pemasukan terpisah (tip + argo)",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 10000,
+     "kategori_ok": [
+      "ojek",
+      "lainnya"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "masuk",
+     "amount": 48000,
+     "kategori_ok": [
+      "ojek"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-22",
+  "persona": "ojol",
+  "text": "tadi ganti ban belakang 190rb, beli sarung tangan 25rb, narik cuma dapet 120rb",
+  "note": "multi-entri 3 peristiwa: 2 keluar + 1 masuk; 'tadi' = hari ini",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 190000,
+     "kategori_ok": [
+      "operasional",
+      "peralatan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 25000,
+     "kategori_ok": [
+      "peralatan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "masuk",
+     "amount": 120000,
+     "kategori_ok": [
+      "ojek"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-23",
+  "persona": "ojol",
+  "text": "abis isi bensin di spbu tadi",
+  "note": "tanpa nominal: entri draft keluar amount null, pertanyaan true",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": null,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-24",
+  "persona": "ojol",
+  "text": "barusan servis motor di bengkel langganan",
+  "note": "tanpa nominal: servis = operasional, 'barusan' = hari ini, pertanyaan true",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": null,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-25",
+  "persona": "ojol",
+  "text": "dapet orderan jauh banget ke bandara",
+  "note": "tanpa nominal: pemasukan ojek tanpa angka, amount null, pertanyaan true",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": null,
+     "kategori_ok": [
+      "ojek"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-26",
+  "persona": "ojol",
+  "text": "cicilan motor udah dibayar tadi siang",
+  "note": "tanpa nominal: cicilan motor ambigu, 'tadi siang' = hari ini, pertanyaan true",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": null,
+     "kategori_ok": [
+      "operasional",
+      "pribadi",
+      "lainnya"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-27",
+  "persona": "ojol",
+  "text": "ujan deres banget dari siang ga berhenti",
+  "note": "bukan transaksi: komentar cuaca, tidak_dikenali true",
+  "expect": {
+   "entries": [],
+   "pertanyaan": false,
+   "tidak_dikenali": true
+  }
+ },
+ {
+  "id": "ojol-28",
+  "persona": "ojol",
+  "text": "bang aplikasi kok sering error ya akhir akhir ini",
+  "note": "bukan transaksi: keluhan/pertanyaan soal aplikasi, tanpa peristiwa uang",
+  "expect": {
+   "entries": [],
+   "pertanyaan": false,
+   "tidak_dikenali": true
+  }
+ },
+ {
+  "id": "ojol-29",
+  "persona": "ojol",
+  "text": "semangat buat semua driver yang narik hari ini",
+  "note": "bukan transaksi: sapaan/motivasi, tanpa peristiwa uang",
+  "expect": {
+   "entries": [],
+   "pertanyaan": false,
+   "tidak_dikenali": true
+  }
+ },
+ {
+  "id": "ojol-30",
+  "persona": "ojol",
+  "text": "bli bnsin 20rb td dket rumah",
+  "note": "typo umum: bli=beli, bnsin=bensin, td=tadi (hari ini)",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 20000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-31",
+  "persona": "ojol",
+  "text": "byr pulsa 25rb pake dana",
+  "note": "typo umum: byr=bayar; Dana sebagai alat bayar = ewallet",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 25000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "ewallet",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-32",
+  "persona": "ojol",
+  "text": "alhamdulillah trima orderan gede dpt 95rb",
+  "note": "typo umum: trima=terima, dpt=dapat; pemasukan ojek",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 95000,
+     "kategori_ok": [
+      "ojek"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-33",
+  "persona": "ojol",
+  "text": "mampir bengkel tuku oli 55rb",
+  "note": "campur bahasa jawa ringan: tuku=beli; oli motor = operasional",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 55000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-34",
+  "persona": "ojol",
+  "text": "meser kopi jeung gorengan 15rb bari ngetem euy",
+  "note": "campur sunda ringan: meser=beli, jeung=dan, bari=sambil; jajan pribadi",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 15000,
+     "kategori_ok": [
+      "pribadi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-35",
+  "persona": "ojol",
+  "text": "anter 3 paket sekali jalan dapet 27rb",
+  "note": "jebakan kuantitas: angka 3 = jumlah paket, nominal = 27rb",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 27000,
+     "kategori_ok": [
+      "ojek"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "ojol-36",
+  "persona": "ojol",
+  "text": "beli 2 botol oli 90rb buat ganti sendiri",
+  "note": "jebakan kuantitas: angka 2 = jumlah botol, nominal = 90rb; oli motor = operasional",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 90000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-01",
+  "persona": "freelance",
+  "text": "dp logo warung kopi masuk 500rb dari klien",
+  "note": "satu entri, format rb, pendapatan jasa desain, default tunai",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 500000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-02",
+  "persona": "freelance",
+  "text": "klien les privat matematika bayar 75k cash",
+  "note": "satu entri, format k, jasa les, cash eksplisit = tunai",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 75000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-03",
+  "persona": "freelance",
+  "text": "beli lisensi font premium 150.000 buat proyek branding",
+  "note": "satu entri, format titik ribuan, lisensi software ambigu operasional/peralatan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 150000,
+     "kategori_ok": [
+      "operasional",
+      "peralatan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-04",
+  "persona": "freelance",
+  "text": "invoice desain feed ig cair Rp750.000 via transfer bca",
+  "note": "satu entri, format Rp tanpa spasi, transfer bank",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 750000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-05",
+  "persona": "freelance",
+  "text": "perpanjang canva pro Rp 95.000",
+  "note": "satu entri, format Rp dengan spasi, langganan software",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 95000,
+     "kategori_ok": [
+      "operasional",
+      "peralatan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-06",
+  "persona": "freelance",
+  "text": "pelunasan proyek company profile 1,5jt udah masuk rekening",
+  "note": "satu entri, format 1,5jt, kata rekening = transfer",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 1500000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-07",
+  "persona": "freelance",
+  "text": "termin 2 proyek web kelurahan cair 2 juta",
+  "note": "satu entri, format '2 juta'; angka 2 pada 'termin 2' adalah ordinal bukan uang",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 2000000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-08",
+  "persona": "freelance",
+  "text": "dibayar les gambar anak tetangga seratus ribu",
+  "note": "satu entri, angka terbilang 'seratus ribu'",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 100000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-09",
+  "persona": "freelance",
+  "text": "nambah ram laptop kerja 250 ribu",
+  "note": "satu entri, format '250 ribu', upgrade alat kerja = peralatan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 250000,
+     "kategori_ok": [
+      "peralatan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-10",
+  "persona": "freelance",
+  "text": "servis printer buat cetak portofolio 85rb",
+  "note": "satu entri, servis = operasional sesuai panduan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 85000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-11",
+  "persona": "freelance",
+  "text": "gofood pas meeting klien 45k pake gopay",
+  "note": "satu entri, gopay = ewallet, konsumsi meeting ambigu operasional/lainnya",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 45000,
+     "kategori_ok": [
+      "operasional",
+      "lainnya"
+     ],
+     "payment_method": "ewallet",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-12",
+  "persona": "freelance",
+  "text": "dapet komisi referral proyek dari temen studio 300rb",
+  "note": "satu entri, kategori komisi eksplisit",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 300000,
+     "kategori_ok": [
+      "komisi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-13",
+  "persona": "freelance",
+  "text": "kemarin klien nambah scope, dibayar ekstra 200rb lewat dana",
+  "note": "waktu relatif kemarin = 2026-08-11, Dana sebagai alat bayar = ewallet",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 200000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "ewallet",
+     "occurred_at": "2026-08-11"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-14",
+  "persona": "freelance",
+  "text": "tadi pagi dp ilustrasi buku anak masuk 350rb",
+  "note": "waktu relatif tadi pagi = hari ini 2026-08-12",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 350000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-15",
+  "persona": "freelance",
+  "text": "jumat lalu beli stok kertas foto 120rb buat pesenan cetak",
+  "note": "hari bernama: jumat lalu = 2026-08-07, stok bahan = bahan_baku",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 120000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-07"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-16",
+  "persona": "freelance",
+  "text": "minggu lalu bayar sewa meja coworking 600rb",
+  "note": "minggu lalu tanpa kata 'hari' = 2026-08-05, sewa = operasional",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 600000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-05"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-17",
+  "persona": "freelance",
+  "text": "2 hari lalu invoice editing video dilunasin 900rb tf",
+  "note": "2 hari lalu = 2026-08-10, tf = transfer; angka 2 bagian frasa waktu bukan nominal",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 900000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-10"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-18",
+  "persona": "freelance",
+  "text": "terima pelunasan undangan digital 450rb terus bayar lisensi mockup 90rb",
+  "note": "multi-entri: pemasukan jasa + pengeluaran lisensi dalam satu kalimat",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 450000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 90000,
+     "kategori_ok": [
+      "operasional",
+      "peralatan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-19",
+  "persona": "freelance",
+  "text": "dp motion graphic 1jt masuk via qris, langsung beli aset musik 150rb sama parkir meeting 5rb",
+  "note": "multi-entri 3 peristiwa: qris hanya untuk entri pertama, parkir = transportasi",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 1000000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "qris",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 150000,
+     "kategori_ok": [
+      "bahan_baku",
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 5000,
+     "kategori_ok": [
+      "transportasi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-20",
+  "persona": "freelance",
+  "text": "kelar les coding dapet 250rb cash, abis itu isi bensin 30rb sama beli pulsa 25rb",
+  "note": "multi-entri 3 peristiwa: jasa masuk, bensin dan pulsa = operasional",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 250000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 30000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 25000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-21",
+  "persona": "freelance",
+  "text": "klien foto produk bayar 800rb transfer, ongkir kirim hasil cetak 20rb",
+  "note": "multi-entri: transfer hanya di entri masuk, ongkir = transportasi tunai",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 800000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 20000,
+     "kategori_ok": [
+      "transportasi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-22",
+  "persona": "freelance",
+  "text": "kemarin fee jadi mc workshop 700rb, keluar 100rb buat print materi",
+  "note": "multi-entri dengan waktu relatif: kedua entri ikut tanggal kemarin 2026-08-11",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 700000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-11"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 100000,
+     "kategori_ok": [
+      "operasional",
+      "lainnya"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-11"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-23",
+  "persona": "freelance",
+  "text": "barusan klien transfer dp landing page, belum ngecek nominalnya",
+  "note": "tanpa nominal: draft masuk amount null, transfer terdeteksi, barusan = hari ini",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": null,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-24",
+  "persona": "freelance",
+  "text": "tadi siang beli lisensi plugin after effects",
+  "note": "tanpa nominal: pengeluaran lisensi amount null, tadi siang = hari ini",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": null,
+     "kategori_ok": [
+      "operasional",
+      "peralatan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-25",
+  "persona": "freelance",
+  "text": "dibayar murid les gitar tapi lupa berapa",
+  "note": "tanpa nominal: pemasukan jasa amount null, pertanyaan true",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": null,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-26",
+  "persona": "freelance",
+  "text": "naik gojek ke kantor klien buat presentasi",
+  "note": "tanpa nominal: ongkos gojek = transportasi, gojek sebagai kendaraan bukan gopay",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": null,
+     "kategori_ok": [
+      "transportasi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-27",
+  "persona": "freelance",
+  "text": "wkwk deadline numpuk banget minggu ini, pengen rebahan",
+  "note": "bukan transaksi: curhat soal kerjaan, 'minggu ini' bukan peristiwa uang",
+  "expect": {
+   "entries": [],
+   "pertanyaan": false,
+   "tidak_dikenali": true
+  }
+ },
+ {
+  "id": "freelance-28",
+  "persona": "freelance",
+  "text": "halo kak salam kenal, saya freelancer desain dari bandung",
+  "note": "bukan transaksi: sapaan/perkenalan",
+  "expect": {
+   "entries": [],
+   "pertanyaan": false,
+   "tidak_dikenali": true
+  }
+ },
+ {
+  "id": "freelance-29",
+  "persona": "freelance",
+  "text": "hujan gede banget dari pagi, wifi ikutan lemot",
+  "note": "bukan transaksi: komentar cuaca",
+  "expect": {
+   "entries": [],
+   "pertanyaan": false,
+   "tidak_dikenali": true
+  }
+ },
+ {
+  "id": "freelance-30",
+  "persona": "freelance",
+  "text": "trima pembayaran dp desain spanduk 175rb",
+  "note": "typo 'trima' = terima, pemasukan jasa",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 175000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-31",
+  "persona": "freelance",
+  "text": "byr langganan adobe bulan ini 380rb pake ovo",
+  "note": "typo 'byr' = bayar, OVO = ewallet, langganan software",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 380000,
+     "kategori_ok": [
+      "operasional",
+      "peralatan"
+     ],
+     "payment_method": "ewallet",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-32",
+  "persona": "freelance",
+  "text": "bli bnsin 40rb pas mau survey lokasi pemotretan",
+  "note": "typo 'bli'+'bnsin' = beli bensin, bensin = operasional sesuai panduan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 40000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-33",
+  "persona": "freelance",
+  "text": "tuku kabel hdmi nggo presentasi neng klien 55rb",
+  "note": "bahasa jawa ringan: tuku = beli, kabel = peralatan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 55000,
+     "kategori_ok": [
+      "peralatan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-34",
+  "persona": "freelance",
+  "text": "tos dibayar ku klien jasa motret produk 275rb, alhamdulillah",
+  "note": "bahasa sunda ringan: tos = sudah, ku = oleh; pemasukan jasa",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 275000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-35",
+  "persona": "freelance",
+  "text": "ngedit 3 video reels klien dibayar 600rb scan qris",
+  "note": "jebakan kuantitas: 3 = jumlah video, 600rb = uang; scan = qris",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 600000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "qris",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "freelance-36",
+  "persona": "freelance",
+  "text": "beli 2 kabel usb c buat kerjaan 70rb",
+  "note": "jebakan kuantitas: 2 = jumlah barang, 70rb = uang; kabel = peralatan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 70000,
+     "kategori_ok": [
+      "peralatan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-01",
+  "persona": "online",
+  "text": "jual case hp di shopee laku 45rb",
+  "note": "satu entri, format 45rb, penjualan marketplace",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 45000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-02",
+  "persona": "online",
+  "text": "beli bubble wrap 35k buat packing",
+  "note": "satu entri, format 35k, perlengkapan packing ambigu operasional/bahan_baku",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 35000,
+     "kategori_ok": [
+      "operasional",
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-03",
+  "persona": "online",
+  "text": "top up saldo iklan shopee 100.000",
+  "note": "satu entri, format ribuan 100.000, iklan -> pemasaran",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 100000,
+     "kategori_ok": [
+      "pemasaran"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-04",
+  "persona": "online",
+  "text": "bayar ongkir jne buat paket customer Rp28.000",
+  "note": "satu entri, format Rp28.000, ongkir -> transportasi",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 28000,
+     "kategori_ok": [
+      "transportasi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-05",
+  "persona": "online",
+  "text": "orderan tokped masuk Rp 156.000",
+  "note": "satu entri, format Rp 156.000 (dengan spasi), penjualan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 156000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-06",
+  "persona": "online",
+  "text": "restock hijab dari supplier 1,5jt transfer",
+  "note": "satu entri, format 1,5jt, restock -> bahan_baku, kata transfer -> transfer",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 1500000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-07",
+  "persona": "online",
+  "text": "alhamdulillah penjualan live tiktok tembus 2 juta",
+  "note": "satu entri, format 2 juta, penjualan live",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 2000000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-08",
+  "persona": "online",
+  "text": "beli lakban sama kardus seratus ribu",
+  "note": "satu entri, angka terbilang 'seratus ribu' = 100000",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 100000,
+     "kategori_ok": [
+      "operasional",
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-09",
+  "persona": "online",
+  "text": "komisi affiliate shopee cair 250 ribu",
+  "note": "satu entri, format 250 ribu, komisi affiliate",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 250000,
+     "kategori_ok": [
+      "komisi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-10",
+  "persona": "online",
+  "text": "gajian admin olshop bulan ini 900rb lewat transfer",
+  "note": "satu entri, 900rb, gaji karyawan, transfer",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 900000,
+     "kategori_ok": [
+      "gaji"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-11",
+  "persona": "online",
+  "text": "dapet cashback gopay 15k barusan",
+  "note": "satu entri, 15k, cashback -> lainnya, gopay -> ewallet, barusan -> hari ini",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 15000,
+     "kategori_ok": [
+      "lainnya"
+     ],
+     "payment_method": "ewallet",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-12",
+  "persona": "online",
+  "text": "beli printer thermal buat cetak resi 1,2jt pake dana",
+  "note": "satu entri, 1,2jt, printer -> peralatan, Dana sebagai alat bayar -> ewallet",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 1200000,
+     "kategori_ok": [
+      "peralatan"
+     ],
+     "payment_method": "ewallet",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-13",
+  "persona": "online",
+  "text": "kemarin ada yg checkout gamis 320rb",
+  "note": "waktu relatif: kemarin -> 2026-08-11",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 320000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-11"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-14",
+  "persona": "online",
+  "text": "tadi pagi bayar pickup kurir 20rb",
+  "note": "waktu relatif: tadi pagi -> 2026-08-12, biaya kurir -> transportasi",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 20000,
+     "kategori_ok": [
+      "transportasi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-15",
+  "persona": "online",
+  "text": "sabtu lalu boost iklan tiktok 200rb bayar pake qris",
+  "note": "waktu relatif: sabtu lalu -> 2026-08-08, iklan -> pemasaran, qris",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 200000,
+     "kategori_ok": [
+      "pemasaran"
+     ],
+     "payment_method": "qris",
+     "occurred_at": "2026-08-08"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-16",
+  "persona": "online",
+  "text": "minggu lalu restock 50 pcs kaos polos 2,5jt",
+  "note": "waktu relatif: minggu lalu (tanpa 'hari') -> 2026-08-05; 50 pcs = kuantitas",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 2500000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-05"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-17",
+  "persona": "online",
+  "text": "2 hari lalu dpt orderan lazada 95rb",
+  "note": "waktu relatif: 2 hari lalu -> 2026-08-10, plus typo dpt",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 95000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-10"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-18",
+  "persona": "online",
+  "text": "hari ini closing 480rb tapi keluar ongkir 32rb",
+  "note": "multi-entri: penjualan masuk + ongkir keluar, sama-sama hari ini",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 480000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 32000,
+     "kategori_ok": [
+      "transportasi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-19",
+  "persona": "online",
+  "text": "saldo tokped cair ke rekening 850rb terus beli kardus 60rb cash",
+  "note": "multi-entri: pencairan ke rekening -> transfer (penjualan/lainnya), beli kardus cash -> tunai",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 850000,
+     "kategori_ok": [
+      "penjualan",
+      "lainnya"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 60000,
+     "kategori_ok": [
+      "operasional",
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-20",
+  "persona": "online",
+  "text": "jual 5 totebag 150rb, bayar ongkir 18rb, beli tali rami 25rb",
+  "note": "multi-entri 3 peristiwa; angka 5 = kuantitas totebag",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 150000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 18000,
+     "kategori_ok": [
+      "transportasi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 25000,
+     "kategori_ok": [
+      "bahan_baku",
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-21",
+  "persona": "online",
+  "text": "kemarin abis 150rb buat iklan fb sama 200rb jasa foto produk",
+  "note": "multi-entri 2 pengeluaran, keduanya kemarin; foto produk ambigu pemasaran/operasional",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 150000,
+     "kategori_ok": [
+      "pemasaran"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-11"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 200000,
+     "kategori_ok": [
+      "pemasaran",
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-11"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-22",
+  "persona": "online",
+  "text": "tadi malem live rame, masuk 900rb ke gopay, terus bayar packer 150rb",
+  "note": "multi-entri: tadi malam -> 2026-08-11; gopay -> ewallet; upah packer -> gaji",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 900000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "ewallet",
+     "occurred_at": "2026-08-11"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 150000,
+     "kategori_ok": [
+      "gaji"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-11"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-23",
+  "persona": "online",
+  "text": "abis blanja plastik packing tadi",
+  "note": "tanpa nominal -> amount null + pertanyaan true; typo blanja",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": null,
+     "kategori_ok": [
+      "operasional",
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-24",
+  "persona": "online",
+  "text": "ada yg checkout bundling skincare di shopee barusan",
+  "note": "tanpa nominal, penjualan draft, barusan -> hari ini",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": null,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-25",
+  "persona": "online",
+  "text": "bayarin ongkir sicepat buat paket ke medan",
+  "note": "tanpa nominal, ongkir -> transportasi",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": null,
+     "kategori_ok": [
+      "transportasi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-26",
+  "persona": "online",
+  "text": "topup saldo iklan tokped lagi tadi siang",
+  "note": "tanpa nominal, iklan -> pemasaran, tadi siang -> hari ini",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": null,
+     "kategori_ok": [
+      "pemasaran"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-27",
+  "persona": "online",
+  "text": "min mau nanya cara ganti nama toko di shopee gimana ya",
+  "note": "bukan transaksi: pertanyaan cara pakai, bukan uang",
+  "expect": {
+   "entries": [],
+   "pertanyaan": false,
+   "tidak_dikenali": true
+  }
+ },
+ {
+  "id": "online-28",
+  "persona": "online",
+  "text": "hujan seharian males banget packing paket",
+  "note": "bukan transaksi: curhat cuaca, tidak ada peristiwa uang",
+  "expect": {
+   "entries": [],
+   "pertanyaan": false,
+   "tidak_dikenali": true
+  }
+ },
+ {
+  "id": "online-29",
+  "persona": "online",
+  "text": "halo kak, semangat jualannya hari ini",
+  "note": "bukan transaksi: sapaan",
+  "expect": {
+   "entries": [],
+   "pertanyaan": false,
+   "tidak_dikenali": true
+  }
+ },
+ {
+  "id": "online-30",
+  "persona": "online",
+  "text": "bli bnsin buat anter paket cod 25rb",
+  "note": "typo bli + bnsin; bensin -> operasional (konteks antar paket bisa diterima transportasi)",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 25000,
+     "kategori_ok": [
+      "operasional",
+      "transportasi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-31",
+  "persona": "online",
+  "text": "byr ongkir jnt 22rb pake qris",
+  "note": "typo byr; ongkir -> transportasi; qris",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 22000,
+     "kategori_ok": [
+      "transportasi"
+     ],
+     "payment_method": "qris",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-32",
+  "persona": "online",
+  "text": "trima pembayaran orderan 340rb via tf bca",
+  "note": "typo trima; tf/bank -> transfer; penjualan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 340000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-33",
+  "persona": "online",
+  "text": "dodolan online dino iki payu 12 biji, duite 465rb",
+  "note": "bahasa jawa (dodolan/payu/dino iki=hari ini); 12 biji = kuantitas",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 465000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-34",
+  "persona": "online",
+  "text": "meser bubble wrap jeung lakban 38rb kanggo paket",
+  "note": "bahasa sunda ringan (meser=beli, jeung=dan, kanggo=untuk)",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 38000,
+     "kategori_ok": [
+      "operasional",
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-35",
+  "persona": "online",
+  "text": "laku 7 pcs scrunchie totalnya 105rb",
+  "note": "jebakan kuantitas: 7 pcs = jumlah barang, 105rb = uang",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 105000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "online-36",
+  "persona": "online",
+  "text": "beli 3 lusin hanger 90k buat display olshop",
+  "note": "jebakan kuantitas: 3 lusin = jumlah, 90k = uang; hanger display -> peralatan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 90000,
+     "kategori_ok": [
+      "peralatan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-01",
+  "persona": "lainnya",
+  "text": "dapet kiriman transferan dari kakak 250 ribu",
+  "note": "satu entri, format '250 ribu', pemasukan umum via transfer, persona campuran",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 250000,
+     "kategori_ok": [
+      "lainnya"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-02",
+  "persona": "lainnya",
+  "text": "bayar arisan ibu ibu komplek 110rb",
+  "note": "satu entri, format 'rb', pengeluaran rumah tangga; arisan jujur ambigu pribadi/lainnya",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 110000,
+     "kategori_ok": [
+      "pribadi",
+      "lainnya"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-03",
+  "persona": "lainnya",
+  "text": "dapet komisi nawarin madu punya temen, 45k masuk kantong",
+  "note": "satu entri, format '45k', komisi jelas",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 45000,
+     "kategori_ok": [
+      "komisi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-04",
+  "persona": "lainnya",
+  "text": "beli gas 3kg sama galon 68.000 di warung sebelah",
+  "note": "satu entri, format titik ribuan '68.000'; '3kg' bukan uang; gas+galon ambigu operasional/bahan_baku",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 68000,
+     "kategori_ok": [
+      "operasional",
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-05",
+  "persona": "lainnya",
+  "text": "tadi sore beli obat di apotek Rp45.000 buat ibu",
+  "note": "satu entri, format 'Rp45.000' tanpa spasi, keperluan pribadi, tadi sore = hari ini",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 45000,
+     "kategori_ok": [
+      "pribadi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-06",
+  "persona": "lainnya",
+  "text": "honor bantu proyekan cair Rp 1.250.000 ke rekening",
+  "note": "satu entri, format 'Rp 1.250.000' pakai spasi, 'ke rekening' = transfer; honor kerja jasa/lainnya",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 1250000,
+     "kategori_ok": [
+      "jasa",
+      "lainnya"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-07",
+  "persona": "lainnya",
+  "text": "servis motor tadi habis 1,5jt",
+  "note": "satu entri, format '1,5jt' = 1500000; servis → operasional sesuai panduan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 1500000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-08",
+  "persona": "lainnya",
+  "text": "akhirnya lemari bekas kejual 2 juta, dibayar cash",
+  "note": "satu entri, format '2 juta'; jual barang bekas milik sendiri ambigu penjualan/lainnya",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 2000000,
+     "kategori_ok": [
+      "penjualan",
+      "lainnya"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-09",
+  "persona": "lainnya",
+  "text": "ngasih ibu seratus ribu buat belanja dapur rumah",
+  "note": "satu entri, format terbilang 'seratus ribu' = 100000, keperluan pribadi rumah",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 100000,
+     "kategori_ok": [
+      "pribadi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-10",
+  "persona": "lainnya",
+  "text": "pasang iklan fb ads 150rb bayarnya pake ovo",
+  "note": "satu entri, iklan → pemasaran, OVO → ewallet",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 150000,
+     "kategori_ok": [
+      "pemasaran"
+     ],
+     "payment_method": "ewallet",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-11",
+  "persona": "lainnya",
+  "text": "temen bayar utangnya ke aku 75k via qris",
+  "note": "satu entri, format '75k', pelunasan utang = masuk lainnya, qris",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 75000,
+     "kategori_ok": [
+      "lainnya"
+     ],
+     "payment_method": "qris",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-12",
+  "persona": "lainnya",
+  "text": "beli rice cooker baru 385.000 buat di rumah",
+  "note": "satu entri, format titik ribuan; alat masak untuk rumah ambigu peralatan/pribadi",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 385000,
+     "kategori_ok": [
+      "peralatan",
+      "pribadi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-13",
+  "persona": "lainnya",
+  "text": "kemarin dapet upah bantu angkat barang pindahan 80rb",
+  "note": "waktu relatif: kemarin → 2026-08-11; upah tenaga = jasa",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 80000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-11"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-14",
+  "persona": "lainnya",
+  "text": "tadi pagi isi pulsa 50rb",
+  "note": "waktu relatif: tadi pagi → hari ini; pulsa → operasional sesuai panduan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 50000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-15",
+  "persona": "lainnya",
+  "text": "jumat lalu ada transferan masuk 900rb dari jualan preloved",
+  "note": "waktu relatif hari bernama: jumat lalu → 2026-08-07; transfer",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 900000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-07"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-16",
+  "persona": "lainnya",
+  "text": "minggu lalu bayar sewa kios 750rb",
+  "note": "waktu relatif: minggu lalu (tanpa kata 'hari') → 2026-08-05; sewa → operasional",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 750000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-05"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-17",
+  "persona": "lainnya",
+  "text": "2 hari lalu komisi referral cair 120rb ke rekening",
+  "note": "waktu relatif: 2 hari lalu → 2026-08-10; 'ke rekening' = transfer",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 120000,
+     "kategori_ok": [
+      "komisi"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-10"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-18",
+  "persona": "lainnya",
+  "text": "hari ini dapet 300rb dari jualan online, kepotong ongkir 20rb",
+  "note": "multi-entri 2 peristiwa: pemasukan penjualan + ongkir → transportasi",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 300000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 20000,
+     "kategori_ok": [
+      "transportasi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-19",
+  "persona": "lainnya",
+  "text": "dapet tf pelanggan 450rb, tarik 200rb buat gajian si mbak",
+  "note": "multi-entri: masuk via transfer (pelanggan, ambigu penjualan/jasa) + keluar gaji tunai",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 450000,
+     "kategori_ok": [
+      "penjualan",
+      "jasa"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 200000,
+     "kategori_ok": [
+      "gaji"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-20",
+  "persona": "lainnya",
+  "text": "semalam beli stok minyak goreng 90rb, bayar parkir 5rb, terus dapet 60rb upah nganterin galon tetangga",
+  "note": "multi-entri 3 peristiwa, semua semalam → 2026-08-11; parkir → transportasi; antar barang jasa/ojek",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 90000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-11"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 5000,
+     "kategori_ok": [
+      "transportasi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-11"
+    },
+    {
+     "jenis": "masuk",
+     "amount": 60000,
+     "kategori_ok": [
+      "jasa",
+      "ojek"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-11"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-21",
+  "persona": "lainnya",
+  "text": "bayar wifi 300rb sama endorse selebgram 250rb, dua duanya pake qris",
+  "note": "multi-entri 2 pengeluaran, keduanya qris; wifi → operasional, endorse → pemasaran",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 300000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "qris",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 250000,
+     "kategori_ok": [
+      "pemasaran"
+     ],
+     "payment_method": "qris",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-22",
+  "persona": "lainnya",
+  "text": "tadi siang jual pot bunga 3 biji total 95rb, modalnya kemarin 40rb",
+  "note": "multi-entri dengan tanggal beda per entri: tadi siang → hari ini, modal kemarin → 2026-08-11; '3 biji' kuantitas",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 95000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 40000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-11"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-23",
+  "persona": "lainnya",
+  "text": "tadi ada pelanggan transfer buat pesenan tapi belum ku cek nominalnya",
+  "note": "tanpa nominal: entri draft masuk, amount null, transfer disebut, pertanyaan true",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": null,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-24",
+  "persona": "lainnya",
+  "text": "beli sabun cuci sama sampo buat rumah",
+  "note": "tanpa nominal: satu pembelian keperluan rumah, amount null",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": null,
+     "kategori_ok": [
+      "pribadi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-25",
+  "persona": "lainnya",
+  "text": "barusan bayar tukang benerin pompa air, lupa berapa",
+  "note": "tanpa nominal: servis → operasional, barusan → hari ini",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": null,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-26",
+  "persona": "lainnya",
+  "text": "kemarin beliin anak jajan di minimarket",
+  "note": "tanpa nominal + waktu relatif: jajan → pribadi, kemarin → 2026-08-11",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": null,
+     "kategori_ok": [
+      "pribadi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-11"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-27",
+  "persona": "lainnya",
+  "text": "assalamualaikum bang, lagi sibuk kah?",
+  "note": "bukan transaksi: sapaan",
+  "expect": {
+   "entries": [],
+   "pertanyaan": false,
+   "tidak_dikenali": true
+  }
+ },
+ {
+  "id": "lainnya-28",
+  "persona": "lainnya",
+  "text": "ujan deres banget dari pagi, adem bener",
+  "note": "bukan transaksi: komentar cuaca",
+  "expect": {
+   "entries": [],
+   "pertanyaan": false,
+   "tidak_dikenali": true
+  }
+ },
+ {
+  "id": "lainnya-29",
+  "persona": "lainnya",
+  "text": "eh ini aplikasi bisa buat nyatet utang piutang ga sih",
+  "note": "bukan transaksi: pertanyaan tentang aplikasi, tidak ada peristiwa uang",
+  "expect": {
+   "entries": [],
+   "pertanyaan": false,
+   "tidak_dikenali": true
+  }
+ },
+ {
+  "id": "lainnya-30",
+  "persona": "lainnya",
+  "text": "bli beras 10 kilo 130rb di toko langganan",
+  "note": "typo 'bli'; '10 kilo' kuantitas bukan uang; beras → bahan_baku",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 130000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-31",
+  "persona": "lainnya",
+  "text": "byr bnsin motor 30rb pake gopay",
+  "note": "typo 'byr' + 'bnsin'; bensin → operasional; Gopay → ewallet",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 30000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "ewallet",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-32",
+  "persona": "lainnya",
+  "text": "trima dp orderan kue ultah, dpt 175rb",
+  "note": "typo 'trima' + 'dpt'; DP pesanan kue = pemasukan penjualan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 175000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-33",
+  "persona": "lainnya",
+  "text": "dodolan es ku payu kabeh, entuk 320rb",
+  "note": "campur jawa (dodolan/payu/entuk): dagangan laku semua, masuk penjualan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 320000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-34",
+  "persona": "lainnya",
+  "text": "mayar listrik 210rb euy, mahal pisan",
+  "note": "campur sunda ringan (mayar/euy/pisan): listrik → operasional",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 210000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-35",
+  "persona": "lainnya",
+  "text": "jual 5 gelas jus mangga dapet 60rb",
+  "note": "jebakan kuantitas: '5' porsi bukan uang, nominal hanya 60rb",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 60000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "lainnya-36",
+  "persona": "lainnya",
+  "text": "beli 12 butir telur sama 2 kilo gula pasir, abis 61rb",
+  "note": "jebakan kuantitas ganda: '12 butir' dan '2 kilo' bukan uang, satu total 61rb = satu entri bahan_baku",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 61000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jebakan-01",
+  "persona": "campuran",
+  "text": "tadi siang laku 3 porsi nasgor 45rb",
+  "note": "Kuantitas vs nominal: 3 = jumlah porsi, 45rb = uang. Tadi siang = hari ini.",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 45000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jebakan-02",
+  "persona": "campuran",
+  "text": "beli 2 galon 40rb buat stok warung",
+  "note": "Kuantitas vs nominal: 2 galon = kuantitas, 40rb = uang. Air galon untuk warung jujur ambigu bahan_baku/operasional.",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 40000,
+     "kategori_ok": [
+      "bahan_baku",
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jebakan-03",
+  "persona": "campuran",
+  "text": "5 porsi ayam geprek 100k dibayar qris semua",
+  "note": "Kuantitas di awal kalimat (5 porsi), nominal 100k=100000, metode qris.",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 100000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "qris",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jebakan-04",
+  "persona": "campuran",
+  "text": "kemarin risol laku 12 pcs total 180rb",
+  "note": "Kuantitas 12 pcs bukan uang, nominal 180rb. Kemarin = 2026-08-11.",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 180000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-11"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jebakan-05",
+  "persona": "campuran",
+  "text": "tadi sore kejual 20 gorengan cuma 15 ribu",
+  "note": "Jebakan ekstrem: angka kuantitas (20) LEBIH BESAR dari angka uang (15). Penanda 'ribu' menentukan nominal = 15000.",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 15000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jebakan-06",
+  "persona": "campuran",
+  "text": "nyetok 50 tusuk sate 20rb di pasar pagi",
+  "note": "Kuantitas (50) > angka uang (20). 20rb = 20000, belanja stok = bahan_baku.",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 20000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jebakan-07",
+  "persona": "campuran",
+  "text": "terima pembayaran catering Rp 1.250.000 lewat transfer bca",
+  "note": "Format Rp + titik ribuan = 1250000. Catering jujur ambigu penjualan/jasa. Transfer bank.",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 1250000,
+     "kategori_ok": [
+      "penjualan",
+      "jasa"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jebakan-08",
+  "persona": "campuran",
+  "text": "kemarin lusa beli kulkas buat es 2,5 jt",
+  "note": "Koma desimal: 2,5 jt = 2500000. Kulkas = peralatan. Kemarin lusa = 2026-08-10.",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 2500000,
+     "kategori_ok": [
+      "peralatan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-10"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jebakan-09",
+  "persona": "campuran",
+  "text": "abis servis mesin jahit 1.5jt",
+  "note": "Titik sebagai desimal (bukan pemisah ribuan): 1.5jt = 1500000, bukan 15 juta. Servis = operasional.",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 1500000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jebakan-10",
+  "persona": "campuran",
+  "text": "gopay masuk 300 ribu dari yg borong kue tadi",
+  "note": "Angka + kata 'ribu' terpisah = 300000. Gopay = ewallet, pembeli borong kue = penjualan.",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 300000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "ewallet",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jebakan-11",
+  "persona": "campuran",
+  "text": "besok buka jam 8 ya gaes",
+  "note": "Ada angka (8) tapi jam operasional, bukan peristiwa uang → tidak_dikenali, tanpa entri.",
+  "expect": {
+   "entries": [],
+   "pertanyaan": false,
+   "tidak_dikenali": true
+  }
+ },
+ {
+  "id": "jebakan-12",
+  "persona": "campuran",
+  "text": "pesanan nomor 45 udah dikirim barusan",
+  "note": "Angka 45 = nomor order, BUKAN Rp45. Status kirim bukan peristiwa uang → tidak_dikenali.",
+  "expect": {
+   "entries": [],
+   "pertanyaan": false,
+   "tidak_dikenali": true
+  }
+ },
+ {
+  "id": "jebakan-13",
+  "persona": "campuran",
+  "text": "beli gas 3 kg buat masak, lupa harganya",
+  "note": "Ada kata kerja uang (beli) tapi '3 kg' = ukuran tabung, bukan nominal → entri draft amount null + pertanyaan. Gas masak ambigu operasional/bahan_baku.",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": null,
+     "kategori_ok": [
+      "operasional",
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jebakan-14",
+  "persona": "campuran",
+  "text": "narik dari pagi dapet 250rb, bensin 30rb makan siang 20rb",
+  "note": "Multi-entri campur arah: 1 masuk (ojek) + 2 keluar (bensin=operasional, makan siang=pribadi). Semua hari ini.",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 250000,
+     "kategori_ok": [
+      "ojek"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 30000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 20000,
+     "kategori_ok": [
+      "pribadi"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jebakan-15",
+  "persona": "campuran",
+  "text": "jumat lalu dagangan dapet 500rb langsung buat belanja stok 200rb",
+  "note": "Multi-entri campur arah + waktu relatif: jumat lalu = 2026-08-07 berlaku untuk kedua entri.",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 500000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-07"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 200000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-07"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jebakan-16",
+  "persona": "campuran",
+  "text": "orderan jahit 150rb dibayar tf, trus beli benang 25rb",
+  "note": "Multi-entri: TF hanya untuk entri masuk (jasa jahit); belanja benang tidak disebut metodenya → default tunai.",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 150000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    },
+    {
+     "jenis": "keluar",
+     "amount": 25000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jebakan-17",
+  "persona": "campuran",
+  "text": "dana usaha nambah 500rb dari jualan semalam",
+  "note": "'dana' = uang/modal, BUKAN e-wallet DANA → payment tunai. Semalam = 2026-08-11, sumber jualan = penjualan.",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 500000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-11"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jebakan-18",
+  "persona": "campuran",
+  "text": "pesenan kue ultah dibayar pake dana 75rb",
+  "note": "'pake dana' = alat bayar DANA → ewallet. Kebalikan kasus 'dana usaha'.",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 75000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "ewallet",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jebakan-19",
+  "persona": "campuran",
+  "text": "alhamdulillah gajian sampingan 1,2jt masuk rekening",
+  "note": "Gajian = uang MASUK (bukan kategori keluar 'gaji'). Upah kerja sampingan tak ada slug pas → lainnya/jasa. Rekening = transfer. 1,2jt = 1200000.",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 1200000,
+     "kategori_ok": [
+      "lainnya",
+      "jasa"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jebakan-20",
+  "persona": "campuran",
+  "text": "minggu ini bayar gaji si udin 800rb",
+  "note": "Gaji karyawan = KELUAR kategori gaji. Jebakan waktu: 'minggu ini' BUKAN 'minggu lalu' → tetap hari ini.",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 800000,
+     "kategori_ok": [
+      "gaji"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ }
+]

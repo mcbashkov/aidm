@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   MessageSquarePlus,
@@ -17,22 +18,81 @@ import {
   ringkasHariIni,
   transaksiTerakhir,
 } from "@/lib/mock/finance";
+import { daftarTransaksi } from "@/lib/catat/client";
 import {
   formatRupiah,
   formatRupiahCompact,
   formatTanggalPanjangID,
+  type Transaction,
 } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
+
+interface DataBeranda {
+  masuk: number;
+  keluar: number;
+  sisa: number;
+  terakhir: Transaction[];
+  tanggal: string; // ISO date untuk baris tanggal di header
+}
 
 /**
  * Beranda v3.0 (§13 layar 2). Maksimal 4 blok (aturan hierarki v2.0):
  * kartu hari ini · tombol Catat · misi hari ini · transaksi terakhir.
+ *
+ * Data nyata: ringkasan hari ini dari daily_rollups + 3 transaksi terakhir
+ * (GET /api/transaksi?ringkas=1). Server belum dikonfigurasi → dataset mock
+ * (nilai awal di bawah) supaya demo tetap hidup.
  */
 export default function BerandaPage() {
   const me = useMe();
 
-  const hariIni = ringkasHariIni();
-  const terakhir = transaksiTerakhir(3);
+  const [data, setData] = useState<DataBeranda>(() => {
+    const mock = ringkasHariIni();
+    return {
+      masuk: mock.masuk,
+      keluar: mock.keluar,
+      sisa: mock.sisa,
+      terakhir: transaksiTerakhir(3),
+      tanggal: MOCK_ANCHOR,
+    };
+  });
+
+  useEffect(() => {
+    let aktif = true;
+    void daftarTransaksi({ pageSize: 3, ringkas: true }).then((res) => {
+      if (!aktif) return;
+      const hariIniNyata = new Date(Date.now() + 7 * 3600_000)
+        .toISOString()
+        .slice(0, 10);
+      if (res.ok) {
+        const r = res.data.ringkas_hari_ini;
+        setData({
+          masuk: r?.masuk ?? 0,
+          keluar: r?.keluar ?? 0,
+          sisa: r?.sisa ?? 0,
+          terakhir: res.data.items,
+          tanggal: hariIniNyata,
+        });
+      } else if (!res.demo) {
+        // User NYATA tapi jaringan/server gagal: angka mock akan terbaca
+        // sebagai data miliknya — tampilkan nol yang jujur, bukan fiksi.
+        setData({
+          masuk: 0,
+          keluar: 0,
+          sisa: 0,
+          terakhir: [],
+          tanggal: hariIniNyata,
+        });
+      }
+      // res.demo (401/501) → biarkan dataset mock: pengalaman demo.
+    });
+    return () => {
+      aktif = false;
+    };
+  }, []);
+
+  const hariIni = data;
+  const terakhir = data.terakhir;
   const surplus = hariIni.sisa >= 0;
 
   // Sapaan pakai nama usaha bila sudah diisi saat onboarding; kalau belum,
@@ -43,7 +103,7 @@ export default function BerandaPage() {
     <div className="space-y-section">
       <header>
         <p className="text-[13px] font-medium text-ink-subtle">
-          {formatTanggalPanjangID(MOCK_ANCHOR)}
+          {formatTanggalPanjangID(hariIni.tanggal)}
         </p>
         <h1 className="mt-1">{nama ? `Halo, ${nama} 👋` : "Halo 👋"}</h1>
       </header>

@@ -1,11 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Search, Download, X } from "lucide-react";
 import { TransactionRow } from "@/components/transaksi/transaction-row";
 import { TransactionSheet } from "@/components/transaksi/transaction-sheet";
 import { getTransactions, PERIOD_OPTIONS } from "@/lib/mock/finance";
+import {
+  daftarTransaksi,
+  ubahTransaksi,
+  hapusTransaksi,
+  periodeSekarang,
+} from "@/lib/catat/client";
 import {
   KATEGORI_KELUAR,
   KATEGORI_MASUK,
@@ -20,15 +26,7 @@ import { cn } from "@/lib/utils";
 
 type FilterJenis = "semua" | Jenis;
 
-const ANCHOR_MS = new Date("2026-08-12T00:00:00+07:00").getTime();
-
-function dalamPeriode(tx: Transaction, period: string): boolean {
-  if (period === "semua") return true;
-  if (period === "30d") {
-    return new Date(tx.occurredAt).getTime() >= ANCHOR_MS - 30 * 86_400_000;
-  }
-  return tx.occurredAt.slice(0, 7) === period;
-}
+const PAGE_SIZE = 50;
 
 /** Unduh CSV di sisi klien — tanpa server, tanpa data keluar dari perangkat. */
 function unduhCsv(rows: Transaction[]) {
@@ -55,23 +53,87 @@ function unduhCsv(rows: Transaction[]) {
   URL.revokeObjectURL(url);
 }
 
-/** Riwayat transaksi (§13 layar 6 / §7.7). */
+/**
+ * Riwayat transaksi (§13 layar 6 / §7.7) — data nyata dari GET /api/transaksi
+ * (filter & paginasi server-side, §11). Saat server belum dikonfigurasi
+ * (401/501) jatuh ke dataset mock supaya demo tetap hidup.
+ */
 export function RiwayatView() {
   const [period, setPeriod] = useState("semua");
   const [jenis, setJenis] = useState<FilterJenis>("semua");
   const [kategori, setKategori] = useState("semua");
   const [q, setQ] = useState("");
+  const [qDebounced, setQDebounced] = useState("");
   const [editing, setEditing] = useState<Transaction | null>(null);
+
+  const [items, setItems] = useState<Transaction[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [memuat, setMemuat] = useState(true);
+  const [demo, setDemo] = useState(false);
+
+  // Perubahan lokal di mode demo (server tidak menyimpan apa-apa).
   const [dihapus, setDihapus] = useState<string[]>([]);
   const [diubah, setDiubah] = useState<Record<string, Transaction>>({});
 
-  const hasil = useMemo(() => {
-    const cari = q.trim().toLowerCase();
+  const reqSeq = useRef(0);
+
+  useEffect(() => {
+    const t = setTimeout(() => setQDebounced(q.trim()), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  const muat = useCallback(
+    async (halaman: number, tambah: boolean) => {
+      const seq = ++reqSeq.current;
+      setMemuat(true);
+      const res = await daftarTransaksi({
+        period,
+        jenis,
+        kategori,
+        q: qDebounced,
+        page: halaman,
+        pageSize: PAGE_SIZE,
+      });
+      if (seq !== reqSeq.current) return; // respons kedaluwarsa
+      if (res.ok) {
+        setDemo(false);
+        setItems((prev) => (tambah ? [...prev, ...res.data.items] : res.data.items));
+        setTotal(res.data.total);
+        setPage(halaman);
+      } else if (res.demo) {
+        // HANYA saat server belum dikonfigurasi (401/501) → dataset mock.
+        // Gagal jaringan TIDAK boleh menampilkan data palsu seolah milik
+        // user — biarkan daftar apa adanya (kosong/stale).
+        setDemo(true);
+      }
+      setMemuat(false);
+    },
+    [period, jenis, kategori, qDebounced],
+  );
+
+  useEffect(() => {
+    void muat(0, false);
+  }, [muat]);
+
+  /* ── Mode demo: dataset mock + filter klien (perilaku lama) ────────────── */
+  const ANCHOR_MS = useMemo(
+    () => new Date("2026-08-12T00:00:00+07:00").getTime(),
+    [],
+  );
+  const hasilDemo = useMemo(() => {
+    if (!demo) return [];
+    const cari = qDebounced.toLowerCase();
     return getTransactions()
       .filter((t) => !dihapus.includes(t.id))
       .map((t) => diubah[t.id] ?? t)
       .filter((t) => t.status !== "deleted")
-      .filter((t) => dalamPeriode(t, period))
+      .filter((t) => {
+        if (period === "semua") return true;
+        if (period === "30d")
+          return new Date(t.occurredAt).getTime() >= ANCHOR_MS - 30 * 86_400_000;
+        return t.occurredAt.slice(0, 7) === period;
+      })
       .filter((t) => (jenis === "semua" ? true : t.jenis === jenis))
       .filter((t) => (kategori === "semua" ? true : t.kategori === kategori))
       .filter((t) =>
@@ -80,7 +142,10 @@ export function RiwayatView() {
             kategoriLabel(t.jenis, t.kategori).toLowerCase().includes(cari)
           : true,
       );
-  }, [period, jenis, kategori, q, dihapus, diubah]);
+  }, [demo, period, jenis, kategori, qDebounced, dihapus, diubah, ANCHOR_MS]);
+
+  const hasil = demo ? hasilDemo : items;
+  const adaLagi = !demo && items.length < total;
 
   // Kelompokkan per hari supaya daftar panjang tetap punya jangkar waktu.
   const perHari = useMemo(() => {
@@ -92,7 +157,7 @@ export function RiwayatView() {
     return [...map.entries()];
   }, [hasil]);
 
-  const total = hasil.reduce(
+  const totalSelisih = hasil.reduce(
     (s, t) => s + (t.jenis === "masuk" ? t.amount : -t.amount),
     0,
   );
@@ -100,12 +165,50 @@ export function RiwayatView() {
     jenis === "masuk" ? KATEGORI_MASUK : jenis === "keluar" ? KATEGORI_KELUAR : [];
   const adaFilter =
     period !== "semua" || jenis !== "semua" || kategori !== "semua" || q !== "";
+  const periodOptions = demo ? PERIOD_OPTIONS : periodeSekarang();
 
   function resetFilter() {
     setPeriod("semua");
     setJenis("semua");
     setKategori("semua");
     setQ("");
+  }
+
+  function simpanEdit(tx: Transaction) {
+    if (demo) {
+      setDiubah((prev) => ({ ...prev, [tx.id]: tx }));
+      return;
+    }
+    // Optimistic + kirim ke server; gagal → muat ulang supaya jujur.
+    setItems((prev) => prev.map((t) => (t.id === tx.id ? tx : t)));
+    void ubahTransaksi(tx.id, {
+      jenis: tx.jenis,
+      amount: tx.amount,
+      kategori: tx.kategori,
+      payment_method: tx.paymentMethod,
+      occurred_at: tx.occurredAt,
+      catatan: tx.catatan ?? null,
+    }).then((res) => {
+      if (res.ok) {
+        setItems((prev) =>
+          prev.map((t) => (t.id === tx.id ? res.data.entry : t)),
+        );
+      } else {
+        void muat(0, false);
+      }
+    });
+  }
+
+  function hapusEntri(id: string) {
+    if (demo) {
+      setDihapus((prev) => [...prev, id]);
+      return;
+    }
+    setItems((prev) => prev.filter((t) => t.id !== id));
+    setTotal((prev) => Math.max(0, prev - 1));
+    void hapusTransaksi(id).then((res) => {
+      if (!res.ok && res.status !== 404) void muat(0, false);
+    });
   }
 
   return (
@@ -153,7 +256,7 @@ export function RiwayatView() {
       {/* Filter */}
       <div className="space-y-2">
         <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1">
-          {[{ value: "semua", label: "Semua" }, ...PERIOD_OPTIONS].map((p) => (
+          {[{ value: "semua", label: "Semua" }, ...periodOptions].map((p) => (
             <button
               key={p.value}
               type="button"
@@ -223,15 +326,21 @@ export function RiwayatView() {
       {/* Ringkasan hasil filter */}
       {hasil.length > 0 ? (
         <p className="text-[12px] text-ink-muted">
-          {hasil.length} transaksi · selisih{" "}
+          {demo ? hasil.length : total} transaksi · selisih{" "}
           <span className="tnum font-semibold text-ink">
-            {formatRupiah(total)}
+            {formatRupiah(totalSelisih)}
           </span>
         </p>
       ) : null}
 
       {/* Daftar */}
-      {hasil.length === 0 ? (
+      {memuat && hasil.length === 0 ? (
+        <div className="space-y-2">
+          <div className="skeleton h-16 w-full" />
+          <div className="skeleton h-16 w-full" />
+          <div className="skeleton h-16 w-full" />
+        </div>
+      ) : hasil.length === 0 ? (
         <div className="card flex flex-col items-center gap-2 p-10 text-center">
           <h2>{adaFilter ? "Tidak ada yang cocok" : "Belum ada transaksi"}</h2>
           <p className="max-w-xs text-[14px] leading-relaxed text-ink-muted">
@@ -255,13 +364,13 @@ export function RiwayatView() {
         </div>
       ) : (
         <div className="space-y-4">
-          {perHari.map(([tanggal, items]) => (
+          {perHari.map(([tanggal, itemsHari]) => (
             <section key={tanggal} className="space-y-2">
               <h2 className="px-1 text-[13px] font-semibold uppercase tracking-wide text-ink-subtle">
                 {formatTanggalPanjangID(tanggal)}
               </h2>
               <div className="card divide-y divide-line overflow-hidden">
-                {items.map((tx) => (
+                {itemsHari.map((tx) => (
                   <TransactionRow
                     key={tx.id}
                     tx={tx}
@@ -272,14 +381,25 @@ export function RiwayatView() {
               </div>
             </section>
           ))}
+
+          {adaLagi ? (
+            <button
+              type="button"
+              onClick={() => void muat(page + 1, true)}
+              disabled={memuat}
+              className="mx-auto flex min-h-[44px] items-center justify-center rounded-pill bg-surface-warm px-6 text-[13px] font-semibold text-ink disabled:opacity-50"
+            >
+              {memuat ? "Memuat…" : "Muat lebih banyak"}
+            </button>
+          ) : null}
         </div>
       )}
 
       <TransactionSheet
         transaction={editing}
         onClose={() => setEditing(null)}
-        onSave={(tx) => setDiubah((prev) => ({ ...prev, [tx.id]: tx }))}
-        onDelete={(id) => setDihapus((prev) => [...prev, id])}
+        onSave={simpanEdit}
+        onDelete={hapusEntri}
       />
     </div>
   );
