@@ -4,7 +4,7 @@ import { brand } from "@/lib/design/tokens";
 /** Manifest PWA (§9.5) — display standalone, ikon maskable+any, shortcut. */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "AIDM — Intelijen Pasar UMKM",
+    name: "AIDM — Catatan Usaha & Laporan Keuangan",
     short_name: "AIDM",
     description: brand.tagline,
     id: "/",

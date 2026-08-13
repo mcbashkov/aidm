@@ -27,7 +27,7 @@ export const colors = {
 export const brand = {
   name: "AIDM",
   shortName: "AIDM",
-  tagline: "Intelijen pasar untuk UMKM Indonesia",
+  tagline: "Catatan usaha dan laporan keuangan untuk UMKM Indonesia",
   themeColor: colors.bg,
   backgroundColor: colors.bg,
   accent: colors.gold,

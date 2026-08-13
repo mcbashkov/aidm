@@ -1,10 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { StepDots } from "@/components/ui/step-dots";
 import { CATEGORIES } from "@/lib/categories";
 import { cn } from "@/lib/utils";
+import type { Me } from "@/components/providers/me-provider";
+
+/** Profil v2.0/v3.0 lengkap bila keempat field ini sudah terisi (§3). */
+function profilLengkap(user: Me["user"]): boolean {
+  return Boolean(
+    user?.nama_usaha?.trim() &&
+      user?.kategori_slug &&
+      user?.kota?.trim() &&
+      user?.earner_type,
+  );
+}
 
 export default function UsahaPage() {
   const router = useRouter();
@@ -12,6 +23,34 @@ export default function UsahaPage() {
   const [kategori, setKategori] = useState<string | null>(null);
   const [kota, setKota] = useState("");
   const [saving, setSaving] = useState(false);
+  // Cek profil dulu sebelum menampilkan form: field yang sudah tersimpan
+  // (mis. sejak v2.0) di-prefill, bukan ditanya ulang dari kosong. Kalau
+  // keempat field profil sudah lengkap, lewati onboarding sepenuhnya (§3).
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((d: Me) => {
+        if (!active) return;
+        const user = d.user;
+        if (profilLengkap(user)) {
+          router.replace("/beranda");
+          return;
+        }
+        if (user?.nama_usaha) setNamaUsaha(user.nama_usaha);
+        if (user?.kategori_slug) setKategori(user.kategori_slug);
+        if (user?.kota) setKota(user.kota);
+        setChecking(false);
+      })
+      .catch(() => {
+        if (active) setChecking(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   // Nama usaha opsional: kop laporan PDF (§7.3) bisa memakai nama pengguna
   // sebagai cadangan, jadi jangan menghalangi orang masuk ke aplikasi.
@@ -35,6 +74,8 @@ export default function UsahaPage() {
     }
     router.push("/beranda");
   }
+
+  if (checking) return null;
 
   return (
     <div className="space-y-7">

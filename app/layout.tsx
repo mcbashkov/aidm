@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
   ),
   title: {
-    default: "AIDM — Intelijen Pasar UMKM",
+    default: "AIDM — Catatan Usaha & Laporan Keuangan",
     template: "%s · AIDM",
   },
   description: brand.tagline,

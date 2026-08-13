@@ -14,9 +14,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <MobileTopBar />
         {/* Kolom konten (§13) — latar ivory mengisi sisa viewport. Pola mobile
             (bottom-nav, padding lega) berlaku sampai <1024px; kolom desktop
-            max-w-6xl (1152px) aktif di ≥1024px — sama persis dengan container
+            max-w-[1320px] aktif di ≥1024px — sama persis dengan container
             TopNav supaya logo/nav/HeaderStats sejajar dengan konten. */}
-        <main className="mx-auto w-full max-w-2xl px-4 pb-28 pt-4 lg:max-w-6xl lg:px-6 lg:pb-12 lg:pt-8">
+        <main className="mx-auto w-full max-w-2xl px-4 pb-28 pt-4 lg:max-w-[1320px] lg:px-6 lg:pb-12 lg:pt-8">
           {children}
         </main>
         <BottomNav />

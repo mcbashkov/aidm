@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
@@ -8,14 +9,27 @@ import { isPrivyConfigured } from "@/lib/privy/config";
 import { useSafeLogin } from "@/lib/privy/use-safe-login";
 import { Button } from "@/components/ui/button";
 
+/**
+ * Logo + judul + sub jadi satu blok (§ revisi header, logo±32px di atas
+ * judul) — AuthLayout tidak lagi merender logo terpisah untuk /masuk supaya
+ * seluruh blok bisa di-center bersama di viewport.
+ */
 function Intro() {
   return (
-    <div className="space-y-3">
-      <h1>Riset pasar, dalam satu tanya.</h1>
-      <p className="text-[15px] leading-relaxed text-ink-muted">
-        Temukan produk yang lagi naik, ide konten siap pakai, dan peluang usaha —
-        khusus UMKM Indonesia.
-      </p>
+    <div>
+      <Link href="/beranda" className="mb-8 flex items-center gap-2">
+        <Image src="/icons/icon-192.png" alt="AIDM" width={30} height={30} />
+        <span className="font-serif text-[20px] font-semibold tracking-tight text-ink">
+          AIDM
+        </span>
+      </Link>
+      <div className="space-y-3">
+        <h1>Catat usahamu, dalam satu ucap.</h1>
+        <p className="text-[15px] leading-relaxed text-ink-muted">
+          Tulis atau ucapkan transaksimu — AIDM merapikannya jadi laporan
+          keuangan yang siap diajukan ke bank.
+        </p>
+      </div>
     </div>
   );
 }

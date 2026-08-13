@@ -1,11 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { StepDots } from "@/components/ui/step-dots";
 import { EARNER_OPTIONS, type EarnerType } from "@/lib/earner";
 import { cn } from "@/lib/utils";
+import type { Me } from "@/components/providers/me-provider";
+
+/** Profil v2.0/v3.0 lengkap bila keempat field ini sudah terisi (§3). */
+function profilLengkap(user: Me["user"]): boolean {
+  return Boolean(
+    user?.nama_usaha?.trim() &&
+      user?.kategori_slug &&
+      user?.kota?.trim() &&
+      user?.earner_type,
+  );
+}
 
 /**
  * Layar peran v3.0 (§7.1 alur #3): "Kamu berpenghasilan dari mana?".
@@ -15,6 +26,29 @@ import { cn } from "@/lib/utils";
 export default function PeranPage() {
   const router = useRouter();
   const [saving, setSaving] = useState<EarnerType | null>(null);
+  // Profil yang sudah lengkap (mis. login ulang) tidak perlu onboarding lagi
+  // sama sekali (§3) — cek dulu sebelum menampilkan layar ini.
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((d: Me) => {
+        if (!active) return;
+        if (profilLengkap(d.user)) {
+          router.replace("/beranda");
+          return;
+        }
+        setChecking(false);
+      })
+      .catch(() => {
+        if (active) setChecking(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   async function pick(earnerType: EarnerType) {
     setSaving(earnerType);
@@ -29,6 +63,8 @@ export default function PeranPage() {
     }
     router.push("/onboarding/usaha");
   }
+
+  if (checking) return null;
 
   return (
     <div className="space-y-7">

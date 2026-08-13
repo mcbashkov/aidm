@@ -15,6 +15,7 @@ export interface Me {
     role?: string;
     earner_type?: string;
     nama_usaha?: string;
+    kategori_slug?: string;
     kota?: string;
   } | null;
   wallet?: { address?: string } | null;

@@ -26,7 +26,7 @@ export async function GET() {
       supa
         .from("users")
         .select(
-          "id, role, earner_type, nama_usaha, kategori_id, sub_kategori, kota, provinsi, email, phone",
+          "id, role, earner_type, nama_usaha, kategori_id, sub_kategori, kota, provinsi, email, phone, categories:kategori_id(slug)",
         )
         .eq("id", uid)
         .single(),
@@ -37,10 +37,26 @@ export async function GET() {
         .maybeSingle(),
     ]);
 
+    // Slug kategori (dipakai onboarding untuk prefill chip §3) — relasi bisa
+    // balik sebagai objek atau array tergantung driver, sama seperti di
+    // /api/research/[id]/stream.
+    const kategoriRel = (user as { categories?: unknown } | null)?.categories as
+      | { slug?: string }
+      | { slug?: string }[]
+      | null
+      | undefined;
+    const kategori_slug = Array.isArray(kategoriRel)
+      ? kategoriRel[0]?.slug
+      : kategoriRel?.slug;
+    const { categories: _categories, ...userRest } = (user ?? {}) as Record<
+      string,
+      unknown
+    >;
+
     // Saldo token dibaca on-chain di milestone selanjutnya (M4/M5).
     return NextResponse.json({
       authenticated: true,
-      user,
+      user: user ? { ...userRest, kategori_slug } : user,
       wallet,
       credits,
       idmx: 0,
