@@ -100,10 +100,13 @@ export function MicButton({
       aria-label={listening ? "Berhenti merekam" : "Catat dengan suara"}
       aria-pressed={listening}
       className={cn(
+        // Ikon polos (tanpa latar) saat siaga: di kolom input hanya boleh ada
+        // SATU tombol berbobot — mikrofon berganti jadi tombol kirim begitu
+        // ada teks, bukan tampil berdampingan.
         "grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors",
         listening
           ? "bg-danger text-ink-invert"
-          : "bg-surface-warm text-ink-muted hover:bg-gold-tint hover:text-gold-deep",
+          : "text-ink-subtle hover:bg-surface-warm hover:text-ink-muted",
         disabled && "opacity-50",
       )}
     >

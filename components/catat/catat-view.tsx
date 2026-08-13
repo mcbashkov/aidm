@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CloudOff, Sparkles, MessageSquarePlus } from "lucide-react";
+import { ArrowUp, CloudOff, MessageSquarePlus } from "lucide-react";
 import { MicButton } from "@/components/catat/mic-button";
 import { EntryCard } from "@/components/catat/entry-card";
 import { TransactionSheet } from "@/components/transaksi/transaction-sheet";
@@ -20,6 +20,23 @@ type Bubble =
 let counter = 0;
 const nextId = () => `b${++counter}`;
 
+/** Tinggi maksimum kolom input sebelum isinya menggulir sendiri (§5). */
+const INPUT_MAX_H = 120;
+/** Ambang deteksi keyboard: selisih sekecil ini masih toolbar browser. */
+const KEYBOARD_MIN_H = 80;
+/** Breakpoint desktop — sama dengan `lg:` di seluruh shell aplikasi. */
+const DESKTOP_MQ = "(min-width: 1024px)";
+
+/**
+ * Bottom-nav disembunyikan saat keyboard terbuka supaya komposer bisa
+ * menempel tepat di atas keyboard. Aturannya dirender bersama layar Catat
+ * (bukan di globals.css) agar efeknya benar-benar terbatas di layar ini.
+ * Nav top-bar ikut cocok dengan selektor ini, tapi tidak masalah: aturannya
+ * dibatasi <1024px, di mana top-bar memang sudah tersembunyi.
+ */
+const KEYBOARD_CSS =
+  '@media (max-width:1023.98px){html[data-catat-keyboard="open"] nav[aria-label="Navigasi utama"]{display:none}}';
+
 interface CatatViewProps {
   earnerType?: EarnerType;
 }
@@ -27,6 +44,11 @@ interface CatatViewProps {
 /**
  * Tab Catat (§7.2 / §13 layar 3) — pembalikan dari tab Riset lama: pengguna
  * memberi tahu, agen mencatat.
+ *
+ * Tata letak mengikuti pola komposer AI: kolom setinggi viewport dengan area
+ * pesan yang menggulir sendiri, dan komposer yang menempel di bawah — di
+ * mobile `fixed` tepat di atas bottom-nav (atau di atas keyboard saat terbuka),
+ * di desktop ikut lebar kolom konten.
  *
  * SEMENTARA: entri dibuat oleh parser aturan di klien (§7.2 fallback) dan
  * disimpan di state, belum ke `transactions`. Bentuk datanya sudah sama dengan
@@ -38,7 +60,22 @@ export function CatatView({ earnerType = "dagang" }: CatatViewProps) {
   const [interim, setInterim] = useState("");
   const [offline, setOffline] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const rootRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const chipsRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  /** Hasil ukur tata letak; 0 = belum terukur (render pertama / SSR). */
+  const [metrics, setMetrics] = useState({
+    columnH: 0,
+    composerH: 0,
+    bottom: 0,
+    keyboard: false,
+    desktop: false,
+  });
+  const [fade, setFade] = useState({ left: false, right: false });
 
   const chips = catatChips(earnerType);
 
@@ -54,8 +91,139 @@ export function CatatView({ earnerType = "dagang" }: CatatViewProps) {
     };
   }, []);
 
+  /**
+   * Ukur ruang yang tersedia untuk kolom chat. Semua angka DIUKUR, bukan
+   * dihardcode, supaya aman terhadap safe-area, tinggi bottom-nav, dan
+   * padding `main` yang berbeda per breakpoint.
+   *
+   * Keyboard dideteksi lewat visualViewport: `innerHeight` (layout viewport)
+   * tidak menyusut saat keyboard muncul, jadi selisihnya = tinggi keyboard.
+   */
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    function measure() {
+      const root = rootRef.current;
+      if (!root) return;
+
+      const vv = window.visualViewport;
+      const innerH = window.innerHeight;
+      const keyboardH = vv
+        ? Math.max(0, innerH - vv.height - vv.offsetTop)
+        : 0;
+      const keyboard = keyboardH > KEYBOARD_MIN_H;
+      const desktop = window.matchMedia(DESKTOP_MQ).matches;
+
+      // Ruang terpakai di bawah kolom chat.
+      let reserved: number;
+      if (desktop) {
+        // Padding bawah <main>; komposer ikut arus di dalam kolom.
+        const main = root.parentElement;
+        reserved = main
+          ? parseFloat(getComputedStyle(main).paddingBottom) || 0
+          : 0;
+      } else if (keyboard) {
+        reserved = keyboardH;
+      } else {
+        // Bottom-nav. Nav top-bar punya aria-label sama tapi induknya
+        // `display:none` di mobile, jadi tingginya 0 — ambil yang terbesar.
+        const navs = Array.from(
+          document.querySelectorAll<HTMLElement>(
+            'nav[aria-label="Navigasi utama"]',
+          ),
+        );
+        reserved = navs.reduce(
+          (max, n) => Math.max(max, n.getBoundingClientRect().height),
+          0,
+        );
+      }
+
+      const top = root.getBoundingClientRect().top;
+      const columnH = Math.max(240, Math.round(innerH - reserved - top));
+      const composerH = Math.round(
+        composerRef.current?.getBoundingClientRect().height ?? 0,
+      );
+
+      setMetrics((prev) =>
+        prev.columnH === columnH &&
+        prev.composerH === composerH &&
+        prev.bottom === reserved &&
+        prev.keyboard === keyboard &&
+        prev.desktop === desktop
+          ? prev
+          : { columnH, composerH, bottom: reserved, keyboard, desktop },
+      );
+    }
+
+    measure();
+
+    const vv = window.visualViewport;
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+    vv?.addEventListener("resize", measure);
+    vv?.addEventListener("scroll", measure);
+
+    // Komposer berubah tinggi saat input auto-grow / chip membungkus.
+    const ro = new ResizeObserver(measure);
+    if (composerRef.current) ro.observe(composerRef.current);
+
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+      vv?.removeEventListener("resize", measure);
+      vv?.removeEventListener("scroll", measure);
+      ro.disconnect();
+    };
+  }, []);
+
+  /**
+   * Tandai keyboard terbuka di <html> supaya bottom-nav bisa disembunyikan
+   * (aturannya ikut dirender komponen ini — lihat <style> di bawah).
+   */
+  useEffect(() => {
+    const el = document.documentElement;
+    if (metrics.keyboard) el.dataset.catatKeyboard = "open";
+    else delete el.dataset.catatKeyboard;
+    return () => {
+      delete el.dataset.catatKeyboard;
+    };
+  }, [metrics.keyboard]);
+
+  /** Fade di tepi baris chip — petunjuk masih ada chip lain (§3). */
+  useEffect(() => {
+    const el = chipsRef.current;
+    if (!el) return;
+    const sync = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = el;
+      setFade({
+        left: scrollLeft > 4,
+        right: Math.ceil(scrollLeft + clientWidth) < scrollWidth - 4,
+      });
+    };
+    sync();
+    el.addEventListener("scroll", sync, { passive: true });
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", sync);
+      ro.disconnect();
+    };
+  }, [chips]);
+
+  /** Kolom input tumbuh mengikuti isi, lalu menggulir di dalam (§5). */
+  const autoGrow = useCallback(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, INPUT_MAX_H)}px`;
+  }, []);
+
+  useEffect(() => {
+    autoGrow();
+  }, [draft, interim, autoGrow]);
+
+  // Pesan terbaru selalu terlihat — gulir area pesan, bukan halaman.
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [bubbles]);
 
   const kirim = useCallback(
@@ -120,11 +288,42 @@ export function CatatView({ earnerType = "dagang" }: CatatViewProps) {
     );
   }
 
+  /**
+   * Enter mengirim di desktop, Shift+Enter baris baru. Di mobile Enter =
+   * baris baru (kirim lewat tombol) — keyboard virtual tidak punya Shift
+   * yang nyaman dijangkau.
+   */
+  function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key !== "Enter" || e.shiftKey) return;
+    // Jangan potong konfirmasi IME (mis. papan ketik prediktif).
+    if ((e.nativeEvent as unknown as { isComposing?: boolean }).isComposing) {
+      return;
+    }
+    if (!metrics.desktop) return;
+    e.preventDefault();
+    kirim(draft);
+  }
+
   const kosong = bubbles.length === 0;
+  const adaTeks = draft.trim().length > 0;
 
   return (
-    <div className="flex min-h-[calc(100dvh-14rem)] flex-col">
-      <div className="mb-4 flex items-start justify-between gap-3">
+    <div
+      ref={rootRef}
+      // -mb-28 menetralkan padding bawah <main> yang disediakan untuk
+      // bottom-nav: di layar ini komposer sendiri yang mengelola ruang bawah,
+      // dan sisa padding akan membuat halaman ikut menggulir.
+      className="-mb-28 flex flex-col lg:mb-0"
+      style={metrics.columnH ? { height: metrics.columnH } : undefined}
+    >
+      {/* Aturan lokal layar Catat: sembunyikan bottom-nav saat keyboard
+          terbuka supaya komposer bisa menempel tepat di atas keyboard.
+          Hidup-mati bersama layar ini — tidak menyentuh komponen nav.
+          `dangerouslySetInnerHTML` dipakai supaya tanda kutip di selektor
+          tidak di-escape berbeda antara server dan klien (hydration mismatch). */}
+      <style dangerouslySetInnerHTML={{ __html: KEYBOARD_CSS }} />
+
+      <div className="mb-4 flex shrink-0 items-start justify-between gap-3">
         <div>
           <h1>Catat</h1>
           <p className="mt-1 text-[13px] text-ink-subtle">
@@ -142,112 +341,167 @@ export function CatatView({ earnerType = "dagang" }: CatatViewProps) {
       {offline ? (
         <div
           role="status"
-          className="mb-4 rounded-card bg-gold-tint px-5 py-3 text-[12px] leading-relaxed text-ink-muted"
+          className="mb-4 shrink-0 rounded-card bg-gold-tint px-5 py-3 text-[12px] leading-relaxed text-ink-muted"
         >
-          Kamu sedang offline. Catatan tetap tersimpan di perangkat dan
-          dikirim otomatis begitu internet kembali.
+          Kamu sedang offline. Catatan tetap tersimpan di perangkat dan dikirim
+          otomatis begitu internet kembali.
         </div>
       ) : null}
 
-      {/* Percakapan */}
-      <div className="flex-1 space-y-3">
-        {kosong ? (
-          <div className="card flex flex-col items-center gap-2 p-10 text-center">
-            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gold-tint">
-              <MessageSquarePlus className="h-6 w-6 text-gold-deep" aria-hidden />
-            </span>
-            <h2 className="mt-1">Belum ada catatan hari ini</h2>
-            <p className="max-w-xs text-[14px] leading-relaxed text-ink-muted">
-              Tulis atau ucapkan apa yang terjadi — misalnya{" "}
-              <span className="text-ink">
-                &ldquo;jual 3 nasi goreng 45rb bayar QRIS&rdquo;
-              </span>
-              . Mencatat selalu gratis.
-            </p>
-          </div>
-        ) : (
-          bubbles.map((b) => {
-            if (b.kind === "user") {
-              return (
-                <div key={b.id} className="flex justify-end">
-                  <p className="max-w-[85%] animate-fade-up rounded-card rounded-br-lg bg-cta px-4 py-2.5 text-[14px] leading-relaxed text-ink-invert">
-                    {b.text}
-                  </p>
-                </div>
-              );
-            }
-            if (b.kind === "agent") {
-              return (
-                <p
-                  key={b.id}
-                  className="max-w-[85%] animate-fade-up rounded-card rounded-bl-lg bg-surface-warm px-4 py-2.5 text-[14px] leading-relaxed text-ink"
-                >
-                  {b.text}
+      {/* Area pesan — menggulir sendiri, isi tumbuh dari bawah ke atas. */}
+      <div ref={scrollerRef} className="min-h-0 flex-1 overflow-y-auto">
+        {/* `mt-auto` (bukan justify-end) supaya pesan paling atas tetap
+            terjangkau saat isinya lebih tinggi dari area gulir. */}
+        <div className="flex min-h-full flex-col">
+          <div className={cn("space-y-3", kosong ? "m-auto" : "mt-auto")}>
+            {kosong ? (
+              <div className="card flex flex-col items-center gap-2 p-8 text-center">
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gold-tint">
+                  <MessageSquarePlus
+                    className="h-6 w-6 text-gold-deep"
+                    aria-hidden
+                  />
+                </span>
+                <h2 className="mt-1">Belum ada catatan hari ini</h2>
+                <p className="max-w-xs text-[14px] leading-relaxed text-ink-muted">
+                  Tulis atau ucapkan apa yang terjadi — misalnya{" "}
+                  <span className="text-ink">
+                    &ldquo;jual 3 nasi goreng 45rb bayar QRIS&rdquo;
+                  </span>
+                  . Mencatat selalu gratis.
                 </p>
-              );
-            }
-            return (
-              <EntryCard
-                key={b.id}
-                tx={b.tx}
-                antre={b.antre}
-                onEdit={setEditing}
-              />
-            );
-          })
-        )}
-        <div ref={bottomRef} />
+              </div>
+            ) : (
+              bubbles.map((b) => {
+                if (b.kind === "user") {
+                  return (
+                    <div key={b.id} className="flex justify-end">
+                      <p className="max-w-[85%] animate-fade-up whitespace-pre-wrap rounded-card rounded-br-lg bg-cta px-4 py-2.5 text-[14px] leading-relaxed text-ink-invert">
+                        {b.text}
+                      </p>
+                    </div>
+                  );
+                }
+                if (b.kind === "agent") {
+                  return (
+                    <p
+                      key={b.id}
+                      className="max-w-[85%] animate-fade-up rounded-card rounded-bl-lg bg-surface-warm px-4 py-2.5 text-[14px] leading-relaxed text-ink"
+                    >
+                      {b.text}
+                    </p>
+                  );
+                }
+                return (
+                  <EntryCard
+                    key={b.id}
+                    tx={b.tx}
+                    antre={b.antre}
+                    onEdit={setEditing}
+                  />
+                );
+              })
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Chip saran kontekstual (§7.2 alur #7) */}
-      <div className="sticky bottom-0 -mx-4 mt-4 bg-bg px-4 pb-2 pt-3 md:-mx-6 md:px-6">
-        <div className="no-scrollbar -mx-1 mb-2 flex gap-2 overflow-x-auto px-1">
-          <span className="flex shrink-0 items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">
-            <Sparkles className="h-3 w-3" aria-hidden />
-            Contoh
-          </span>
-          {chips.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => kirim(c)}
-              className="chip whitespace-nowrap"
-            >
-              {c}
-            </button>
-          ))}
-        </div>
+      {/* Penahan ruang untuk komposer yang `fixed` di mobile. */}
+      <div
+        aria-hidden
+        className="shrink-0 lg:hidden"
+        style={{ height: metrics.composerH }}
+      />
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            kirim(draft);
-          }}
-          className="flex items-center gap-2 rounded-pill bg-surface p-1.5 pl-5 shadow-card transition-shadow focus-within:shadow-float"
-        >
-          <input
-            value={interim || draft}
-            onChange={(e) => {
-              setDraft(e.target.value);
-              setInterim("");
+      {/* Komposer: mobile menempel di atas bottom-nav / keyboard; desktop ikut
+          arus sebagai anak terakhir kolom, jadi lebarnya = lebar konten. */}
+      <div
+        ref={composerRef}
+        className="fixed inset-x-0 z-30 bg-bg lg:static lg:z-auto"
+        style={
+          metrics.desktop ? undefined : { bottom: `${metrics.bottom}px` }
+        }
+      >
+        <div className="mx-auto w-full max-w-2xl px-4 pb-2 pt-2 lg:max-w-none lg:px-0 lg:pb-0 lg:pt-3">
+          {/* Chip contoh (§7.2 alur #7) — gulir penuh, tanpa label. */}
+          <div className="relative -mx-4 lg:mx-0">
+            <div
+              ref={chipsRef}
+              className="no-scrollbar flex snap-x scroll-px-4 gap-2 overflow-x-auto px-4 pb-2 lg:scroll-px-0 lg:px-0"
+            >
+              {chips.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => kirim(c)}
+                  className="chip shrink-0 snap-start whitespace-nowrap"
+                >
+                  {c}
+                </button>
+              ))}
+              {/* Jaga jarak chip terakhir dari tepi (padding-right pada
+                  kontainer gulir tidak konsisten di semua mesin render). */}
+              <span aria-hidden className="w-2 shrink-0" />
+            </div>
+            <div
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-bg to-transparent transition-opacity duration-200",
+                fade.left ? "opacity-100" : "opacity-0",
+              )}
+            />
+            <div
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-bg to-transparent transition-opacity duration-200",
+                fade.right ? "opacity-100" : "opacity-0",
+              )}
+            />
+          </div>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              kirim(draft);
             }}
-            placeholder="Ketik atau ucapkan transaksimu…"
-            aria-label="Catat transaksi"
-            className={cn(
-              "min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-subtle",
-              interim && "italic text-ink-muted",
-            )}
-          />
-          <MicButton onTranscript={kirim} onInterim={setInterim} />
-          <button
-            type="submit"
-            aria-label="Catat"
-            disabled={draft.trim().length === 0}
-            className="btn-send"
+            // Radius 27px = setengah tinggi saat satu baris, jadi bentuknya
+            // pill penuh saat diam. Sengaja TIDAK memakai rounded-pill: pada
+            // tinggi maksimum (120px) lengkung stadion menutupi baris pertama
+            // dan terakhir teks.
+            className="flex items-end gap-2 rounded-[27px] border border-line bg-surface p-1 pl-4 shadow-card transition-shadow focus-within:ring-2 focus-within:ring-gold focus-within:shadow-float"
           >
-            <MessageSquarePlus className="h-5 w-5" aria-hidden />
-          </button>
-        </form>
+            <textarea
+              ref={inputRef}
+              rows={1}
+              value={interim || draft}
+              onChange={(e) => {
+                setDraft(e.target.value);
+                setInterim("");
+              }}
+              onKeyDown={onKeyDown}
+              placeholder="Ketik atau ucapkan transaksimu…"
+              aria-label="Catat transaksi"
+              className={cn(
+                // Cincin fokus dipindah ke kapsul pembungkus (focus-within):
+                // outline global menggambar persegi di DALAM pill.
+                "min-w-0 flex-1 resize-none self-center bg-transparent py-2.5 text-[15px] leading-6 text-ink outline-none placeholder:text-ink-subtle focus-visible:outline-none",
+                interim && "italic text-ink-muted",
+              )}
+              style={{ maxHeight: INPUT_MAX_H }}
+            />
+            {adaTeks ? (
+              <button
+                type="submit"
+                aria-label="Catat"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-cta text-ink-invert transition-colors hover:bg-gold hover:text-cta"
+              >
+                <ArrowUp className="h-5 w-5" aria-hidden />
+              </button>
+            ) : (
+              <MicButton onTranscript={kirim} onInterim={setInterim} />
+            )}
+          </form>
+        </div>
       </div>
 
       <TransactionSheet
