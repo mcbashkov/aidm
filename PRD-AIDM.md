@@ -634,17 +634,17 @@ Mengikuti v2.0 (Lighthouse ≥ 90, LCP ≤ 2,5s, INP < 200ms, CLS < 0,1, bundle 
 
 ## 16. Keputusan Terbuka (Product Owner)
 
-1. **Nama tab & tagline final** — "Catat" vs "Buku" vs "Catatan"; tagline "Catat usahamu, dalam satu ucap". *(sebelum M1)*
-2. **Domain produk** — idmtoken.com vs domain baru; `app.` subdomain. *(sebelum M6)*
+1. **Nama tab & tagline final** — *(selesai)* "Catat" (`nav-items.ts`) + tagline "Catat usahamu, dalam satu ucap." (`login-panel.tsx`) sudah diimplementasikan.
+2. **Domain produk** — *(diputuskan 2026-08-14)* `ai.idmtoken.com` — subdomain dari domain token yang sudah ada.
 3. **Provider embedded wallet** — Privy (default, sudah terpasang). *(selesai)*
-4. **Payment gateway** — Midtrans vs Xendit. *(sebelum M5)*
-5. **Kurs awal IDMX → IDM Reborn** + kebijakan peninjauan. *(sebelum M6)*
-6. **Perlakuan IDMX masuk pool** — burn (default) vs kembali ke pool. *(sebelum M4)*
-7. **Angka reward misi pencatatan** — konfirmasi default §7.6. *(sebelum M4)*
-8. **Tokenomics Token IDM Reborn** — alokasi 1 miliar → dokumen terpisah. *(sebelum M6)*
-9. **Library PDF** — @react-pdf/renderer vs Puppeteer. *(sebelum M3)*
-10. **Kebijakan retensi `raw_input`** — berapa lama kalimat asli disimpan untuk perbaikan parser sebelum dianonimkan. *(sebelum M6, terkait PDP)*
-11. **Jembatan lintas-chain** — IDM Reborn di BSC vs aktivitas di opBNB; bridge resmi atau kontrak mirror. *(sebelum M4 — warisan v2.0)*
+4. **Payment gateway** — *(diputuskan 2026-08-08)* Midtrans. Lihat `.env.local.example` (dipakai mulai M3, pembelian kredit QRIS/VA).
+5. **Kurs awal IDMX → IDM Reborn** + kebijakan peninjauan. **Masih terbuka** — mekanisme disepakati (kurs tetap awal, bukan floating, ditinjau ulang per kuartal, diumumkan di UI sebelum user menukar), tapi rasio angkanya adalah keputusan finansial yang belum ditetapkan. *(sebelum M6)*
+6. **Perlakuan IDMX masuk pool** — *(diputuskan 2026-08-14)* Burn — deflasi sederhana, tanpa mekanisme redistribusi/governance tambahan.
+7. **Angka reward misi pencatatan** — *(dikonfirmasi 2026-08-14)* Pakai default §7.6 apa adanya (+20/+50/+100/+150/+50, cap 250 IDMX/hari); tetap configurable admin sehingga aman diubah tanpa deploy ulang.
+8. **Tokenomics Token IDM Reborn** — alokasi 1 miliar → dokumen terpisah. **Masih terbuka**, sengaja di luar cakupan PRD ini — kemungkinan perlu review legal. *(sebelum M6)*
+9. **Library PDF** — *(diputuskan 2026-08-14)* `@react-pdf/renderer` — serverless-friendly (Next.js API routes), tanpa overhead binary Chromium headless ala Puppeteer di cold start.
+10. **Kebijakan retensi `raw_input`** — *(diputuskan 2026-08-14)* 90 hari, lalu dianonimkan (raw_input dihapus, entri transaksi terstruktur dipertahankan). Mekanisme purge otomatis dikerjakan di hardening PDP M6 sesuai jadwal semula — **belum diimplementasikan**.
+11. **Jembatan lintas-chain** — IDM Reborn di BSC vs aktivitas di opBNB; bridge resmi atau kontrak mirror. **Masih terbuka** — rekomendasi awal: kontrak mirror di opBNB dulu (tanpa dependensi bridge pihak ketiga), migrasi ke bridge resmi saat volume signifikan. Keputusan final menjelang M4 karena berimplikasi keamanan (target eksploit umum di lintas-chain). *(sebelum M4 — warisan v2.0)*
 
 ---
 
