@@ -14,7 +14,8 @@
     "db:migrate": "bash scripts/apply-migrations.sh",
     "test:api": "node scripts/api-test.mjs",
     "test:canonical": "node scripts/canonical-test.mjs",
-    "deploy:attestation": "node scripts/deploy-attestation.mjs"
+    "deploy:attestation": "node scripts/deploy-attestation.mjs",
+    "deploy:rewards": "node scripts/deploy-rewards.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

@@ -526,13 +526,18 @@ async function main() {
     });
     if (r.status === 501) {
       cek("tanpa konfigurasi chain → 501 jujur", true);
-      const n = sql(`select count(*) from report_seals where user_id='${uidB}'`);
-      cek("501 tidak meninggalkan baris pending yatim", n === "0", `dapat ${n}`);
     } else {
-      // Env dengan chain terpasang (testnet aktif) — jalur nyata teruji.
-      cek("dengan konfigurasi chain → 200", r.status === 200,
+      // Kontrak segel TERPASANG. User uji sengaja tidak diberi wallet: jalur
+      // on-chain penuh akan mengirim transaksi testnet SUNGGUHAN (dan membakar
+      // gas) tiap kali test dijalankan — mahal untuk suite yang sering jalan.
+      // Jalur sukses penuh diverifikasi manual di produksi; yang dijaga di
+      // sini adalah penolakan yang jelas untuk akun tanpa wallet.
+      cek("akun tanpa wallet ditolak jelas → 400",
+        r.status === 400 && /wallet/i.test(r.body?.error ?? ""),
         `dapat ${r.status} ${JSON.stringify(r.body).slice(0, 120)}`);
     }
+    const n = sql(`select count(*) from report_seals where user_id='${uidB}'`);
+    cek("penolakan tidak meninggalkan baris pending yatim", n === "0", `dapat ${n}`);
   }
   {
     const r = await api(`/api/laporan/segel/${bulanIni}`, { cookie: B });
@@ -550,6 +555,104 @@ async function main() {
   {
     const n = sql(`select count(*) from missions where code='seal_monthly_report' and aktif`);
     cek("misi 'seal_monthly_report' terpasang & aktif (0016)", n === "1", `dapat ${n}`);
+  }
+
+  console.log("\n── 14. Misi & reward (§7.6) ──");
+  {
+    const r = await api("/api/missions");
+    cek("tanpa sesi → 401", r.status === 401, `dapat ${r.status}`);
+  }
+  {
+    // User B menanam 4 transaksi valid hari ini di seksi 10 (2 di hari ini),
+    // ditambah entri seksi ini supaya lintas ambang misi terlihat.
+    const r = await api("/api/missions", { cookie: B });
+    cek("200 OK", r.status === 200, `dapat ${r.status}`);
+    const kode = (r.body?.misi ?? []).map((m) => m.code);
+    cek("misi riset v2.0 tidak muncul (dinonaktifkan 0016)",
+      !kode.includes("first_research_today"), kode.join(","));
+    cek("5 misi v3.0 tampil", kode.length === 5, `dapat ${kode.length}`);
+
+    const pertama = (r.body?.misi ?? []).find((m) => m.code === "first_tx_today");
+    cek("misi 'transaksi pertama' selesai (ada catatan hari ini)",
+      pertama?.selesai === true, JSON.stringify(pertama?.progress));
+    cek("periodKey harian = tanggal WIB",
+      pertama?.periodKey === wibHariIni, `dapat ${pertama?.periodKey}`);
+
+    const lima = (r.body?.misi ?? []).find((m) => m.code === "five_tx_today");
+    cek("progres 'catat 5' dibatasi target, bukan angka mentah",
+      lima.progress <= lima.target, `${lima?.progress}/${lima?.target}`);
+
+    const profil = (r.body?.misi ?? []).find((m) => m.code === "complete_profile");
+    cek("profil belum lengkap → misi belum selesai",
+      profil?.selesai === false, `dapat ${profil?.selesai}`);
+
+    cek("cap harian dilaporkan (§7.6)",
+      r.body?.capHarian?.batas === 250, `dapat ${r.body?.capHarian?.batas}`);
+    cek("cap bulanan terpisah dari cap harian",
+      r.body?.capBulanan?.batas === 150, `dapat ${r.body?.capBulanan?.batas}`);
+  }
+  {
+    // AC §7.6: menghapus transaksi mengurangi progres misi terkait.
+    const rSebelum = await api("/api/missions", { cookie: B });
+    const sebelum = (rSebelum.body?.misi ?? [])
+      .find((m) => m.code === "five_tx_today").progress;
+    const idHapus = sql(
+      `select id from transactions where user_id='${uidB}' and status='confirmed'
+       order by created_at desc limit 1`);
+    await api(`/api/transaksi/${idHapus}`, { method: "DELETE", cookie: B });
+    const rSesudah = await api("/api/missions", { cookie: B });
+    const sesudah = (rSesudah.body?.misi ?? [])
+      .find((m) => m.code === "five_tx_today").progress;
+    cek("hapus transaksi MENURUNKAN progres misi (AC §7.6)",
+      sesudah === sebelum - 1, `${sebelum} → ${sesudah}`);
+  }
+  {
+    // Anti-abuse §7.6: duplikat persis dalam 60 detik tidak dihitung.
+    const kat = `(select id from categories where slug='penjualan')`;
+    const rAwal = await api("/api/missions", { cookie: B });
+    const awal = (rAwal.body?.misi ?? [])
+      .find((m) => m.code === "five_tx_today").progress;
+    // Dua baris identik, created_at hanya berjarak 10 detik.
+    sql(`insert into transactions
+      (user_id, jenis, amount, kategori_id, payment_method, occurred_at, source, parsed_by, status, created_at)
+      values
+      ('${uidB}','masuk',77000,${kat},'tunai','${wibHariIni}T15:00:00+07:00','manual','manual','confirmed', now()),
+      ('${uidB}','masuk',77000,${kat},'tunai','${wibHariIni}T15:00:00+07:00','manual','manual','confirmed', now() + interval '10 seconds')`);
+    const rAkhir = await api("/api/missions", { cookie: B });
+    const akhir = (rAkhir.body?.misi ?? [])
+      .find((m) => m.code === "five_tx_today").progress;
+    cek("duplikat persis dalam 60 dtk hanya dihitung SEKALI (§7.6 anti-abuse)",
+      akhir === awal + 1, `${awal} → ${akhir} (2 baris ditanam)`);
+  }
+  {
+    const r = await api("/api/missions/klaim", {
+      method: "POST", body: { code: "first_tx_today" },
+    });
+    cek("klaim tanpa sesi → 401", r.status === 401, `dapat ${r.status}`);
+  }
+  {
+    const r = await api("/api/missions/klaim", {
+      method: "POST", cookie: B, body: { code: "misi_ngawur" },
+    });
+    cek("klaim misi ngawur → 400/501", [400, 501].includes(r.status),
+      `dapat ${r.status}`);
+  }
+  {
+    // Tanpa kontrak reward: 501 jujur, dan TIDAK ada baris klaim yatim.
+    const r = await api("/api/missions/klaim", {
+      method: "POST", cookie: B, body: { code: "first_tx_today" },
+    });
+    if (r.status === 501) {
+      cek("tanpa kontrak reward → 501 jujur", true);
+    } else {
+      // Sama seperti segel: klaim sungguhan mengirim transaksi testnet dan
+      // memindahkan IDMX nyata. Yang diuji rutin adalah penolakan jujurnya.
+      cek("akun tanpa wallet ditolak jelas → 400",
+        r.status === 400 && /wallet/i.test(r.body?.error ?? ""),
+        `dapat ${r.status} ${JSON.stringify(r.body).slice(0, 120)}`);
+    }
+    const n = sql(`select count(*) from mission_claims where user_id='${uidB}'`);
+    cek("penolakan tidak meninggalkan baris klaim yatim", n === "0", `dapat ${n}`);
   }
 
   console.log("\n── 12. DELETE /api/akun (§12 hak penghapusan) ──");
