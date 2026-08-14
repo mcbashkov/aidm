@@ -87,6 +87,19 @@ async function api(path, { method = "GET", body, cookie } = {}) {
   return { status: res.status, body: json };
 }
 
+/** Ekstrak teks PDF via pdftotext; null bila alatnya tidak terpasang. */
+function pdfText(buf) {
+  try {
+    const tmp = `/tmp/aidm-pdf-uji-${process.pid}-${Math.random().toString(36).slice(2)}.pdf`;
+    writeFileSync(tmp, buf);
+    const teks = execFileSync("pdftotext", [tmp, "-"], { encoding: "utf8" });
+    unlinkSync(tmp);
+    return teks;
+  } catch {
+    return null;
+  }
+}
+
 let lulus = 0;
 const gagal = [];
 function cek(nama, kondisi, detail = "") {
@@ -298,7 +311,14 @@ async function main() {
         group by 1
       )
       select coalesce(count(*),0) from nyata n
-      full join daily_rollups r on r.user_id='${uidA}' and r.tanggal=n.d
+      full join (
+        -- Difilter DI DALAM subquery, bukan di kondisi JOIN: pada FULL JOIN,
+        -- filter di kondisi join hanya memutus pasangan — baris user LAIN
+        -- tetap muncul sebagai baris kanan tak berpasangan dan terhitung
+        -- "tidak cocok". Lolos bertahun-tahun selama DB kosong; pecah begitu
+        -- ada user nyata pertama (uji lapangan 2026-08-14).
+        select * from daily_rollups where user_id='${uidA}'
+      ) r on r.tanggal=n.d
       where coalesce(n.masuk,0) <> coalesce(r.total_masuk,0)
          or coalesce(n.keluar,0) <> coalesce(r.total_keluar,0)
          or coalesce(n.n,0) <> coalesce(r.jml_transaksi,0)`);
@@ -462,6 +482,74 @@ async function main() {
   {
     const res = await fetch(`${BASE}/api/laporan/pdf?period=${bulanIni}`);
     cek("PDF tanpa sesi → 401", res.status === 401, `dapat ${res.status}`);
+  }
+  {
+    // Periode tanpa satu pun catatan → PDF sopan yang jujur, bukan error.
+    const res = await fetch(`${BASE}/api/laporan/pdf?period=2025-01`, {
+      headers: { cookie: B },
+    });
+    const buf = Buffer.from(await res.arrayBuffer());
+    cek("PDF periode kosong → 200", res.status === 200, `dapat ${res.status}`);
+    const teks = pdfText(buf);
+    if (teks !== null) {
+      cek("PDF kosong menerangkan 'Tidak ada data di periode ini.'",
+        teks.includes("Tidak ada data di periode ini."));
+      cek("PDF kosong tetap memuat footer wajib",
+        teks.includes("Laporan ini disusun mandiri oleh pemilik usaha melalui aplikasi AIDM."));
+    }
+  }
+
+  console.log("\n── 13. Segel on-chain (§7.5) — jalur tanpa konfigurasi chain ──");
+  {
+    const r = await api("/api/laporan/segel", {
+      method: "POST", body: { period: "2026-07" },
+    });
+    cek("tanpa sesi → 401", r.status === 401, `dapat ${r.status}`);
+  }
+  {
+    const r = await api("/api/laporan/segel", {
+      method: "POST", cookie: B, body: { period: bulanIni },
+    });
+    cek("bulan berjalan → 400 (§7.5)", r.status === 400, `dapat ${r.status}`);
+  }
+  {
+    const r = await api("/api/laporan/segel", {
+      method: "POST", cookie: B, body: { period: "gado-gado" },
+    });
+    cek("periode ngawur → 400", r.status === 400, `dapat ${r.status}`);
+  }
+  {
+    // Env uji tidak punya kontrak/relayer → 501 JUJUR, dan yang terpenting:
+    // TANPA baris pending yatim di report_seals (config dicek sebelum tulis).
+    const r = await api("/api/laporan/segel", {
+      method: "POST", cookie: B, body: { period: "2026-07" },
+    });
+    if (r.status === 501) {
+      cek("tanpa konfigurasi chain → 501 jujur", true);
+      const n = sql(`select count(*) from report_seals where user_id='${uidB}'`);
+      cek("501 tidak meninggalkan baris pending yatim", n === "0", `dapat ${n}`);
+    } else {
+      // Env dengan chain terpasang (testnet aktif) — jalur nyata teruji.
+      cek("dengan konfigurasi chain → 200", r.status === 200,
+        `dapat ${r.status} ${JSON.stringify(r.body).slice(0, 120)}`);
+    }
+  }
+  {
+    const r = await api(`/api/laporan/segel/${bulanIni}`, { cookie: B });
+    cek("GET status segel → belum", r.body?.segel?.status === "belum",
+      `dapat ${r.body?.segel?.status}`);
+  }
+  {
+    const res = await fetch(`${BASE}/api/verify/${uidB}/2026-07`);
+    cek("verify publik tanpa segel → 404", res.status === 404, `dapat ${res.status}`);
+  }
+  {
+    const res = await fetch(`${BASE}/api/verify/bukan-uuid/2026-07`);
+    cek("verify format ngawur → 400", res.status === 400, `dapat ${res.status}`);
+  }
+  {
+    const n = sql(`select count(*) from missions where code='seal_monthly_report' and aktif`);
+    cek("misi 'seal_monthly_report' terpasang & aktif (0016)", n === "1", `dapat ${n}`);
   }
 
   console.log("\n── 12. DELETE /api/akun (§12 hak penghapusan) ──");

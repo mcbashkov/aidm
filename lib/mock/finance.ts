@@ -335,6 +335,8 @@ export function laporanDemo(period: string): LaporanResponse {
     keluar: breakdownKategori(period, "keluar"),
     segel: statusSegel(period),
     bolehSegel: bolehSegel(period),
+    // Demo tidak pernah bisa menyegel — tidak ada server, apalagi chain.
+    segelSiap: false,
     bulanTercatat: bulanTercatat(),
   };
 }

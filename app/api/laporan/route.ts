@@ -11,6 +11,8 @@ import {
   seriesDariRollups,
   statusSegel,
 } from "@/lib/laporan/server";
+import { isSealConfigured } from "@/lib/laporan/segel-server";
+import { explorerTxUrl } from "@/lib/chains/attestation";
 import type { LaporanResponse } from "@/lib/laporan/types";
 
 export const runtime = "nodejs";
@@ -63,8 +65,12 @@ export async function GET(req: Request) {
       series: seriesDariRollups(rollups),
       masuk: kategori.masuk,
       keluar: kategori.keluar,
-      segel,
+      segel: {
+        ...segel,
+        ...(segel.txHash ? { explorerTx: explorerTxUrl(segel.txHash) } : {}),
+      },
       bolehSegel: bolehSegel(period),
+      segelSiap: isSealConfigured(),
       bulanTercatat: bulan,
     };
     return NextResponse.json(body);

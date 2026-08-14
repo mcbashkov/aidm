@@ -11,7 +11,7 @@ import { SealCard } from "@/components/laporan/seal-card";
 import { ValuationLocked } from "@/components/laporan/valuation-locked";
 import { PERIOD_OPTIONS, laporanDemo } from "@/lib/mock/finance";
 import { periodeSekarang } from "@/lib/catat/client";
-import { ambilLaporan, urlPdfLaporan } from "@/lib/laporan/client";
+import { ambilLaporan, segelLaporan, urlPdfLaporan } from "@/lib/laporan/client";
 import type { LaporanResponse } from "@/lib/laporan/types";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +38,8 @@ export function LaporanView() {
   // Penghitung muat-ulang; menyetel `period` ke nilai yang sama tidak memicu
   // efek apa pun karena React membandingkan state dengan Object.is.
   const [percobaan, setPercobaan] = useState(0);
+  const [menyegel, setMenyegel] = useState(false);
+  const [galatSegel, setGalatSegel] = useState<string | null>(null);
 
   const reqSeq = useRef(0);
 
@@ -67,6 +69,24 @@ export function LaporanView() {
 
   const periodOptions = demo ? PERIOD_OPTIONS : periodeSekarang();
   const kosong = !!data && data.kini.jmlTransaksi === 0;
+
+  async function segel() {
+    setMenyegel(true);
+    setGalatSegel(null);
+    const res = await segelLaporan(period);
+    if (res.ok) {
+      // Muat ulang seluruh laporan supaya badge/hash datang dari satu sumber
+      // kebenaran (server), bukan dirakit optimistis di klien.
+      setPercobaan((n) => n + 1);
+    } else {
+      setGalatSegel(
+        res.offline
+          ? "Kamu sedang offline — menyegel butuh koneksi."
+          : res.error,
+      );
+    }
+    setMenyegel(false);
+  }
 
   return (
     <div className="space-y-section">
@@ -167,7 +187,15 @@ export function LaporanView() {
             masuk={data.kini.masuk}
             masukTerverifikasi={data.kini.masukTerverifikasi}
           />
-          <SealCard period={period} state={data.segel} boleh={data.bolehSegel} />
+          <SealCard
+            period={period}
+            state={data.segel}
+            boleh={data.bolehSegel}
+            siap={data.segelSiap}
+            menyegel={menyegel}
+            galat={galatSegel}
+            onSegel={() => void segel()}
+          />
 
           {/* Unduhan dilayani server (§11 GET /api/laporan/pdf) — di mode demo
               tidak ada apa pun untuk diunduh karena datanya bukan milik siapa

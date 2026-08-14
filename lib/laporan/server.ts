@@ -135,7 +135,45 @@ export async function breakdownKategori(
   return { masuk: susun("masuk"), keluar: susun("keluar") };
 }
 
-/** Status segel periode (§7.5). Baris terbaru yang masih `is_latest`. */
+/**
+ * Baris kategori untuk KANONIKALISASI (§17.2) — beda dari breakdownKategori:
+ * TANPA batas top-N, TANPA persen (float dilarang di payload hash), dan
+ * urutannya leksikografis (jenis, slug) bukan berdasar besaran. Hash harus
+ * menangkap SELURUH data, bukan potongan yang enak ditampilkan.
+ */
+export async function kategoriKanonik(
+  supa: SupabaseClient,
+  userId: string,
+  rentang: RentangTanggal,
+): Promise<{ jenis: Jenis; jml: number; slug: string; total: number }[]> {
+  const [{ data }, maps] = await Promise.all([
+    supa.rpc("laporan_kategori", {
+      p_user: userId,
+      p_start: rentang.start ? isoAwalHariWib(rentang.start) : null,
+      p_end: rentang.end ? isoAwalHariWib(rentang.end) : null,
+    }),
+    getKategoriMaps(supa),
+  ]);
+  return ((data ?? []) as KategoriRow[])
+    .map((r) => ({
+      jenis: r.jenis,
+      jml: r.jml,
+      slug: (r.kategori_id && maps.byId.get(r.kategori_id)) || "lainnya",
+      total: Number(r.total),
+    }))
+    .sort((a, b) =>
+      a.jenis !== b.jenis
+        ? a.jenis.localeCompare(b.jenis)
+        : a.slug.localeCompare(b.slug),
+    );
+}
+
+/**
+ * Status segel periode (§7.5) — baris `is_latest` terbaru. Sengaja
+ * order+limit(1), BUKAN maybeSingle: jendela singkat saat segel ulang bisa
+ * menyisakan dua baris is_latest, dan maybeSingle akan error (lalu terbaca
+ * "belum tersegel" — bohong) justru pada momen user sedang menyegel.
+ */
 export async function statusSegel(
   supa: SupabaseClient,
   userId: string,
@@ -147,14 +185,21 @@ export async function statusSegel(
     .eq("user_id", userId)
     .eq("period_key", period)
     .eq("is_latest", true)
-    .maybeSingle();
+    .order("created_at", { ascending: false })
+    .limit(1);
 
-  if (!data) return { status: "belum" };
+  const baris = data?.[0];
+  if (!baris) return { status: "belum" };
   return {
-    status: data.status === "confirmed" ? "tersegel" : "pending",
-    hash: data.report_hash ?? undefined,
-    txHash: data.tx_hash ?? undefined,
-    sealedAt: data.sealed_at ?? undefined,
+    status:
+      baris.status === "confirmed"
+        ? "tersegel"
+        : baris.status === "failed"
+          ? "belum"
+          : "pending",
+    hash: baris.report_hash ?? undefined,
+    txHash: baris.tx_hash ?? undefined,
+    sealedAt: baris.sealed_at ?? undefined,
   };
 }
 

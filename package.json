@@ -12,7 +12,9 @@
     "test:parser": "node scripts/parser-test.mjs",
     "icons": "bash scripts/generate-icons.sh",
     "db:migrate": "bash scripts/apply-migrations.sh",
-    "test:api": "node scripts/api-test.mjs"
+    "test:api": "node scripts/api-test.mjs",
+    "test:canonical": "node scripts/canonical-test.mjs",
+    "deploy:attestation": "node scripts/deploy-attestation.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
@@ -39,6 +41,7 @@
     "eslint-config-next": "^14.2.0",
     "postcss": "^8.4.0",
     "serwist": "^9.0.0",
+    "solc": "^0.8.26",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.6.0"
   },

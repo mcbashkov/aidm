@@ -14,13 +14,17 @@ harian bersih tanpa jargon.
 > generator konten tetap ada, tapi turun jadi **fitur premium** di `/premium` —
 > bukan lagi jantung produk. Mencatat **selalu gratis, nol Kredit AI**.
 >
-> **Status: M1 selesai, M3 selesai, M2 sebagian** (roadmap PRD §14). Parser
-> pencatatan (LLM + fallback + validasi server-side), tab Catat, kartu konfirmasi,
-> edit/hapus, dan API transaksi jalan di atas data nyata. **Tab Laporan sekarang
-> memakai agregasi server sungguhan** (`GET /api/laporan`, rollup harian + GROUP BY
-> kategori) dan **ekspor PDF** siap-bank sudah bisa diunduh (`@react-pdf/renderer`).
-> Yang tersisa dari M2: input suara & antrean offline sudah ada di kode tapi belum
-> diuji di perangkat Android sungguhan.
+> **Status: M1–M3 selesai (M2 terverifikasi uji lapangan Android 2026-08-14),
+> M4 sebagian besar siap** (roadmap PRD §14). Parser pencatatan, tab Catat,
+> Riwayat, Laporan (agregasi server), dan ekspor PDF siap-bank sudah teruji di
+> produksi (`ai.idmtoken.com`). **Alur Segel on-chain (§7.5) sudah terpasang
+> end-to-end di kode**: kontrak `contracts/ReportAttestation.sol`,
+> kanonikalisasi §17.2 (`pnpm test:canonical`, vektor emas terkunci),
+> `POST /api/laporan/segel` (gasless via relayer), endpoint verifikasi publik
+> untuk bank, tombol Segel di UI, dan misi +150 IDMX. Sisa M4: **deploy kontrak
+> ke testnet** (`pnpm deploy:attestation`, butuh wallet ber-tBNB) — sampai env
+> segel diisi, tombol Segel nonaktif dengan keterangan jujur dan API menjawab
+> 501, sehingga aman berada di produksi.
 
 ---
 
@@ -71,10 +75,10 @@ persistensi aktif begitu env diisi.
 
 ### Database (Supabase)
 
-Skema §10 ada sebagai migrasi berurutan di `supabase/migrations/` (0001–0015).
-0001–0010 adalah fondasi v2.0; **0011–0015 adalah inti v3.0** (`transactions`,
+Skema §10 ada sebagai migrasi berurutan di `supabase/migrations/` (0001–0016).
+0001–0010 adalah fondasi v2.0; **0011–0016 adalah inti v3.0** (`transactions`,
 `daily_rollups`, `report_seals`, taksonomi kategori transaksi, trigger rollup, kuota
-anti-abuse, RPC agregasi laporan). Migrasi v3.0 hanya **menambah** — tabel v2.0 tidak disentuh.
+anti-abuse, RPC agregasi laporan, misi v3.0 + pemicu segel). Migrasi v3.0 hanya **menambah** — tabel v2.0 tidak disentuh.
 
 ```bash
 pnpm db:migrate --dry-run   # tampilkan rencana
@@ -97,13 +101,14 @@ supabase gen types typescript --project-id <ref> --schema public > types/databas
 | `pnpm lint` | ESLint |
 | `pnpm typecheck` | Pengecekan tipe TypeScript |
 | `pnpm test:parser` | Test suite parser — 200 kalimat, gagal bila akurasi < 95% |
-| `pnpm test:api` | Integration test API (butuh `pnpm dev` + `psql`) — 87 assertion |
+| `pnpm test:api` | Integration test API (butuh `pnpm dev` + `psql`) — 99 assertion |
+| `pnpm test:canonical` | Test kanonikalisasi & hash segel (§17.2) — deterministik, jalan di CI |
+| `pnpm deploy:attestation` | Kompilasi + deploy `ReportAttestation.sol` (`--dry-run` / `--mainnet`) |
 | `pnpm db:migrate` | Terapkan migrasi Supabase berurutan |
 | `pnpm icons` | Regenerasi ikon PWA dari `public/brand/logo_idm.png` (butuh ImageMagick) |
 
-CI (`.github/workflows/ci.yml`) menjalankan typecheck + lint + test parser tiap push
-dan PR. Test parser menguji jalur **fallback** yang deterministik, jadi tidak butuh
-API key.
+CI (`.github/workflows/ci.yml`) menjalankan typecheck + lint + test parser + test
+kanonikalisasi tiap push dan PR. Keduanya deterministik — tanpa API key, tanpa chain.
 
 `pnpm test:api` tidak ikut CI karena butuh database & dev server hidup. Jalankan
 manual: `pnpm dev` di satu terminal, `pnpm test:api` di terminal lain. Test ini
@@ -118,7 +123,7 @@ app/
   (auth)/            masuk + onboarding (peran, usaha) — fokus tunggal per layar
   (app)/             shell + Beranda · Catat · Laporan · Misi · Akun (+ /riwayat, /premium)
   api/               auth/session · me · akun · catat · catat/konfirmasi · transaksi ·
-                     laporan · laporan/pdf · research
+                     laporan · laporan/pdf · laporan/segel · verify (publik) · research
   manifest.ts        manifest PWA
   sw.ts              service worker Serwist (di-exclude dari tsc)
   ~offline/          halaman offline (memuat form catat offline)
@@ -132,11 +137,13 @@ components/
 lib/
   parse/             index (orkestrasi) · llm (Haiku §17.1) · fallback (regex) · validate
   catat/             server (helper API) · client (pembungkus fetch)
-  laporan/           periode (batas WIB) · server (agregasi) · client · pdf (dokumen A4)
+  laporan/           periode (batas WIB) · server (agregasi) · kanonik (hash §17.2) ·
+                     segel-server (relayer) · client · pdf (dokumen A4)
   offline/           antrean IndexedDB
   api/               panggil (pembungkus fetch bersama: ok / demo / offline)
   privy/  chains/  supabase/  auth/  ai/  agent/  design/  mock/
-supabase/migrations/ skema §10 (0001–0015)
+contracts/           ReportAttestation.sol (§9.4) + artifacts hasil kompilasi
+supabase/migrations/ skema §10 (0001–0016)
 tests/parser-cases.json  200 kalimat uji lintas 5 persona
 ```
 
@@ -226,9 +233,10 @@ Pola layout: <1024px memakai pola mobile (bottom-nav 5 tab + baris status tanpa 
 
 ## Milestone selanjutnya (§14)
 
-**M2** selesaikan uji suara & offline di perangkat nyata (satu-satunya sisa M2) ·
-~~M3 tab Laporan + ekspor PDF~~ **selesai** · **M4** `ReportAttestation.sol` testnet + alur Segel +
-misi pencatatan · **M5** fitur premium di balik kredit + pembelian kredit + hardening ·
+~~M2 uji suara & offline di perangkat nyata~~ **selesai (uji lapangan 2026-08-14)** ·
+~~M3 tab Laporan + ekspor PDF~~ **selesai** · **M4** alur Segel **kode selesai** — sisa:
+`pnpm deploy:attestation` ke testnet (butuh tBNB) + klaim voucher misi ·
+**M5** fitur premium di balik kredit + pembelian kredit + hardening ·
 **M6** mainnet opBNB + beta tertutup 100 user + launch PWA + DappBay ·
 **M7** Google Play (TWA) + App Store (Capacitor).
 

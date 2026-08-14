@@ -36,6 +36,8 @@ export interface SealState {
   hash?: string;
   txHash?: string;
   sealedAt?: string;
+  /** URL explorer tx — diisi server (yang tahu chain segel), bukan klien. */
+  explorerTx?: string;
 }
 
 /** Body `GET /api/laporan?period=` (§11). */
@@ -48,6 +50,9 @@ export interface LaporanResponse {
   keluar: BarisKategori[];
   segel: SealState;
   bolehSegel: boolean;
+  /** Server siap menyegel? (kontrak ter-deploy + relayer terpasang) — tombol
+   *  Segel tidak boleh ditawarkan bila menekan-nya pasti berujung galat. */
+  segelSiap: boolean;
   bulanTercatat: number;
 }
 

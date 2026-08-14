@@ -3,7 +3,10 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { currentUserId } from "@/lib/catat/server";
 import { todayWib } from "@/lib/parse/validate";
 import { earnerLabel } from "@/lib/earner";
-import { DEFAULT_CHAIN } from "@/lib/chains/opbnb";
+// Blok verifikasi PDF menunjuk chain tempat KONTRAK SEGEL hidup (bisa testnet
+// selama M4), bukan chain default aplikasi — alamat & tautan explorer yang
+// dicetak harus bisa benar-benar dicek petugas bank.
+import { attestationAddress, sealChain } from "@/lib/chains/attestation";
 import {
   awalBulan,
   geserBulan,
@@ -111,9 +114,9 @@ export async function GET(req: Request) {
       bulanan,
       segel,
       kontrak: {
-        alamat: process.env.NEXT_PUBLIC_REPORT_ATTESTATION_ADDRESS || null,
-        explorer: DEFAULT_CHAIN.blockExplorers?.default.url ?? "",
-        jaringan: DEFAULT_CHAIN.name,
+        alamat: attestationAddress(),
+        explorer: sealChain().blockExplorers?.default.url ?? "",
+        jaringan: sealChain().name,
       },
     });
 
