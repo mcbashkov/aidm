@@ -1,17 +1,24 @@
 # AIDM
 
-**Agen AI Intelijen Pasar UMKM · dApp Ekosistem IDM Reborn · opBNB**
+**Catatan Usaha & Laporan Keuangan untuk UMKM** · dApp Ekosistem IDM Reborn · opBNB
 
-PWA intelijen pasar untuk UMKM & calon wirausaha Indonesia. Pendekatan agen riset
-on-demand (tanya → agen meriset TikTok/Google Trends/marketplace → insight + konten
-siap pakai). Web3 "proud but calm": punya akun = punya wallet, reward IDMX, tukar ke
-IDM Reborn — sementara alur riset harian bersih tanpa jargon.
+PWA pencatatan keuangan untuk pelaku usaha mikro Indonesia. Pengguna **menceritakan**
+apa yang terjadi dengan kalimat biasa atau suara ("jual 3 nasi goreng 45rb bayar
+QRIS"), agen mengurainya jadi entri transaksi terstruktur, lalu mengubahnya menjadi
+laporan keuangan yang siap diajukan ke bank/koperasi. Web3 "proud but calm": punya
+akun = punya wallet, reward IDMX, segel laporan on-chain — sementara alur mencatat
+harian bersih tanpa jargon.
 
-> **Status: Milestone M0** (roadmap PRD §14) — fondasi siap: Next.js 14 (App Router)
-> + Tailwind, sistem desain §13 (putih-emas, serif+sans), PWA installable (manifest +
-> service worker), auth Privy + embedded wallet otomatis (opBNB), skema database
-> Supabase §10 sebagai migrasi. Fitur inti (agen riset, kredit, kontrak, tukar)
-> menyusul di M1–M7.
+> **Pivot v3.0 (§0 PRD).** Versi 2.0 adalah agen *riset pasar* ("kamu bertanya, agen
+> menjawab"). v3.0 membalik arah: **kamu memberi tahu, agen mencatat**. Riset pasar &
+> generator konten tetap ada, tapi turun jadi **fitur premium** di `/premium` —
+> bukan lagi jantung produk. Mencatat **selalu gratis, nol Kredit AI**.
+>
+> **Status: M1 selesai, M2 sebagian** (roadmap PRD §14). Parser pencatatan (LLM +
+> fallback + validasi server-side), tab Catat, kartu konfirmasi, edit/hapus, dan
+> API transaksi sudah jalan di atas data nyata. Input suara & antrean offline sudah
+> ada tapi belum diuji di perangkat Android sungguhan. Tab **Laporan masih memakai
+> data mock** — agregasi server (§9.3) menyusul di M3.
 
 ---
 
@@ -21,6 +28,7 @@ IDM Reborn — sementara alur riset harian bersih tanpa jargon.
 |---|---|
 | Frontend | Next.js 14 App Router (PWA) + Tailwind |
 | Auth + Embedded Wallet | Privy (email/HP/Google → wallet EVM otomatis) |
+| Parser pencatatan | Claude Haiku (JSON mode, §17.1) + fallback regex deterministik |
 | PWA / Service Worker | Serwist (`@serwist/next`) |
 | Database | Supabase Postgres + pgvector (migrasi di `supabase/migrations`) |
 | Chain | **opBNB** (mainnet 204 / testnet 5611) via viem |
@@ -28,8 +36,9 @@ IDM Reborn — sementara alur riset harian bersih tanpa jargon.
 
 ## Prasyarat
 
-- Node.js ≥ 18.18 (dipakai: v22)
+- Node.js ≥ 22.18 (type stripping bawaan dipakai runner test parser)
 - pnpm (dipakai: v11)
+- `psql` — untuk `pnpm db:migrate` (opsional; alternatifnya SQL Editor Supabase)
 - ImageMagick — hanya untuk regenerasi ikon (`pnpm icons`), opsional
 
 ## Mulai
@@ -40,8 +49,9 @@ cp .env.local.example .env.local   # lalu isi nilainya (lihat di bawah)
 pnpm dev                           # http://localhost:3000
 ```
 
-Tanpa mengisi `.env.local`, aplikasi tetap jalan dalam **mode demo**: seluruh UI
-bisa dijelajahi; auth + wallet + persistensi aktif begitu env diisi.
+Tanpa mengisi `.env.local`, aplikasi tetap jalan dalam **mode demo**: seluruh UI bisa
+dijelajahi dan tab Catat memakai parser fallback di klien. Auth, wallet, dan
+persistensi aktif begitu env diisi.
 
 ### Environment
 
@@ -52,20 +62,21 @@ bisa dijelajahi; auth + wallet + persistensi aktif begitu env diisi.
 | `SESSION_SECRET` | Tanda tangan cookie sesi (HMAC) |
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Klien Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | Tulis data server-side (bypass RLS) |
+| `SUPABASE_DB_URL` | Connection string Postgres untuk `pnpm db:migrate` |
+| `ANTHROPIC_API_KEY` | Parser pencatatan + agen riset premium. **Kosong = parser fallback saja** (aplikasi tetap jalan) |
+| `AIDM_LIGHT_MODEL` | Override model parser (default `claude-haiku-4-5`) |
 | `NEXT_PUBLIC_DEFAULT_CHAIN` | `opbnb` (default) / `opbnb-testnet` |
 
 ### Database (Supabase)
 
-Skema §10 ada sebagai migrasi berurutan di `supabase/migrations/` (0001–0009:
-extensions/pgvector → core → kredit → riset → misi/swap → config/admin → indeks →
-RLS → seed). Terapkan dengan salah satu:
+Skema §10 ada sebagai migrasi berurutan di `supabase/migrations/` (0001–0013).
+0001–0010 adalah fondasi v2.0; **0011–0013 adalah inti v3.0** (`transactions`,
+`daily_rollups`, `report_seals`, taksonomi kategori transaksi, trigger rollup, kuota
+anti-abuse). Migrasi v3.0 hanya **menambah** — tabel v2.0 tidak disentuh.
 
 ```bash
-# Supabase CLI (disarankan)
-supabase link --project-ref <ref>
-supabase db push
-
-# atau: salin isi tiap file 0001..0009 ke SQL Editor Supabase, jalankan berurutan
+pnpm db:migrate --dry-run   # tampilkan rencana
+pnpm db:migrate             # apply yang belum pernah jalan (idempoten)
 ```
 
 Regenerasi tipe setelah skema diterapkan:
@@ -83,53 +94,102 @@ supabase gen types typescript --project-id <ref> --schema public > types/databas
 | `pnpm start` | Jalankan hasil build |
 | `pnpm lint` | ESLint |
 | `pnpm typecheck` | Pengecekan tipe TypeScript |
+| `pnpm test:parser` | Test suite parser — 200 kalimat, gagal bila akurasi < 95% |
+| `pnpm db:migrate` | Terapkan migrasi Supabase berurutan |
 | `pnpm icons` | Regenerasi ikon PWA dari `public/brand/logo_idm.png` (butuh ImageMagick) |
+
+CI (`.github/workflows/ci.yml`) menjalankan typecheck + lint + test parser tiap push
+dan PR. Test parser menguji jalur **fallback** yang deterministik, jadi tidak butuh
+API key.
 
 ## Struktur
 
 ```
 app/
   (auth)/            masuk + onboarding (peran, usaha) — fokus tunggal per layar
-  (app)/             shell + Beranda · Riset · Konten · Misi · Akun
-  api/               auth/session · me
+  (app)/             shell + Beranda · Catat · Laporan · Misi · Akun (+ /riwayat, /premium)
+  api/               auth/session · me · catat · catat/konfirmasi · transaksi · research
   manifest.ts        manifest PWA
   sw.ts              service worker Serwist (di-exclude dari tsc)
-  ~offline/          halaman offline
+  ~offline/          halaman offline (memuat form catat offline)
 components/
-  ui/                Button, Card, PillToggle, SuggestionChips, CreditCounter, Gauge, AskInput, StepDots
-  layout/            BottomNav (mobile) · TopNav (tablet/desktop) · AuthStatus
-  research/          AnswerArticle ("Kamu bertanya…") · RisetView
-  wallet/            WalletCard (gelap-emas)
-  pwa/               registrasi SW + prompt install
+  catat/             CatatView (komposer chat) · EntryCard · MicButton · OfflineCatatForm
+  transaksi/         RiwayatView · TransactionRow · TransactionSheet (edit/hapus)
+  laporan/           SummaryCards · CashflowChart · CategoryBreakdown · SealCard  ← masih mock
+  layout/            BottomNav (<1024px) · TopNav (≥1024px) · HeaderStats · MobileTopBar
+  research/          RisetView · AnswerArticle — kini di balik /premium
+  wallet/  pwa/  ui/  providers/
 lib/
-  privy/  chains/  supabase/  auth/  design/  + utils, categories, missions, research
-supabase/migrations/ skema §10 (0001–0009)
-public/icons/        ikon PWA (any + maskable) dari logo
+  parse/             index (orkestrasi) · llm (Haiku §17.1) · fallback (regex) · validate
+  catat/             server (helper API) · client (pembungkus fetch)
+  offline/           antrean IndexedDB
+  privy/  chains/  supabase/  auth/  ai/  agent/  design/  mock/
+supabase/migrations/ skema §10 (0001–0013)
+tests/parser-cases.json  200 kalimat uji lintas 5 persona
 ```
+
+## Alur pencatatan (§9.2)
+
+```
+User (chat/suara) → POST /api/catat
+  → parser LLM Haiku (JSON mode, skema §17.1) [timeout 5 dtk]
+      ↓ gagal/timeout → parser fallback regex
+  → validasi server-side (nominal > 0, jenis, kategori ada di taksonomi, tanggal ≤ hari ini)
+  → insert transactions[] (confirmed | draft bila nominal belum disebut)
+  → trigger memperbarui daily_rollups
+  → respons: kartu konfirmasi di chat
+```
+
+Prinsip yang mengikat: **satu kalimat boleh jadi banyak entri**; **dilarang mengarang
+nominal** (tidak disebut → simpan sebagai draft + tanya **satu** hal saja); **mencatat
+tidak pernah memotong Kredit AI**.
+
+### Akurasi parser
+
+`pnpm test:parser` → **200/200 (100%)**, target PRD ≥ 95%. Catatan jujur: expected
+output-nya diturunkan dari aturan §17.1 lalu parser disetel sampai lulus — jadi angka
+ini berarti "cocok dengan 200 harapan turunan-spek", **bukan** jaminan 100% pada
+kalimat yang belum pernah dilihat. Uji lapangan menyusul di gerbang beta M6.
 
 ## Sistem desain (§13)
 
-Tema terang & bersih: latar putih hangat `#FAFAFA`, teks hitam pekat, kartu putih
-radius 24px ber-border tipis. CTA utama pill **charcoal** `#1F1F1F`. Aksen **emas**
-`#F0B90B→#FCD535` untuk ikon aktif, progress, highlight angka. Kartu **gelap-emas**
-hanya untuk Wallet/Reward. Tipografi kontras **serif (Fraunces)** untuk judul/
-pertanyaan + **sans (Plus Jakarta Sans)** untuk body/angka. Nilai token: `app/globals.css`.
+Tema **ivory hangat**: latar `#FAF7F0` (bukan putih dingin), teks near-black hangat
+`#211C15`, kartu putih radius 24px yang **mengambang** — shadow lembut, *bukan* border
+1px. CTA utama pill **charcoal** `#1B1B1B`. Aksen **emas** `#F0B90B→#FCD535` untuk
+ikon aktif, progress, highlight angka. Kartu **gelap-emas** hanya untuk Wallet/Reward.
+Tipografi kontras **serif (Fraunces)** untuk judul/sapaan/angka besar + **sans (Plus
+Jakarta Sans)** untuk body/label/nav. Nilai token: `app/globals.css`.
 
-## Catatan M0
+Pola layout: <1024px memakai pola mobile (bottom-nav 5 tab + baris status tanpa logo);
+≥1024px memakai top-nav berlabel dengan nav di tengah, sejajar container konten.
 
-- **Mode placeholder:** tanpa kredensial, `Providers` melewati Privy dan middleware
-  mengizinkan semua rute agar UI bisa didemokan. Isi env untuk mengaktifkan alur riil.
+## Catatan implementasi
+
+- **Mode demo:** tanpa kredensial, `Providers` melewati Privy dan middleware
+  mengizinkan semua rute. Tab Catat memakai parser fallback di klien; Riwayat & Beranda
+  memakai dataset mock. Kegagalan jaringan **dibedakan tegas** dari mode demo — user
+  sungguhan yang servernya mati melihat angka nol yang jujur, bukan data mock.
 - **Auth + wallet:** setelah login Privy, klien memanggil `POST /api/auth/session` →
   token diverifikasi server-side → upsert `users` + `wallets` (100% akun ber-wallet,
   AC §7.1) → cookie sesi ber-HMAC.
+- **RLS:** tulis/baca dilakukan server memakai service-role; otorisasi per-baris
+  ditegakkan dengan filter `user_id` di **setiap** query API.
+- **Rollup harian pakai trigger, bukan job.** Jalur tulis transaksi ada banyak (catat,
+  konfirmasi draft, edit, hapus, sinkron offline); trigger di tabel menjamin agregat
+  tidak pernah tertinggal oleh jalur yang lupa memanggil update.
+- **Anti-abuse:** 200 entri/user/hari (§7.2) plus batas percakapan/hari yang dinaikkan
+  atomik sebelum parser dipanggil — supaya kalimat yang tidak menghasilkan entri tidak
+  bisa memanggil model berbayar tanpa batas.
 - **Bundle ≤ 200 KB (§12):** target optimasi lanjutan (lazy-load Privy, code-split)
   digarap pada milestone kualitas M5. SDK Privy saat ini masuk shared bundle.
-- **Skeleton bermakna:** Riset menampilkan pratinjau format kartu jawaban;
-  Konten/Misi menandai milestone aktivasi (M2/M4).
 
 ## Milestone selanjutnya (§14)
 
-M1 agen riset + 5 tools + cache + kredit · M2 wizard + generator konten ·
-M3 pembelian kredit QRIS/VA · M4 kontrak IDMX/MissionRewards/IDMXSwapPool (testnet) ·
-M5 wallet card + hardening + Lighthouse · M6 mainnet + launch PWA + DappBay ·
-M7 Google Play (TWA) + App Store (Capacitor).
+**M2** selesaikan uji suara & offline di perangkat nyata · **M3** tab Laporan dengan
+agregasi server + ekspor PDF · **M4** `ReportAttestation.sol` testnet + alur Segel +
+misi pencatatan · **M5** fitur premium di balik kredit + pembelian kredit + hardening ·
+**M6** mainnet opBNB + beta tertutup 100 user + launch PWA + DappBay ·
+**M7** Google Play (TWA) + App Store (Capacitor).
+
+**Gerbang beta M6:** akurasi parser ≥ 95%, ≥ 60% beta user mencatat ≥ 4 hari/minggu,
+dan ≥ 1 laporan PDF berhasil diserahkan ke petugas bank/koperasi nyata.

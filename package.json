@@ -2,7 +2,7 @@
   "name": "aidm",
   "version": "0.1.0",
   "private": true,
-  "description": "AIDM — Agen AI Intelijen Pasar UMKM · dApp Ekosistem IDM Reborn · opBNB",
+  "description": "AIDM — Catatan Usaha & Laporan Keuangan untuk UMKM · dApp Ekosistem IDM Reborn · opBNB",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

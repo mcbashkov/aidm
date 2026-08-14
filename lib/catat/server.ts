@@ -88,6 +88,36 @@ export function rowToTx(row: TxRow, byId: Map<string, string>): Transaction {
 /** Batas anti-abuse §7.2: maks 200 entri/user/hari (dihitung dari created_at). */
 export const CATAT_DAILY_LIMIT = 200;
 
+/**
+ * Batas percakapan masuk per hari. Ada DI ATAS batas entri karena keduanya
+ * menjaga hal berbeda: batas entri menjaga isi buku (§7.2), batas request
+ * menjaga biaya parser LLM — kalimat yang tidak menghasilkan entri (sapaan,
+ * teks acak) tidak menambah baris `transactions` sama sekali, jadi tanpa
+ * penghitung ini ia bisa memanggil model berbayar tanpa pernah mentok.
+ * Angkanya longgar: pengguna nyata tidak mengetik 400 kalimat sehari.
+ */
+export const CATAT_REQUEST_LIMIT = 400;
+
+/**
+ * Naikkan penghitung percakapan hari ini (WIB) secara ATOMIK dan kembalikan
+ * nilai barunya. Atomik = bebas race check-then-act: dua request paralel
+ * mustahil sama-sama membaca angka di bawah batas lalu lolos berdua.
+ * Mengembalikan null bila RPC tidak tersedia — pemanggil memilih untuk tetap
+ * melayani (batas entri masih berlaku), bukan memblokir pencatatan.
+ */
+export async function naikkanKuotaRequest(
+  supa: SupabaseClient,
+  userId: string,
+  tanggalWib: string,
+): Promise<number | null> {
+  const { data, error } = await supa.rpc("catat_kuota_inc", {
+    p_user: userId,
+    p_tanggal: tanggalWib,
+  });
+  if (error || typeof data !== "number") return null;
+  return data;
+}
+
 /** Awal hari WIB berjalan sebagai ISO — batas hitung kuota harian. */
 export function wibDayStartIso(now = new Date()): string {
   const wib = new Date(now.getTime() + 7 * 3600_000);

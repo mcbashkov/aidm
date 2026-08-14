@@ -4,9 +4,11 @@ import { parseCatat } from "@/lib/parse";
 import { todayWib } from "@/lib/parse/validate";
 import {
   CATAT_DAILY_LIMIT,
+  CATAT_REQUEST_LIMIT,
   currentUserId,
   entriDibuatHariIni,
   getKategoriMaps,
+  naikkanKuotaRequest,
   rowToTx,
   TX_COLUMNS,
   type TxRow,
@@ -52,7 +54,23 @@ export async function POST(req: Request) {
     );
   }
 
+  const today = todayWib();
+
   try {
+    // Batas percakapan/hari — dinaikkan SEBELUM parser dipanggil supaya
+    // kalimat yang tidak menghasilkan entri pun ikut terhitung (kalau tidak,
+    // parser LLM berbayar bisa dipanggil tanpa batas).
+    const request_ke = await naikkanKuotaRequest(supa, uid, today);
+    if (request_ke !== null && request_ke > CATAT_REQUEST_LIMIT) {
+      return NextResponse.json(
+        {
+          error:
+            "Terlalu banyak percakapan hari ini. Coba lagi besok ya — catatanmu aman tersimpan.",
+        },
+        { status: 429 },
+      );
+    }
+
     // Batas anti-abuse §7.2: 200 entri/user/hari.
     const sudah = await entriDibuatHariIni(supa, uid);
     if (sudah >= CATAT_DAILY_LIMIT) {
@@ -77,7 +95,6 @@ export async function POST(req: Request) {
       | null;
     const kategoriUsaha = Array.isArray(katRel) ? katRel[0]?.nama : katRel?.nama;
 
-    const today = todayWib();
     const hasil = await parseCatat(text, {
       today,
       earnerType: profil?.earner_type ?? null,
