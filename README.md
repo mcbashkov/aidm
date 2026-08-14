@@ -71,10 +71,10 @@ persistensi aktif begitu env diisi.
 
 ### Database (Supabase)
 
-Skema §10 ada sebagai migrasi berurutan di `supabase/migrations/` (0001–0013).
-0001–0010 adalah fondasi v2.0; **0011–0013 adalah inti v3.0** (`transactions`,
+Skema §10 ada sebagai migrasi berurutan di `supabase/migrations/` (0001–0015).
+0001–0010 adalah fondasi v2.0; **0011–0015 adalah inti v3.0** (`transactions`,
 `daily_rollups`, `report_seals`, taksonomi kategori transaksi, trigger rollup, kuota
-anti-abuse). Migrasi v3.0 hanya **menambah** — tabel v2.0 tidak disentuh.
+anti-abuse, RPC agregasi laporan). Migrasi v3.0 hanya **menambah** — tabel v2.0 tidak disentuh.
 
 ```bash
 pnpm db:migrate --dry-run   # tampilkan rencana
