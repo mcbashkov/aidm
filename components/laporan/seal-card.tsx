@@ -2,7 +2,7 @@
 
 import { ShieldCheck, Lock, Info } from "lucide-react";
 import { formatPeriodeID } from "@/lib/transactions";
-import type { SealState } from "@/lib/mock/finance";
+import type { SealState } from "@/lib/laporan/types";
 
 interface SealCardProps {
   period: string;

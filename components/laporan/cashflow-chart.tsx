@@ -7,7 +7,7 @@ import {
   formatTanggalPanjangID,
   formatTanggalPendekID,
 } from "@/lib/transactions";
-import type { TitikHarian } from "@/lib/mock/finance";
+import type { TitikHarian } from "@/lib/laporan/types";
 import { cn } from "@/lib/utils";
 
 interface CashflowChartProps {

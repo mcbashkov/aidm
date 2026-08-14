@@ -1,6 +1,6 @@
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { formatRupiah, formatRupiahCompact } from "@/lib/transactions";
-import type { Ringkasan } from "@/lib/mock/finance";
+import type { Ringkasan } from "@/lib/laporan/types";
 import { cn } from "@/lib/utils";
 
 interface SummaryCardsProps {

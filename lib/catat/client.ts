@@ -1,11 +1,12 @@
 /**
- * Pembungkus klien untuk API pencatatan (§11). Satu bentuk hasil untuk semua
- * panggilan: `ok` membedakan sukses/gagal, `demo` menandai server belum
- * dikonfigurasi (401 tanpa sesi / 501 tanpa Supabase) — pemanggil lalu jatuh
- * ke jalur demo lokal supaya UI tetap bisa dicoba tanpa backend.
+ * Pembungkus klien untuk API pencatatan (§11). Bentuk hasil & semantik
+ * demo/offline-nya bersama seluruh API lain — lihat `lib/api/panggil`.
  */
 
 import type { Transaction } from "@/lib/transactions";
+import { panggil, type ApiHasil } from "@/lib/api/panggil";
+
+export type { ApiHasil };
 
 export interface CatatResponse {
   entries: Transaction[];
@@ -28,38 +29,6 @@ export interface TransaksiListResponse {
   page_size: number;
   total: number;
   ringkas_hari_ini?: RingkasHariIni;
-}
-
-export type ApiHasil<T> =
-  | { ok: true; data: T }
-  | { ok: false; status: number; error: string; demo: boolean; offline: boolean };
-
-async function panggil<T>(
-  input: string,
-  init?: RequestInit,
-): Promise<ApiHasil<T>> {
-  try {
-    const res = await fetch(input, {
-      ...init,
-      headers: { "Content-Type": "application/json", ...init?.headers },
-    });
-    const body = (await res.json().catch(() => ({}))) as T & {
-      error?: string;
-    };
-    if (!res.ok) {
-      return {
-        ok: false,
-        status: res.status,
-        error: body.error ?? `HTTP ${res.status}`,
-        demo: res.status === 401 || res.status === 501,
-        offline: false,
-      };
-    }
-    return { ok: true, data: body };
-  } catch {
-    // Jaringan putus di tengah jalan — pemanggil mengantrekan ulang.
-    return { ok: false, status: 0, error: "offline", demo: false, offline: true };
-  }
 }
 
 export function kirimCatat(

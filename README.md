@@ -14,11 +14,13 @@ harian bersih tanpa jargon.
 > generator konten tetap ada, tapi turun jadi **fitur premium** di `/premium` —
 > bukan lagi jantung produk. Mencatat **selalu gratis, nol Kredit AI**.
 >
-> **Status: M1 selesai, M2 sebagian** (roadmap PRD §14). Parser pencatatan (LLM +
-> fallback + validasi server-side), tab Catat, kartu konfirmasi, edit/hapus, dan
-> API transaksi sudah jalan di atas data nyata. Input suara & antrean offline sudah
-> ada tapi belum diuji di perangkat Android sungguhan. Tab **Laporan masih memakai
-> data mock** — agregasi server (§9.3) menyusul di M3.
+> **Status: M1 selesai, M3 selesai, M2 sebagian** (roadmap PRD §14). Parser
+> pencatatan (LLM + fallback + validasi server-side), tab Catat, kartu konfirmasi,
+> edit/hapus, dan API transaksi jalan di atas data nyata. **Tab Laporan sekarang
+> memakai agregasi server sungguhan** (`GET /api/laporan`, rollup harian + GROUP BY
+> kategori) dan **ekspor PDF** siap-bank sudah bisa diunduh (`@react-pdf/renderer`).
+> Yang tersisa dari M2: input suara & antrean offline sudah ada di kode tapi belum
+> diuji di perangkat Android sungguhan.
 
 ---
 
@@ -95,6 +97,7 @@ supabase gen types typescript --project-id <ref> --schema public > types/databas
 | `pnpm lint` | ESLint |
 | `pnpm typecheck` | Pengecekan tipe TypeScript |
 | `pnpm test:parser` | Test suite parser — 200 kalimat, gagal bila akurasi < 95% |
+| `pnpm test:api` | Integration test API (butuh `pnpm dev` + `psql`) — 87 assertion |
 | `pnpm db:migrate` | Terapkan migrasi Supabase berurutan |
 | `pnpm icons` | Regenerasi ikon PWA dari `public/brand/logo_idm.png` (butuh ImageMagick) |
 
@@ -102,29 +105,38 @@ CI (`.github/workflows/ci.yml`) menjalankan typecheck + lint + test parser tiap 
 dan PR. Test parser menguji jalur **fallback** yang deterministik, jadi tidak butuh
 API key.
 
+`pnpm test:api` tidak ikut CI karena butuh database & dev server hidup. Jalankan
+manual: `pnpm dev` di satu terminal, `pnpm test:api` di terminal lain. Test ini
+memanggil `/api/catat` ~10× — bila `ANTHROPIC_API_KEY` terisi di `.env.local`, parser
+LLM sungguhan ikut terpanggil (biaya kecil). Bagian Laporan/PDF/Akun menanam data uji
+lewat SQL langsung, jadi tidak menambah biaya model.
+
 ## Struktur
 
 ```
 app/
   (auth)/            masuk + onboarding (peran, usaha) — fokus tunggal per layar
   (app)/             shell + Beranda · Catat · Laporan · Misi · Akun (+ /riwayat, /premium)
-  api/               auth/session · me · catat · catat/konfirmasi · transaksi · research
+  api/               auth/session · me · akun · catat · catat/konfirmasi · transaksi ·
+                     laporan · laporan/pdf · research
   manifest.ts        manifest PWA
   sw.ts              service worker Serwist (di-exclude dari tsc)
   ~offline/          halaman offline (memuat form catat offline)
 components/
   catat/             CatatView (komposer chat) · EntryCard · MicButton · OfflineCatatForm
   transaksi/         RiwayatView · TransactionRow · TransactionSheet (edit/hapus)
-  laporan/           SummaryCards · CashflowChart · CategoryBreakdown · SealCard  ← masih mock
+  laporan/           SummaryCards · CashflowChart · CategoryBreakdown · SealCard
   layout/            BottomNav (<1024px) · TopNav (≥1024px) · HeaderStats · MobileTopBar
   research/          RisetView · AnswerArticle — kini di balik /premium
   wallet/  pwa/  ui/  providers/
 lib/
   parse/             index (orkestrasi) · llm (Haiku §17.1) · fallback (regex) · validate
   catat/             server (helper API) · client (pembungkus fetch)
+  laporan/           periode (batas WIB) · server (agregasi) · client · pdf (dokumen A4)
   offline/           antrean IndexedDB
+  api/               panggil (pembungkus fetch bersama: ok / demo / offline)
   privy/  chains/  supabase/  auth/  ai/  agent/  design/  mock/
-supabase/migrations/ skema §10 (0001–0013)
+supabase/migrations/ skema §10 (0001–0015)
 tests/parser-cases.json  200 kalimat uji lintas 5 persona
 ```
 
@@ -143,6 +155,28 @@ User (chat/suara) → POST /api/catat
 Prinsip yang mengikat: **satu kalimat boleh jadi banyak entri**; **dilarang mengarang
 nominal** (tidak disebut → simpan sebagai draft + tanya **satu** hal saja); **mencatat
 tidak pernah memotong Kredit AI**.
+
+## Laporan & ekspor PDF (§7.3)
+
+```
+GET /api/laporan?period=2026-08 | 30d | today
+  → ringkasan + grafik harian   : daily_rollups  (O(hari), bukan O(transaksi))
+  → rincian kategori            : RPC laporan_kategori (GROUP BY, migrasi 0015)
+  → status segel                : report_seals
+GET /api/laporan/pdf?period=…   → A4 siap dibawa ke bank (@react-pdf/renderer)
+```
+
+Seluruh agregasi di server; layar tidak pernah menjumlah transaksi sendiri. Batas
+periode dihitung sekali di `lib/laporan/periode.ts` sebagai **tanggal WIB**, lalu
+diturunkan jadi ISO — dua sumber data (rollup bertipe `date`, transaksi bertipe
+`timestamptz`) karena itu memotong garis yang sama persis, sehingga total kategori
+selalu sama dengan total ringkasan. **Membuka Laporan & mengunduh PDF = 0 kredit.**
+
+Isi PDF mengikuti kebutuhan penilai KUR: kop usaha, ringkasan, arus kas 12 bulan,
+rincian kategori, porsi terverifikasi, blok verifikasi, dan footer wajib. Angka yang
+ditampilkan adalah **laba kotor** — istilah "laba bersih" dilarang sampai HPP ada
+(Fase 2). `pnpm test:api` membaca ulang isi PDF hasil (`pdftotext`) untuk memastikan
+kalimat baku §7.5 dan footer §7.3 benar-benar ada di berkas, bukan cuma di kode.
 
 ### Akurasi parser
 
@@ -166,9 +200,12 @@ Pola layout: <1024px memakai pola mobile (bottom-nav 5 tab + baris status tanpa 
 ## Catatan implementasi
 
 - **Mode demo:** tanpa kredensial, `Providers` melewati Privy dan middleware
-  mengizinkan semua rute. Tab Catat memakai parser fallback di klien; Riwayat & Beranda
-  memakai dataset mock. Kegagalan jaringan **dibedakan tegas** dari mode demo — user
-  sungguhan yang servernya mati melihat angka nol yang jujur, bukan data mock.
+  mengizinkan semua rute. Tab Catat memakai parser fallback di klien; Riwayat, Beranda,
+  dan Laporan memakai dataset mock (Laporan lewat `laporanDemo()` yang menghasilkan
+  bentuk `LaporanResponse` yang sama persis, jadi layarnya cuma punya satu jalur
+  render). Kegagalan jaringan **dibedakan tegas** dari mode demo — user sungguhan yang
+  servernya mati melihat pesan jujur, bukan data mock. Unduh PDF dimatikan di mode demo
+  karena datanya bukan milik siapa pun.
 - **Auth + wallet:** setelah login Privy, klien memanggil `POST /api/auth/session` →
   token diverifikasi server-side → upsert `users` + `wallets` (100% akun ber-wallet,
   AC §7.1) → cookie sesi ber-HMAC.
@@ -180,13 +217,17 @@ Pola layout: <1024px memakai pola mobile (bottom-nav 5 tab + baris status tanpa 
 - **Anti-abuse:** 200 entri/user/hari (§7.2) plus batas percakapan/hari yang dinaikkan
   atomik sebelum parser dipanggil — supaya kalimat yang tidak menghasilkan entri tidak
   bisa memanggil model berbayar tanpa batas.
+- **Hapus akun (§12 / UU PDP):** `DELETE /api/akun` meminta frasa konfirmasi `HAPUS`,
+  lalu satu `delete from users` — seluruh data turunan ikut lewat `on delete cascade`,
+  jadi tidak ada daftar tabel yang harus dijaga manual dan tertinggal saat tabel baru
+  ditambahkan.
 - **Bundle ≤ 200 KB (§12):** target optimasi lanjutan (lazy-load Privy, code-split)
   digarap pada milestone kualitas M5. SDK Privy saat ini masuk shared bundle.
 
 ## Milestone selanjutnya (§14)
 
-**M2** selesaikan uji suara & offline di perangkat nyata · **M3** tab Laporan dengan
-agregasi server + ekspor PDF · **M4** `ReportAttestation.sol` testnet + alur Segel +
+**M2** selesaikan uji suara & offline di perangkat nyata (satu-satunya sisa M2) ·
+~~M3 tab Laporan + ekspor PDF~~ **selesai** · **M4** `ReportAttestation.sol` testnet + alur Segel +
 misi pencatatan · **M5** fitur premium di balik kredit + pembelian kredit + hardening ·
 **M6** mainnet opBNB + beta tertutup 100 user + launch PWA + DappBay ·
 **M7** Google Play (TWA) + App Store (Capacitor).

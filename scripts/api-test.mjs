@@ -27,7 +27,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync, unlinkSync } from "node:fs";
 import crypto from "node:crypto";
 
 /* ── Env ─────────────────────────────────────────────────────────────────── */
@@ -317,6 +317,189 @@ async function main() {
     const baris = sql(
       `select count(*) from transactions where user_id='${uidA}' and raw_input='halo apa kabar'`);
     cek("kalimat non-transaksi tidak membuat entri", baris === "0", `dapat ${baris}`);
+  }
+
+  console.log("\n── 10. GET /api/laporan (§7.3) ──");
+  // Data uji ditanam langsung lewat SQL, bukan lewat /api/catat: laporan diuji
+  // atas angka yang SUDAH pasti, dan jalur ini juga membuktikan trigger rollup
+  // ikut jalan pada penulisan di luar API.
+  const wibHariIni = new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10);
+  const bulanIni = wibHariIni.slice(0, 7);
+  const hariA = `${bulanIni}-01`;
+  const hariB = wibHariIni; // sama dengan hariA bila hari ini tanggal 1
+  const hariUnik = new Set([hariA, hariB]).size;
+  {
+    const kat = (slug) => `(select id from categories where slug='${slug}')`;
+    sql(`insert into transactions
+      (user_id, jenis, amount, kategori_id, payment_method, occurred_at, source, parsed_by, status)
+      values
+      ('${uidB}','masuk',100000,${kat("penjualan")},'tunai','${hariA}T10:00:00+07:00','manual','manual','confirmed'),
+      ('${uidB}','masuk',200000,${kat("penjualan")},'qris','${hariA}T11:00:00+07:00','manual','manual','confirmed'),
+      ('${uidB}','masuk',150000,${kat("jasa")},'transfer','${hariB}T12:00:00+07:00','manual','manual','confirmed'),
+      ('${uidB}','keluar',50000,${kat("bahan_baku")},'tunai','${hariB}T13:00:00+07:00','manual','manual','confirmed')`);
+
+    const r = await api(`/api/laporan?period=${bulanIni}`, { cookie: B });
+    const k = r.body?.kini;
+    cek("200 OK", r.status === 200, `dapat ${r.status}`);
+    cek("total masuk 450.000", k?.masuk === 450000, `dapat ${k?.masuk}`);
+    cek("total keluar 50.000", k?.keluar === 50000, `dapat ${k?.keluar}`);
+    cek("sisa (laba kotor) 400.000", k?.sisa === 400000, `dapat ${k?.sisa}`);
+    cek("4 transaksi", k?.jmlTransaksi === 4, `dapat ${k?.jmlTransaksi}`);
+    cek(`hari aktif ${hariUnik}`, k?.hariAktif === hariUnik, `dapat ${k?.hariAktif}`);
+    cek("masuk terverifikasi 350.000 (qris+transfer, bukan tunai)",
+      k?.masukTerverifikasi === 350000, `dapat ${k?.masukTerverifikasi}`);
+    cek("rasio terverifikasi ≈ 0,778",
+      Math.abs((k?.rasioTerverifikasi ?? 0) - 350000 / 450000) < 1e-9,
+      `dapat ${k?.rasioTerverifikasi}`);
+    cek(`series ${hariUnik} titik`, r.body?.series?.length === hariUnik,
+      `dapat ${r.body?.series?.length}`);
+
+    // AC §7.3: kategori HARUS berjumlah sama dengan ringkasan — inilah alasan
+    // batas periode rollup & transaksi dihitung dari satu sumber yang sama.
+    const totalKatMasuk = (r.body?.masuk ?? []).reduce((s, b) => s + b.total, 0);
+    const totalKatKeluar = (r.body?.keluar ?? []).reduce((s, b) => s + b.total, 0);
+    cek("Σ kategori masuk == ringkasan masuk", totalKatMasuk === k?.masuk,
+      `${totalKatMasuk} vs ${k?.masuk}`);
+    cek("Σ kategori keluar == ringkasan keluar", totalKatKeluar === k?.keluar,
+      `${totalKatKeluar} vs ${k?.keluar}`);
+    const teratas = r.body?.masuk?.[0];
+    cek("kategori teratas = Penjualan 300.000",
+      teratas?.slug === "penjualan" && teratas?.total === 300000,
+      `dapat ${teratas?.slug} ${teratas?.total}`);
+    cek("persen kategori dinormalkan ke 1",
+      Math.abs((r.body?.keluar?.[0]?.persen ?? 0) - 1) < 1e-9,
+      `dapat ${r.body?.keluar?.[0]?.persen}`);
+
+    cek("bulan berjalan belum boleh disegel (§7.5)", r.body?.bolehSegel === false,
+      `dapat ${r.body?.bolehSegel}`);
+    cek("segel berstatus belum", r.body?.segel?.status === "belum",
+      `dapat ${r.body?.segel?.status}`);
+    cek("bulan tercatat = 1", r.body?.bulanTercatat === 1,
+      `dapat ${r.body?.bulanTercatat}`);
+  }
+  {
+    const r = await api(`/api/laporan?period=${bulanIni}`, { cookie: A });
+    cek("laporan user A tidak memuat angka user B",
+      r.body?.kini?.masuk !== 450000, `dapat ${r.body?.kini?.masuk}`);
+  }
+  {
+    const r = await api("/api/laporan?period=semau-gue", { cookie: B });
+    cek("periode ngawur → 400 (bukan diam-diam 'semua')", r.status === 400,
+      `dapat ${r.status}`);
+  }
+  {
+    const r = await api("/api/laporan?period=30d", { cookie: B });
+    cek("periode 30d valid", r.status === 200, `dapat ${r.status}`);
+    cek("30d memuat transaksi hari ini", r.body?.kini?.jmlTransaksi >= 2,
+      `dapat ${r.body?.kini?.jmlTransaksi}`);
+  }
+  {
+    const r = await api("/api/laporan");
+    cek("tanpa sesi → 401", r.status === 401, `dapat ${r.status}`);
+  }
+  {
+    const n = sql(`select count(*) from credit_ledger where user_id='${uidB}'`);
+    cek("membuka Laporan tidak memotong kredit (AC §7.3)", n === "0", `dapat ${n}`);
+  }
+
+  console.log("\n── 11. GET /api/laporan/pdf (§7.3) ──");
+  {
+    const t0 = Date.now();
+    const res = await fetch(`${BASE}/api/laporan/pdf?period=${bulanIni}`, {
+      headers: { cookie: B },
+    });
+    const buf = Buffer.from(await res.arrayBuffer());
+    const detik = (Date.now() - t0) / 1000;
+    cek("200 OK", res.status === 200, `dapat ${res.status}`);
+    cek("Content-Type application/pdf",
+      res.headers.get("content-type")?.includes("application/pdf"),
+      String(res.headers.get("content-type")));
+    cek("berkas PDF sungguhan (magic %PDF)",
+      buf.subarray(0, 4).toString() === "%PDF", buf.subarray(0, 8).toString());
+    cek("ukuran wajar (> 2 KB)", buf.length > 2048, `${buf.length} byte`);
+    cek("dilampirkan sebagai unduhan",
+      (res.headers.get("content-disposition") ?? "").includes("attachment"),
+      String(res.headers.get("content-disposition")));
+    cek("tidak di-cache proxy",
+      (res.headers.get("cache-control") ?? "").includes("no-store"),
+      String(res.headers.get("cache-control")));
+    cek("ter-generate ≤ 10 detik (AC §7.3)", detik <= 10, `${detik.toFixed(1)} dtk`);
+
+    // Isi PDF dibaca sungguhan, bukan cuma header-nya. Kalimat baku §7.3/§7.5
+    // adalah pernyataan hukum di dokumen yang dibawa ke bank — pernah hilang
+    // diam-diam karena pembungkus `<View fixed>` tidak ter-render react-pdf,
+    // dan cek "status 200 + magic %PDF" sama sekali tidak menangkapnya.
+    let teks = null;
+    try {
+      const tmp = `/tmp/aidm-laporan-uji-${process.pid}.pdf`;
+      writeFileSync(tmp, buf);
+      teks = execFileSync("pdftotext", [tmp, "-"], { encoding: "utf8" });
+      unlinkSync(tmp);
+    } catch {
+      console.log("  · pdftotext tidak tersedia — cek isi PDF dilewati");
+    }
+    if (teks !== null) {
+      cek("kop memuat periode & tanggal cetak",
+        teks.includes("Laporan Keuangan Usaha") && teks.includes("Dicetak"));
+      cek("memuat ringkasan laba KOTOR (bukan 'laba bersih')",
+        teks.includes("Sisa (laba kotor)") && !teks.includes("laba bersih"));
+      cek("memuat tabel arus kas per bulan", teks.includes("Arus kas per bulan"));
+      cek("memuat rincian kategori masuk & keluar",
+        teks.includes("Rincian pemasukan per kategori") &&
+          teks.includes("Rincian pengeluaran per kategori"));
+      cek("memuat porsi terverifikasi", teks.includes("Porsi pemasukan terverifikasi"));
+      cek("kalimat baku verifikasi ada persis (§7.5)",
+        teks.includes(
+          "Verifikasi ini bukan audit dan bukan penilaian kelayakan kredit.",
+        ));
+      cek("footer wajib ada persis (§7.3)",
+        teks.includes(
+          "Laporan ini disusun mandiri oleh pemilik usaha melalui aplikasi AIDM.",
+        ));
+      cek("angka rupiah format Indonesia (titik ribuan)", /Rp[\d.]*\d\.\d{3}/.test(teks));
+    }
+  }
+  {
+    const res = await fetch(`${BASE}/api/laporan/pdf?period=${bulanIni}`);
+    cek("PDF tanpa sesi → 401", res.status === 401, `dapat ${res.status}`);
+  }
+
+  console.log("\n── 12. DELETE /api/akun (§12 hak penghapusan) ──");
+  {
+    const uidC = sql(
+      `insert into users (privy_did) values ('${PREFIX}C') returning id`,
+    );
+    const C = sessionCookie(uidC, `${PREFIX}C`);
+    sql(`insert into transactions (user_id, jenis, amount, payment_method, occurred_at, source, parsed_by, status)
+      values ('${uidC}','masuk',90000,'tunai','${wibHariIni}T09:00:00+07:00','manual','manual','confirmed')`);
+    const punyaRollup = sql(
+      `select count(*) from daily_rollups where user_id='${uidC}'`);
+    cek("user C punya rollup sebelum dihapus", punyaRollup === "1", `dapat ${punyaRollup}`);
+
+    const salah = await api("/api/akun", {
+      method: "DELETE", cookie: C, body: { konfirmasi: "iya" },
+    });
+    cek("konfirmasi salah → 400", salah.status === 400, `dapat ${salah.status}`);
+    const masihAda = sql(`select count(*) from users where id='${uidC}'`);
+    cek("akun belum terhapus setelah konfirmasi salah", masihAda === "1", `dapat ${masihAda}`);
+
+    const benar = await api("/api/akun", {
+      method: "DELETE", cookie: C, body: { konfirmasi: "HAPUS" },
+    });
+    // Regresi 0014: dulu langkah ini SELALU 500 karena trigger rollup menulis
+    // ulang baris untuk user yang sudah hilang (FK violation).
+    cek("konfirmasi benar → 200 (regresi 0014)", benar.status === 200,
+      `dapat ${benar.status} ${JSON.stringify(benar.body)}`);
+    cek("baris users hilang",
+      sql(`select count(*) from users where id='${uidC}'`) === "0");
+    cek("transaksi ikut terhapus (cascade)",
+      sql(`select count(*) from transactions where user_id='${uidC}'`) === "0");
+    cek("rollup ikut terhapus (cascade)",
+      sql(`select count(*) from daily_rollups where user_id='${uidC}'`) === "0");
+  }
+  {
+    const r = await api("/api/akun", { method: "DELETE", body: { konfirmasi: "HAPUS" } });
+    cek("tanpa sesi → 401", r.status === 401, `dapat ${r.status}`);
   }
 
   console.log(`\n━━ ${lulus} lulus, ${gagal.length} gagal ━━`);

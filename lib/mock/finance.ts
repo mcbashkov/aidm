@@ -20,6 +20,19 @@ import {
   type PaymentMethod,
   type Transaction,
 } from "@/lib/transactions";
+// Bentuk data laporan tinggal satu tempat (§7.3) — mock dan API nyata WAJIB
+// menghasilkan bentuk yang sama, kalau tidak layar Laporan butuh dua jalur
+// render dan mode demo diam-diam melenceng dari produksi.
+import type {
+  BarisKategori,
+  LaporanResponse,
+  Ringkasan,
+  SealState,
+  TitikHarian,
+} from "@/lib/laporan/types";
+
+export { VALUASI_BUTUH_BULAN } from "@/lib/laporan/types";
+export type { BarisKategori, Ringkasan, SealState, TitikHarian };
 
 /** Hari "ini" untuk seluruh data mock. */
 export const MOCK_ANCHOR = "2026-08-12";
@@ -198,16 +211,6 @@ export function transaksiPeriode(period: string): Transaction[] {
 
 /* ── Agregasi (padanan GET /api/laporan) ─────────────────────────────────── */
 
-export interface Ringkasan {
-  masuk: number;
-  keluar: number;
-  sisa: number;
-  jmlTransaksi: number;
-  hariAktif: number;
-  masukTerverifikasi: number;
-  rasioTerverifikasi: number; // 0..1 dari nilai pemasukan
-}
-
 export function ringkas(txs: Transaction[]): Ringkasan {
   let masuk = 0;
   let keluar = 0;
@@ -243,12 +246,6 @@ export function ringkasHariIni(): Ringkasan {
   return ringkas(txs);
 }
 
-export interface TitikHarian {
-  tanggal: string; // ISO date
-  masuk: number;
-  keluar: number;
-}
-
 /** Deret harian untuk grafik arus kas (§7.3 #3). */
 export function seriesHarian(period: string): TitikHarian[] {
   const txs = transaksiPeriode(period);
@@ -263,13 +260,6 @@ export function seriesHarian(period: string): TitikHarian[] {
   }
 
   return [...byDay.values()].sort((a, b) => a.tanggal.localeCompare(b.tanggal));
-}
-
-export interface BarisKategori {
-  slug: string;
-  nama: string;
-  total: number;
-  persen: number; // 0..1
 }
 
 /** Rincian kategori 5 teratas per jenis (§7.3 #4). */
@@ -306,13 +296,6 @@ export function transaksiTerakhir(n = 3): Transaction[] {
 
 /* ── Segel laporan (§7.5) — semua periode belum tersegel di mock ─────────── */
 
-export interface SealState {
-  status: "belum" | "pending" | "tersegel";
-  hash?: string;
-  txHash?: string;
-  sealedAt?: string;
-}
-
 export function statusSegel(period: string): SealState {
   // Bulan berjalan tidak boleh disegel (§7.5 ketentuan) — periode lampau di
   // mock pun sengaja "belum" supaya alur segel diuji dari nol saat backend siap.
@@ -327,10 +310,31 @@ export function bolehSegel(period: string): boolean {
 
 /* ── Progres valuasi usaha (§7.9 kartu terkunci) ─────────────────────────── */
 
-export const VALUASI_BUTUH_BULAN = 6;
-
 export function bulanTercatat(): number {
   const txs = getTransactions().filter((t) => t.status !== "deleted");
   const bulan = new Set(txs.map((t) => t.occurredAt.slice(0, 7)));
   return bulan.size;
+}
+
+/* ── Padanan GET /api/laporan untuk mode demo ────────────────────────────── */
+
+/**
+ * Susun body laporan lengkap dari dataset mock, persis bentuk
+ * `LaporanResponse`. Layar Laporan dengan begitu hanya punya SATU jalur render
+ * — kalau mode demo punya jalurnya sendiri, cacat tampilan di salah satunya
+ * baru ketahuan setelah backend nyala.
+ */
+export function laporanDemo(period: string): LaporanResponse {
+  const lalu = periodeSebelumnya(period);
+  return {
+    period,
+    kini: ringkas(transaksiPeriode(period)),
+    sebelumnya: lalu ? ringkas(transaksiPeriode(lalu)) : null,
+    series: seriesHarian(period),
+    masuk: breakdownKategori(period, "masuk"),
+    keluar: breakdownKategori(period, "keluar"),
+    segel: statusSegel(period),
+    bolehSegel: bolehSegel(period),
+    bulanTercatat: bulanTercatat(),
+  };
 }

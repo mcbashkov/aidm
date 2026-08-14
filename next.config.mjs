@@ -13,6 +13,12 @@ const withSerwist = withSerwistInit({
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  experimental: {
+    // @react-pdf/renderer (§16 #9) memuat font & aset internal lewat resolusi
+    // modul Node saat runtime. Kalau ikut di-bundle webpack, jalur itu putus
+    // dan render PDF gagal di server. Biarkan Node yang me-require-nya.
+    serverComponentsExternalPackages: ["@react-pdf/renderer"],
+  },
   images: {
     // Tanpa optimizer server (tak perlu sharp). Kita rujuk aset yang sudah
     // di-resize (public/icons/*). Optimasi gambar lanjutan bisa diaktifkan nanti.

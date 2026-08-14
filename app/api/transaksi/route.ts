@@ -5,35 +5,18 @@ import {
   currentUserId,
   getKategoriMaps,
   rowToTx,
-  wibDayStartIso,
   TX_COLUMNS,
   type TxRow,
 } from "@/lib/catat/server";
+// Batas periode dibagi dengan layar Laporan (§7.3): chip "30 hari" di Riwayat
+// dan di Laporan harus memotong rentang yang sama persis, kalau tidak daftar
+// dan ringkasannya bercerita beda tentang periode yang sama.
+import { rentangIso } from "@/lib/laporan/periode";
 
 export const runtime = "nodejs";
 
 const PAGE_SIZE_DEFAULT = 20;
 const PAGE_SIZE_MAX = 100;
-
-/** Rentang [start, end) dalam ISO untuk nilai `period` (zona WIB). */
-function rentangPeriode(period: string): { start?: string; end?: string } {
-  if (/^\d{4}-\d{2}$/.test(period)) {
-    const [y, m] = period.split("-").map(Number);
-    const nextY = m === 12 ? y + 1 : y;
-    const nextM = m === 12 ? 1 : m + 1;
-    return {
-      start: `${period}-01T00:00:00+07:00`,
-      end: `${nextY}-${String(nextM).padStart(2, "0")}-01T00:00:00+07:00`,
-    };
-  }
-  if (period === "30d") {
-    return { start: new Date(Date.now() - 30 * 86_400_000).toISOString() };
-  }
-  if (period === "today") {
-    return { start: wibDayStartIso() };
-  }
-  return {}; // "semua"
-}
 
 /**
  * GET /api/transaksi?period=&jenis=&kategori=&q=&page=&page_size=&ringkas=
@@ -80,7 +63,7 @@ export async function GET(req: Request) {
       .eq("user_id", uid)
       .eq("status", "confirmed");
 
-    const { start, end } = rentangPeriode(period);
+    const { start, end } = rentangIso(period);
     if (start) query = query.gte("occurred_at", start);
     if (end) query = query.lt("occurred_at", end);
 

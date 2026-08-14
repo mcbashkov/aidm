@@ -1,52 +1,72 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Download, ListFilter } from "lucide-react";
+import { Download, ListFilter, WifiOff } from "lucide-react";
 import { SummaryCards } from "@/components/laporan/summary-cards";
 import { CashflowChart } from "@/components/laporan/cashflow-chart";
 import { CategoryBreakdown } from "@/components/laporan/category-breakdown";
 import { VerifiedShare } from "@/components/laporan/verified-share";
 import { SealCard } from "@/components/laporan/seal-card";
 import { ValuationLocked } from "@/components/laporan/valuation-locked";
-import {
-  PERIOD_OPTIONS,
-  bolehSegel,
-  breakdownKategori,
-  bulanTercatat,
-  periodeSebelumnya,
-  ringkas,
-  seriesHarian,
-  statusSegel,
-  transaksiPeriode,
-} from "@/lib/mock/finance";
+import { PERIOD_OPTIONS, laporanDemo } from "@/lib/mock/finance";
+import { periodeSekarang } from "@/lib/catat/client";
+import { ambilLaporan, urlPdfLaporan } from "@/lib/laporan/client";
+import type { LaporanResponse } from "@/lib/laporan/types";
 import { cn } from "@/lib/utils";
 
 /**
  * Tab Laporan (§7.3 / §13 layar 4).
  *
- * SEMENTARA: agregasi dihitung dari data mock di klien. Di produksi seluruh
- * perhitungan pindah ke SQL server-side (§7.3 ketentuan: "tidak mengirim
- * seluruh transaksi ke klien untuk dihitung di browser").
+ * Seluruh agregasi dihitung server (`GET /api/laporan`) — layar ini tidak
+ * pernah menjumlah transaksi sendiri, sesuai ketentuan §7.3 "tidak mengirim
+ * seluruh transaksi ke klien untuk dihitung di browser".
+ *
+ * Tiga keadaan dibedakan tegas, sama seperti Riwayat:
+ *   online — angka nyata dari server;
+ *   demo   — server memang belum dikonfigurasi (401/501) → dataset contoh;
+ *   gagal  — jaringan/server bermasalah → katakan apa adanya. Menampilkan
+ *            data contoh di sini akan membuat pemilik usaha membaca omzet
+ *            fiktif sebagai omzetnya sendiri.
  */
 export function LaporanView() {
-  const [period, setPeriod] = useState("2026-08");
+  const [period, setPeriod] = useState(() => periodeSekarang()[0].value);
+  const [data, setData] = useState<LaporanResponse | null>(null);
+  const [memuat, setMemuat] = useState(true);
+  const [demo, setDemo] = useState(false);
+  const [galat, setGalat] = useState<string | null>(null);
+  // Penghitung muat-ulang; menyetel `period` ke nilai yang sama tidak memicu
+  // efek apa pun karena React membandingkan state dengan Object.is.
+  const [percobaan, setPercobaan] = useState(0);
 
-  const data = useMemo(() => {
-    const txs = transaksiPeriode(period);
-    const lalu = periodeSebelumnya(period);
-    return {
-      kini: ringkas(txs),
-      sebelumnya: lalu ? ringkas(transaksiPeriode(lalu)) : null,
-      series: seriesHarian(period),
-      masuk: breakdownKategori(period, "masuk"),
-      keluar: breakdownKategori(period, "keluar"),
-      segel: statusSegel(period),
-      boleh: bolehSegel(period),
-    };
-  }, [period]);
+  const reqSeq = useRef(0);
 
-  const kosong = data.kini.jmlTransaksi === 0;
+  useEffect(() => {
+    const seq = ++reqSeq.current;
+    setMemuat(true);
+    setGalat(null);
+    void ambilLaporan(period).then((res) => {
+      if (seq !== reqSeq.current) return; // respons kedaluwarsa
+      if (res.ok) {
+        setDemo(false);
+        setData(res.data);
+      } else if (res.demo) {
+        setDemo(true);
+        setData(laporanDemo(period));
+      } else {
+        setData(null);
+        setGalat(
+          res.offline
+            ? "Kamu sedang offline. Laporan butuh koneksi karena dihitung di server."
+            : "Gagal memuat laporan. Coba lagi sebentar lagi.",
+        );
+      }
+      setMemuat(false);
+    });
+  }, [period, percobaan]);
+
+  const periodOptions = demo ? PERIOD_OPTIONS : periodeSekarang();
+  const kosong = !!data && data.kini.jmlTransaksi === 0;
 
   return (
     <div className="space-y-section">
@@ -72,7 +92,7 @@ export function LaporanView() {
         aria-label="Periode laporan"
         className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1"
       >
-        {PERIOD_OPTIONS.map((p) => {
+        {periodOptions.map((p) => {
           const aktif = p.value === period;
           return (
             <button
@@ -94,7 +114,31 @@ export function LaporanView() {
         })}
       </div>
 
-      {kosong ? (
+      {memuat && !data ? (
+        <div className="space-y-3">
+          <div className="skeleton h-32 w-full" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="skeleton h-24 w-full" />
+            <div className="skeleton h-24 w-full" />
+          </div>
+          <div className="skeleton h-48 w-full" />
+        </div>
+      ) : galat ? (
+        <div className="card flex flex-col items-center gap-2 p-10 text-center">
+          <WifiOff className="h-8 w-8 text-ink-subtle" aria-hidden />
+          <h2>Laporan belum bisa ditampilkan</h2>
+          <p className="max-w-xs text-[14px] leading-relaxed text-ink-muted">
+            {galat}
+          </p>
+          <button
+            type="button"
+            onClick={() => setPercobaan((n) => n + 1)}
+            className="btn-primary mt-2 max-w-[220px]"
+          >
+            Coba lagi
+          </button>
+        </div>
+      ) : kosong ? (
         <div className="card flex flex-col items-center gap-2 p-10 text-center">
           <h2>Belum ada catatan di periode ini</h2>
           <p className="max-w-xs text-[14px] leading-relaxed text-ink-muted">
@@ -105,7 +149,7 @@ export function LaporanView() {
             Mulai mencatat
           </Link>
         </div>
-      ) : (
+      ) : data ? (
         <>
           <SummaryCards kini={data.kini} sebelumnya={data.sebelumnya} />
           <CashflowChart data={data.series} />
@@ -123,25 +167,24 @@ export function LaporanView() {
             masuk={data.kini.masuk}
             masukTerverifikasi={data.kini.masukTerverifikasi}
           />
-          <SealCard
-            period={period}
-            state={data.segel}
-            boleh={data.boleh}
-          />
+          <SealCard period={period} state={data.segel} boleh={data.bolehSegel} />
 
-          <button
-            type="button"
-            disabled
-            title="Ekspor PDF aktif di M3"
-            className="btn-primary disabled:opacity-40"
+          {/* Unduhan dilayani server (§11 GET /api/laporan/pdf) — di mode demo
+              tidak ada apa pun untuk diunduh karena datanya bukan milik siapa
+              pun. */}
+          <a
+            href={demo ? undefined : urlPdfLaporan(period)}
+            aria-disabled={demo}
+            title={demo ? "Masuk dulu untuk mengunduh laporanmu" : undefined}
+            className={cn("btn-primary", demo && "pointer-events-none opacity-40")}
           >
             <Download className="h-4 w-4" aria-hidden />
             Unduh PDF
-          </button>
+          </a>
 
-          <ValuationLocked bulanTercatat={bulanTercatat()} />
+          <ValuationLocked bulanTercatat={data.bulanTercatat} />
         </>
-      )}
+      ) : null}
     </div>
   );
 }

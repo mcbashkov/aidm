@@ -1,5 +1,5 @@
 import { formatPersen, formatRupiah } from "@/lib/transactions";
-import type { BarisKategori } from "@/lib/mock/finance";
+import type { BarisKategori } from "@/lib/laporan/types";
 
 interface CategoryBreakdownProps {
   judul: string;

@@ -1,5 +1,5 @@
 import { Lock } from "lucide-react";
-import { VALUASI_BUTUH_BULAN } from "@/lib/mock/finance";
+import { VALUASI_BUTUH_BULAN } from "@/lib/laporan/types";
 
 interface ValuationLockedProps {
   bulanTercatat: number;

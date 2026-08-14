@@ -7,14 +7,13 @@ import {
   Bell,
   Shield,
   KeyRound,
-  Trash2,
   ChevronRight,
   Sparkles,
 } from "lucide-react";
 import { WalletCard } from "@/components/wallet/wallet-card";
 import { LogoutButton } from "@/components/account/logout-button";
+import { DeleteAccount } from "@/components/account/delete-account";
 import { earnerLabel } from "@/lib/earner";
-import { cn } from "@/lib/utils";
 
 interface Me {
   authenticated: boolean;
@@ -34,7 +33,6 @@ const SETTINGS = [
   { icon: Bell, label: "Notifikasi" },
   { icon: Shield, label: "Kebijakan privasi (UU PDP)" },
   { icon: KeyRound, label: "Ekspor wallet" },
-  { icon: Trash2, label: "Hapus akun", danger: true },
 ];
 
 export default function AkunPage() {
@@ -95,30 +93,19 @@ export default function AkunPage() {
       <section className="space-y-2">
         <h2 className="px-1">Pengaturan</h2>
         <div className="card overflow-hidden divide-y divide-line p-0">
-          {SETTINGS.map(({ icon: Icon, label, danger }) => (
+          {SETTINGS.map(({ icon: Icon, label }) => (
             <button
               key={label}
               type="button"
               className="flex w-full items-center gap-3 px-5 py-4 text-left transition-colors active:bg-surface-warm"
             >
-              <Icon
-                className={cn(
-                  "h-5 w-5 shrink-0",
-                  danger ? "text-danger" : "text-ink-subtle",
-                )}
-                aria-hidden
-              />
-              <span
-                className={cn(
-                  "flex-1 text-[14px]",
-                  danger ? "text-danger" : "text-ink",
-                )}
-              >
-                {label}
-              </span>
+              <Icon className="h-5 w-5 shrink-0 text-ink-subtle" aria-hidden />
+              <span className="flex-1 text-[14px] text-ink">{label}</span>
               <ChevronRight className="h-4 w-4 text-ink-subtle" aria-hidden />
             </button>
           ))}
+          {/* Hapus akun punya alur konfirmasinya sendiri (§12 hak penghapusan). */}
+          <DeleteAccount />
         </div>
       </section>
 
