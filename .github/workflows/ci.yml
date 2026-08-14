@@ -1,5 +1,5 @@
-# CI (§7.2 Tahap 1): typecheck + lint + test suite parser.
-# Test parser menguji jalur fallback yang deterministik — tanpa API key.
+# CI: typecheck + lint + test parser (§7.2) + test kanonikalisasi segel
+# (§17.2/AC §7.5). Semuanya deterministik — tanpa API key, tanpa chain.
 name: ci
 
 on:
@@ -11,13 +11,15 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # v7/v6: runtime action Node 24 — menghilangkan warning deprecation
+      # Node 20 yang muncul di runtime v4.
+      - uses: actions/checkout@v7
       # Versi pnpm TIDAK ditulis di sini. Satu-satunya sumber kebenaran adalah
       # field "packageManager" di package.json — action ini membacanya sendiri.
       # Menuliskannya di dua tempat membuat action gagal keras (bukan sekadar
       # memperingatkan) begitu kedua angka berbeda.
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           # ≥22.18 — runner test memakai type stripping bawaan Node.
           node-version: 22
@@ -26,3 +28,4 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test:parser
+      - run: pnpm test:canonical
