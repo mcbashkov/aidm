@@ -17,7 +17,17 @@ import { Button } from "@/components/ui/button";
 function Intro() {
   return (
     <div>
-      <Link href="/beranda" className="mb-8 flex items-center gap-2">
+      {/* prefetch dimatikan: /beranda adalah rute TERLINDUNGI, dan di halaman
+          ini pengguna menurut definisi belum punya sesi. Prefetch otomatis
+          Next akan menembak /beranda → middleware memantulkannya ke
+          /masuk?next=/beranda, dan rantai pengalihan itulah yang lewat service
+          worker sebelum login selesai. Tidak ada gunanya memuat awal halaman
+          yang pasti dipantulkan. */}
+      <Link
+        href="/beranda"
+        prefetch={false}
+        className="mb-8 flex items-center gap-2"
+      >
         <Image src="/icons/icon-192.png" alt="AIDM" width={30} height={30} />
         <span className="font-serif text-[20px] font-semibold tracking-tight text-ink">
           AIDM

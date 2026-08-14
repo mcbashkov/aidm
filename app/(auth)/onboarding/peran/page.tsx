@@ -61,7 +61,11 @@ export default function PeranPage() {
     } catch {
       // mode placeholder / offline — lanjut saja, peran disimpan ulang nanti
     }
-    router.push("/onboarding/usaha");
+    // replace, bukan push: langkah onboarding yang sudah dilewati tidak boleh
+    // bisa dikunjungi lagi lewat tombol Kembali — kembalinya akan memicu ulang
+    // pemeriksaan profil + pengalihan, rantai yang sama yang membuat navigasi
+    // macet di produksi.
+    router.replace("/onboarding/usaha");
   }
 
   if (checking) return null;

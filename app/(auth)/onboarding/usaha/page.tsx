@@ -72,7 +72,9 @@ export default function UsahaPage() {
     } catch {
       // mode placeholder / offline — lanjut saja
     }
-    router.push("/beranda");
+    // replace: onboarding selesai — tombol Kembali harus keluar dari alur ini,
+    // bukan memutar pengguna balik ke form yang sudah ia isi.
+    router.replace("/beranda");
   }
 
   if (checking) return null;
