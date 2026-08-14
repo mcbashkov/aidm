@@ -12,9 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Versi pnpm TIDAK ditulis di sini. Satu-satunya sumber kebenaran adalah
+      # field "packageManager" di package.json — action ini membacanya sendiri.
+      # Menuliskannya di dua tempat membuat action gagal keras (bukan sekadar
+      # memperingatkan) begitu kedua angka berbeda.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
       - uses: actions/setup-node@v4
         with:
           # ≥22.18 — runner test memakai type stripping bawaan Node.
