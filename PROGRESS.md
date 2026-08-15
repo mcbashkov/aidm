@@ -4,7 +4,7 @@ Pelacak pekerjaan lintas sesi. **README** menjelaskan produk & cara menjalankan;
 berkas ini menjawab satu pertanyaan saja: *apa yang sudah beres, apa berikutnya,
 dan siapa yang mengerjakan.*
 
-Diperbarui: **2026-08-15** · cabang `main` @ `97f4d3e`
+Diperbarui: **2026-08-15** · cabang `main` @ `fd8e8ff`
 
 **Legenda pemilik:** 🧑 = butuh tangan Anda (kunci, dompet, keputusan bisnis,
 perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
@@ -51,14 +51,37 @@ pnpm deploy:rewards          # deploy IDMX + MissionRewards + danai kontrak
 Sampai ini selesai: tombol Klaim nonaktif berketerangan, API menjawab 501.
 Aman berada di produksi — tidak ada yang rusak, hanya belum aktif.
 
-### 2. 🤖 Utang teknis kecil
+### 2. 🤖 Hidupkan tab Misi tiap hari — **disepakati 2026-08-15, siap dikerjakan**
 
+Masalahnya nyata: di hari biasa hanya **2 misi** yang bisa diklaim. Setelah
+keduanya selesai, tab Misi jadi layar mati sampai besok. Empat misi berikut
+dipilih bukan sekadar menambah hadiah, tapi karena **membayar perilaku yang
+memang kita inginkan**:
+
+- [ ] Catat pemasukan **dan** pengeluaran hari ini — **20/hari**
+      *(laporan hanya berguna kalau dua sisi tercatat; sekarang user bisa cuma
+      mencatat pemasukan dan laporannya timpang)*
+- [ ] Catat pakai suara hari ini — **15/hari**
+      *(suara adalah pembeda utama vs BukuWarung, tapi tidak ada apa pun yang
+      mendorong orang mencobanya)*
+- [ ] Buka Laporan mingguan — **30/minggu**
+      *(kebiasaan MEMBACA laporan — inti bankability, bukan sekadar menimbun data)*
+- [ ] Runtun 30 hari — **300/bulan**
+      *(runtun 7 hari terlalu cepat selesai lalu tidak ada tangga berikutnya)*
+
+Dampak: 4 misi/hari (dari 2) · 70 → **105 IDMX/hari** · 32.600 → **50.535
+IDMX/tahun**. Cap harian 250 tidak perlu diubah (masih ada ruang 2,4×). Kolam
+100 juta tetap cukup untuk beta 100 user selama ~20 tahun (dari 31).
+
+### 3. 🤖 Utang teknis kecil
+
+- [ ] Peringatan saldo kontrak reward menipis — kalau habis, klaim *revert* dan
+      user melihat kegagalan membingungkan, bukan penjelasan
+- [ ] Saldo IDMX di header/Akun masih hardcode `0` — kontraknya sudah ada,
+      tinggal dibaca on-chain
 - [ ] Bundle `/masuk` 848 KB vs target §12 ≤200 KB — SDK Privy, perlu lazy-load
 - [ ] 4 tombol Pengaturan di `/akun` masih mati (gaya bahasa AI, notifikasi,
       kebijakan privasi, ekspor wallet)
-- [ ] Saldo IDMX di header/Akun masih hardcode `0` — sekarang sudah ada kontrak,
-      bisa dibaca on-chain
-- [ ] Peringatan saldo kontrak reward menipis (lihat "Ekonomi reward" di bawah)
 
 ### 3. 🧑 Verifikasi lapangan yang belum dilakukan
 
@@ -86,11 +109,54 @@ sepihak — masing-masing berkonsekuensi finansial, legal, atau keamanan.
 
 | # | Keputusan | Kapan dibutuhkan |
 |---|---|---|
-| 5 | Kurs IDMX → IDM Reborn (mekanisme sudah disepakati, **angka rasionya** belum) | sebelum M6 |
-| 8 | Alokasi tokenomics 1 miliar IDM Reborn (dokumen terpisah, mungkin perlu review legal) | sebelum M6 |
-| 11 | Bridge lintas-chain BSC ↔ opBNB (rekomendasi: kontrak mirror dulu) | sebelum mainnet |
+| 8 | **Alokasi tokenomics 1 miliar IDM Reborn** — berapa % ke kolam swap | **memblokir #5** |
+| 5 | Kurs IDMX → IDM Reborn (mekanisme sudah disepakati, **angka rasionya** belum) | sebelum fitur Tukar |
+| 11 | **Lintas-chain BSC ↔ opBNB** (rekomendasi: kontrak mirror IDM di opBNB) | **memblokir fitur Tukar** |
 
-**#8 juga menentukan ukuran kolam reward IDMX** — lihat bagian berikut.
+### Kenapa #8 dan #11 lebih mendesak daripada yang tercatat sebelumnya
+
+**#5 tidak bisa diputuskan sebelum #8.** Kurs bukan pilihan bebas, melainkan
+hasil bagi:
+
+```text
+kurs = IDMX yang akan terbit selama periode ÷ IDM yang dialokasikan ke kolam swap
+```
+
+Pembilangnya sudah bisa dihitung (lihat bagian ekonomi). Penyebutnya = #8.
+Selama #8 kosong, angka kurs apa pun hanyalah tebakan berbaju perhitungan.
+
+Peta konsekuensi (asumsi 5 tahun · rata-rata 20.000 user aktif · misi versi usulan):
+
+| Alokasi kolam swap | IDM tersedia | Kurs impas | User rajin dapat |
+|---|---|---|---|
+| 10% dari 1 miliar | 100 juta IDM | ~51 IDMX = 1 IDM | ~991 IDM/tahun |
+| **20%** | 200 juta IDM | **~25 IDMX = 1 IDM** | ~2.021 IDM/tahun |
+| 30% | 300 juta IDM | ~17 IDMX = 1 IDM | ~2.973 IDM/tahun |
+
+**Saran arah:** mulai konservatif (angka IDMX per IDM lebih tinggi), lalu
+longgarkan tiap kuartal sesuai mekanisme §16 #5 yang sudah disepakati.
+Alasannya tidak bisa ditawar: menaikkan kemurahan hati selalu bisa, menurunkannya
+menghancurkan kepercayaan secara permanen.
+
+**Peringatan komunikasi:** harga IDM Reborn belum terbentuk (token belum
+diperdagangkan). Jadi nilai rupiah reward **belum bisa dijanjikan ke user** —
+UI harus menampilkan jumlah IDM, bukan taksiran rupiah.
+
+**#11 ternyata memblokir fitur Tukar, bukan sekadar "menjelang mainnet".**
+IDMX hidup di opBNB, IDM Reborn di BSC. Satu kontrak swap tidak bisa menyentuh
+dua jaringan sekaligus. Selama #11 belum diputuskan, menu Tukar tidak bisa
+dibangun sama sekali.
+
+### Alur Tukar yang direncanakan (§7.7 — terhalang #8 & #11)
+
+1. User kumpulkan IDMX dari misi (opBNB)
+2. Buka menu Tukar
+3. Kontrak `IDMXSwapPool`: **IDMX dibakar** (§16 #6 sudah diputuskan), IDM
+   dilepas dari kolam pada kurs sistem
+4. IDM masuk wallet user; menjembatani ke BSC menyusul sebagai fitur terpisah
+
+Tabel `swaps` sudah ada sejak migrasi 0005 — skemanya siap, kontrak & kursnya
+yang belum.
 
 ---
 
