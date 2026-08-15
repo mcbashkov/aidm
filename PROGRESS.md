@@ -83,20 +83,20 @@ IDMX/tahun**. Cap harian 250 tidak perlu diubah (masih ada ruang 2,4×). Kolam
 - [ ] 4 tombol Pengaturan di `/akun` masih mati (gaya bahasa AI, notifikasi,
       kebijakan privasi, ekspor wallet)
 
-### 3. 🧑 Verifikasi lapangan yang belum dilakukan
+### 4. 🧑 Verifikasi lapangan yang belum dilakukan
 
 - [ ] Prompt instal PWA di Android (ikon maskable sudah lengkap sejak M0 — kalau
       gagal, penyebabnya bukan itu)
 - [ ] Serahkan 1 PDF ke petugas bank/koperasi sungguhan — **ini gerbang wajib M6**,
       dan satu-satunya yang tidak bisa disimulasikan
 
-### 4. 🤖 M5 — premium di balik kredit
+### 5. 🤖 M5 — premium di balik kredit
 
 - [ ] Fitur riset & konten dipagari Kredit AI (§7.8)
 - [ ] Pembelian kredit Midtrans (QRIS/VA) — env sudah di-scaffold
 - [ ] Hardening PDP: purge `raw_input` 90 hari (§16 #10, sudah diputuskan)
 
-### 5. 🧑 M6 — mainnet & beta tertutup 100 user
+### 6. 🧑 M6 — mainnet & beta tertutup 100 user
 
 Prasyarat sebelum mulai: keputusan §16 #5, #8, #11 (lihat di bawah).
 
