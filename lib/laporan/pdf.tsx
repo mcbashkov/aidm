@@ -1,6 +1,9 @@
 /**
- * Dokumen PDF laporan keuangan (§7.3 "Isi PDF") — berkas yang dibawa pemilik
- * usaha ke bank/koperasi. Strukturnya mengikuti kebutuhan penilai KUR.
+ * Dokumen PDF laporan keuangan (§7.3 "Isi PDF") — rekap yang bisa dicetak dan
+ * dipakai pemiliknya untuk keperluan apa pun. Strukturnya mengikuti kebutuhan
+ * penilai KUR karena itu bentuk paling lengkap yang kita tahu, TAPI aplikasi
+ * tidak menjanjikan dokumen ini diterima lembaga keuangan mana pun (keputusan
+ * PO 2026-08-15) — penerimaan berkas adalah wewenang penilai.
  *
  * Dua aturan yang TIDAK boleh dilanggar di berkas ini:
  *   1. Istilah "laba bersih" dilarang sebelum harga modal ada (§7.3) — yang

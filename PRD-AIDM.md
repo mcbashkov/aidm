@@ -30,7 +30,7 @@ Alur kerja: PRD ini → Claude Code (build & integrasi)
 
 ## 1. Ringkasan Produk
 
-**AIDM** adalah dApp pencatatan keuangan berbasis percakapan untuk pelaku usaha mikro Indonesia. Pengguna mencatat pemasukan dan pengeluaran dengan **kalimat biasa atau suara** — "jual 3 nasi goreng 45rb bayar QRIS", "narik hari ini dapet 180rb, bensin 25rb" — dan agen AI mengubahnya menjadi catatan keuangan terstruktur. Dari catatan itu aplikasi menyusun **laporan keuangan** yang bisa dicetak dan dibawa ke bank/koperasi untuk mengajukan KUR.
+**AIDM** adalah dApp pencatatan keuangan berbasis percakapan untuk pelaku usaha mikro Indonesia. Pengguna mencatat pemasukan dan pengeluaran dengan **kalimat biasa atau suara** — "jual 3 nasi goreng 45rb bayar QRIS", "narik hari ini dapet 180rb, bensin 25rb" — dan agen AI mengubahnya menjadi catatan keuangan terstruktur. Dari catatan itu aplikasi menyusun **laporan keuangan** yang rapi, bisa dicetak, dan bisa dipakai pemiliknya untuk keperluan apa pun — termasuk melengkapi berkas pengajuan kredit bila ia memilih begitu. **AIDM tidak menjanjikan dokumennya diterima lembaga keuangan mana pun** (keputusan PO 2026-08-15): penerimaan berkas adalah wewenang penilai, bukan sesuatu yang bisa dijanjikan pembuat alat.
 
 Prinsip produk: **"buku usaha tanpa ribet yang diam-diam membuat pelaku mikro bankable."** Pengguna merasa sedang mencatat; sistem sedang membangun jejak data yang bisa dibaca lembaga keuangan.
 
@@ -612,7 +612,9 @@ Mengikuti v2.0 (Lighthouse ≥ 90, LCP ≤ 2,5s, INP < 200ms, CLS < 0,1, bundle 
 | **Fase 2** | Kasbon · katalog & HPP · Skor Kesiapan · OCR nota · bot WhatsApp · staking · referral | — |
 | **Fase 3** | Valuasi usaha · integrasi QRIS/bank · API B2B verifikasi + MCP · price tracker | — |
 
-**Gerbang beta M6 (wajib dipenuhi sebelum launch publik):** akurasi parser ≥ 95%, ≥ 60% beta user mencatat ≥ 4 hari/minggu, dan ≥ 1 laporan PDF berhasil diserahkan ke petugas bank/koperasi nyata sebagai uji lapangan.
+**Gerbang beta M6 (wajib dipenuhi sebelum launch publik):** akurasi parser ≥ 95% pada data lapangan dan ≥ 60% beta user mencatat ≥ 4 hari/minggu.
+
+*Gerbang ketiga ("≥ 1 laporan PDF diserahkan ke petugas bank nyata") **DICABUT** 2026-08-15 bersamaan dengan dibatalkannya janji "siap diajukan ke bank" — gerbang itu ada untuk memverifikasi janji tersebut, dan tanpa janjinya ia kehilangan tujuan.*
 
 ---
 

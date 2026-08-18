@@ -35,7 +35,7 @@ const SITUS = process.env.NEXT_PUBLIC_APP_URL || "https://ai.idmtoken.com";
 
 const JUDUL_SOSIAL = "AIDM — Catat usahamu, dalam satu ucap.";
 const DESKRIPSI_SOSIAL =
-  "Buku usaha untuk UMKM, ojol, dan freelancer. Rapi, siap diajukan ke bank.";
+  "Buku usaha untuk UMKM, ojol, dan freelancer. Catat dengan bicara, laporannya rapi sendiri.";
 
 // Ukuran ASLI berkas `public/og-image.jpg`. Angka ini wajib cocok dengan
 // filenya: sebagian pengambil pratinjau memesan ruang tata letak dari angka
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     template: "%s · AIDM",
   },
   description:
-    "Catat usahamu dalam satu ucap. Buku usaha untuk UMKM, ojol, dan freelancer — rapi, siap diajukan ke bank.",
+    "Catat usahamu dalam satu ucap. Buku usaha untuk UMKM, ojol, dan freelancer — catat dengan bicara, laporannya rapi sendiri.",
   applicationName: brand.name,
   keywords: [
     "catatan usaha",

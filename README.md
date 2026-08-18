@@ -5,7 +5,7 @@
 PWA pencatatan keuangan untuk pelaku usaha mikro Indonesia. Pengguna **menceritakan**
 apa yang terjadi dengan kalimat biasa atau suara ("jual 3 nasi goreng 45rb bayar
 QRIS"), agen mengurainya jadi entri transaksi terstruktur, lalu mengubahnya menjadi
-laporan keuangan yang siap diajukan ke bank/koperasi. Web3 "proud but calm": punya
+laporan keuangan yang rapi dan bisa diunduh kapan saja. Web3 "proud but calm": punya
 akun = punya wallet, reward IDMX, segel laporan on-chain — sementara alur mencatat
 harian bersih tanpa jargon.
 
@@ -15,7 +15,7 @@ harian bersih tanpa jargon.
 > bukan lagi jantung produk. Mencatat **selalu gratis, nol Kredit AI**.
 >
 > **Status: M1–M4 selesai** (roadmap PRD §14). Parser pencatatan, tab Catat,
-> Riwayat, Laporan (agregasi server), dan ekspor PDF siap-bank teruji di
+> Riwayat, Laporan (agregasi server), dan ekspor PDF teruji di
 > produksi (`ai.idmtoken.com`); M2 (suara & offline) diverifikasi di perangkat
 > Android sungguhan 2026-08-14. **Segel laporan on-chain (§7.5) sudah berjalan
 > di testnet opBNB** — `ReportAttestation.sol` ter-deploy, laporan nyata
@@ -247,5 +247,6 @@ tinggal `pnpm deploy:rewards`) ·
 **M6** mainnet opBNB + beta tertutup 100 user + launch PWA + DappBay ·
 **M7** Google Play (TWA) + App Store (Capacitor).
 
-**Gerbang beta M6:** akurasi parser ≥ 95%, ≥ 60% beta user mencatat ≥ 4 hari/minggu,
-dan ≥ 1 laporan PDF berhasil diserahkan ke petugas bank/koperasi nyata.
+**Gerbang beta M6:** akurasi parser ≥ 95% pada data lapangan dan ≥ 60% beta user
+mencatat ≥ 4 hari/minggu. *(Gerbang "PDF diserahkan ke petugas bank" dicabut
+2026-08-15 — lihat PRD §14.)*

@@ -37,7 +37,7 @@ function Intro() {
         <h1>Catat usahamu, dalam satu ucap.</h1>
         <p className="text-[15px] leading-relaxed text-ink-muted">
           Tulis atau ucapkan transaksimu — AIDM merapikannya jadi laporan
-          keuangan yang siap diajukan ke bank.
+          keuangan yang rapi dan bisa diunduh kapan saja.
         </p>
       </div>
     </div>
