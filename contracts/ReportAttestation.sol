@@ -1,23 +1,50 @@
 // SPDX-License-Identifier: MIT
+/**
+ *  ██╗██████╗ ███╗   ███╗    ██████╗ ███████╗██████╗  ██████╗ ██████╗ ███╗   ██╗
+ *  ██║██╔══██╗████╗ ████║    ██╔══██╗██╔════╝██╔══██╗██╔═══██╗██╔══██╗████╗  ██║
+ *  ██║██║  ██║██╔████╔██║    ██████╔╝█████╗  ██████╔╝██║   ██║██████╔╝██╔██╗ ██║
+ *  ██║██║  ██║██║╚██╔╝██║    ██╔══██╗██╔══╝  ██╔══██╗██║   ██║██╔══██╗██║╚██╗██║
+ *  ██║██████╔╝██║ ╚═╝ ██║    ██║  ██║███████╗██████╔╝╚██████╔╝██║  ██║██║ ╚████║
+ *  ╚═╝╚═════╝ ╚═╝     ╚═╝    ╚═╝  ╚═╝╚══════╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝
+ *
+ *                                                                  by MC Basyar
+ *
+ *  ─────────────────────────────────────────────────────────────────────────────
+ *  IDM Reborn — Official Channels
+ *  ─────────────────────────────────────────────────────────────────────────────
+ *  Website   : https://idmtoken.com/
+ *  Telegram  : https://t.me/IDM_Token
+ *
+ *  Creator — MC Basyar
+ *  Website   : https://mcbasyar.org
+ *  Twitter/X : https://x.com/MCBasyar_IDM
+ *  Instagram : https://www.instagram.com/mc_basyar
+ *  ─────────────────────────────────────────────────────────────────────────────
+ */
 pragma solidity 0.8.26;
 
 /**
- * ReportAttestation — segel laporan keuangan AIDM (PRD §7.5 / §9.4).
+ * ReportAttestation — anchors a fingerprint of a user's financial report
+ * on-chain.
  *
- * Minimal dan bisa diaudit. Kontrak ini TIDAK menyimpan data keuangan apa pun:
- * hanya hash 32-byte + stempel waktu. Ketentuan §9.4 "hanya bytes32 yang
- * masuk" ditegakkan oleh tipe parameter itu sendiri — tidak ada parameter
- * string, nominal, atau metadata usaha di satu pun fungsi.
+ * This contract stores NO financial data whatsoever: only a 32-byte hash and a
+ * timestamp. That constraint is enforced by the parameter types themselves —
+ * no function accepts a string, an amount, or any business metadata, so there
+ * is no code path through which private figures could reach a public,
+ * permanent ledger.
  *
- * Hash membuktikan INTEGRITAS + KEBERADAAN laporan pada suatu waktu, BUKAN
- * kebenaran angkanya (§7.5 kejujuran teknis).
+ * What the hash proves is INTEGRITY and EXISTENCE AT A POINT IN TIME: that a
+ * given report has not changed since it was sealed. It does NOT prove the
+ * figures are correct. A user can seal invented numbers, and this contract
+ * would faithfully anchor them. Any wording that presents a seal as an audit
+ * or as a creditworthiness assessment misrepresents what this code does.
  *
- * Tanpa dependensi eksternal (tidak ada OpenZeppelin) — supaya seluruh kode
- * yang diaudit ada di satu berkas ini, dan hasil kompilasi tidak bergeser
- * karena versi library. Ownable dua langkah + pausable ditulis langsung.
+ * No external dependencies (no OpenZeppelin), so every line under audit lives
+ * in this single file and the compiled output does not shift with a library
+ * version bump. Two-step ownable and pausable are written out directly.
  *
- * Kepemilikan produksi (§9.4): setelah deploy, transferOwnership ke multisig
- * ber-timelock. Itu konfigurasi deploy, bukan kode.
+ * Production ownership: after deployment, ownership is transferred to a
+ * timelocked multisig. That is deployment configuration, not code.
  */
 contract ReportAttestation {
     struct Seal {
@@ -27,14 +54,16 @@ contract ReportAttestation {
 
     address public owner;
     address public pendingOwner;
-    /// Treasury yang mensponsori gas — satu-satunya alamat yang boleh
-    /// menyegel atas nama user (§7.5 "gas disponsori").
+    /// The gas-sponsoring treasury: the only address permitted to seal on
+    /// behalf of another user.
     address public relayer;
     bool public paused;
 
-    /// user => periodKey (keccak256("2026-08")) => segel TERAKHIR.
-    /// Segel ulang menimpa nilai ini; seluruh riwayat tetap abadi di event
-    /// `Sealed` (§9.4 — riwayat justru menambah kredibilitas).
+    /// user => periodKey (e.g. keccak256("2026-08")) => the LATEST seal.
+    /// Re-sealing a period overwrites this entry, while the full history
+    /// remains permanently readable from the `Sealed` events. Keeping that
+    /// history visible is intentional: a corrected report that was re-sealed
+    /// is more credible than one with no trace of revision.
     mapping(address => mapping(bytes32 => Seal)) public seals;
 
     event Sealed(
@@ -72,7 +101,7 @@ contract ReportAttestation {
         emit RelayerChanged(relayer_);
     }
 
-    /* ── Administrasi ────────────────────────────────────────────────────── */
+    /* ── Administration ──────────────────────────────────────────────────── */
 
     function setRelayer(address relayer_) external onlyOwner {
         if (relayer_ == address(0)) revert ZeroAddress();
@@ -85,8 +114,8 @@ contract ReportAttestation {
         emit PausedSet(paused_);
     }
 
-    /// Dua langkah: salah tulis alamat owner baru tidak langsung fatal —
-    /// kepemilikan baru pindah setelah alamat tujuan MENERIMA.
+    /// Two-step by design: mistyping the new owner address is not immediately
+    /// fatal, because ownership only moves once the target address ACCEPTS.
     function transferOwnership(address to) external onlyOwner {
         pendingOwner = to;
         emit OwnershipTransferStarted(to);
@@ -99,10 +128,10 @@ contract ReportAttestation {
         pendingOwner = address(0);
     }
 
-    /* ── Segel (§9.4) ────────────────────────────────────────────────────── */
+    /* ── Sealing ─────────────────────────────────────────────────────────── */
 
-    /// Menyegel atas nama diri sendiri — jalur user membayar gas sendiri
-    /// (dipakai bila kelak user ingin lepas dari relayer).
+    /// Seals on behalf of the caller, who pays their own gas. Kept available
+    /// so a user is never dependent on the relayer to anchor their report.
     function attest(bytes32 periodKey, bytes32 reportHash)
         external
         whenNotPaused
@@ -110,8 +139,10 @@ contract ReportAttestation {
         _attest(msg.sender, periodKey, reportHash);
     }
 
-    /// Jalur gasless (§9.4 "sponsored"): relayer treasury mengirim atas nama
-    /// user; ALAMAT USER yang tercatat sebagai subjek segel, bukan relayer.
+    /// Sponsored path: the treasury relayer submits and pays gas on behalf of
+    /// a user. The USER's address is recorded as the subject of the seal, not
+    /// the relayer's — who paid for the transaction is irrelevant to who the
+    /// seal belongs to.
     function attestFor(address user, bytes32 periodKey, bytes32 reportHash)
         external
         whenNotPaused
@@ -125,15 +156,16 @@ contract ReportAttestation {
         internal
     {
         if (reportHash == bytes32(0)) revert ZeroHash();
-        uint64 kini = uint64(block.timestamp);
-        seals[user][periodKey] = Seal(reportHash, kini);
-        emit Sealed(user, periodKey, reportHash, kini);
+        uint64 nowTs = uint64(block.timestamp);
+        seals[user][periodKey] = Seal(reportHash, nowTs);
+        emit Sealed(user, periodKey, reportHash, nowTs);
     }
 
-    /* ── Verifikasi pihak ketiga (§9.4) ──────────────────────────────────── */
+    /* ── Third-party verification ────────────────────────────────────────── */
 
-    /// Bank menghitung ulang hash dari data kanonik di laporan, lalu
-    /// mencocokkan ke sini. `ok` true = laporan tidak berubah sejak disegel.
+    /// A third party recomputes the hash from the canonical data printed in
+    /// the report and matches it here. `ok == true` means the report has not
+    /// changed since it was sealed.
     function verify(address user, bytes32 periodKey, bytes32 reportHash)
         external
         view

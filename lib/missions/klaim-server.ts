@@ -27,8 +27,8 @@ import { CAP_HARIAN_IDMX, CAP_BULANAN_IDMX } from "@/lib/missions";
 export const MISSION_REWARDS_ABI = parseAbi([
   "struct Voucher { address user; uint256 missionId; uint256 amount; uint256 nonce; uint64 deadline; uint8 bucket; }",
   "function claim((address,uint256,uint256,uint256,uint64,uint8) v, bytes signature)",
-  "function nonceTerpakai(address user, uint256 nonce) view returns (bool)",
-  "function sisaJatah(address user, uint8 bucket) view returns (uint256)",
+  "function nonceUsed(address user, uint256 nonce) view returns (bool)",
+  "function remainingAllowance(address user, uint8 bucket) view returns (uint256)",
 ]);
 
 /** Chain kontrak reward — dipisah dari chain default app, sama seperti segel. */

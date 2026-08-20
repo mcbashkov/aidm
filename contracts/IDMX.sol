@@ -56,15 +56,15 @@ contract IDMX {
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Burned(address indexed from, uint256 value);
 
-    error SaldoKurang();
-    error IzinKurang();
-    error AlamatNol();
+    error InsufficientBalance();
+    error InsufficientAllowance();
+    error ZeroAddress();
 
-    constructor(address treasury, uint256 pasokan) {
-        if (treasury == address(0)) revert AlamatNol();
-        totalSupply = pasokan;
-        balanceOf[treasury] = pasokan;
-        emit Transfer(address(0), treasury, pasokan);
+    constructor(address treasury, uint256 supply) {
+        if (treasury == address(0)) revert ZeroAddress();
+        totalSupply = supply;
+        balanceOf[treasury] = supply;
+        emit Transfer(address(0), treasury, supply);
     }
 
     function transfer(address to, uint256 value) external returns (bool) {
@@ -82,14 +82,14 @@ contract IDMX {
         external
         returns (bool)
     {
-        uint256 izin = allowance[from][msg.sender];
+        uint256 allowed = allowance[from][msg.sender];
         // type(uint256).max means an unlimited approval and is not decremented
         // on each transfer. This is the conventional pattern and saves gas for
         // contracts that pull from the same allowance repeatedly.
-        if (izin != type(uint256).max) {
-            if (izin < value) revert IzinKurang();
+        if (allowed != type(uint256).max) {
+            if (allowed < value) revert InsufficientAllowance();
             unchecked {
-                allowance[from][msg.sender] = izin - value;
+                allowance[from][msg.sender] = allowed - value;
             }
         }
         _transfer(from, to, value);
@@ -97,11 +97,11 @@ contract IDMX {
     }
 
     function _transfer(address from, address to, uint256 value) internal {
-        if (to == address(0)) revert AlamatNol();
-        uint256 saldo = balanceOf[from];
-        if (saldo < value) revert SaldoKurang();
+        if (to == address(0)) revert ZeroAddress();
+        uint256 balance = balanceOf[from];
+        if (balance < value) revert InsufficientBalance();
         unchecked {
-            balanceOf[from] = saldo - value;
+            balanceOf[from] = balance - value;
             balanceOf[to] += value;
         }
         emit Transfer(from, to, value);
@@ -122,21 +122,21 @@ contract IDMX {
     /// the swap contract to burn a user's IDMX as the first leg of a
     /// cross-chain claim.
     function burnFrom(address from, uint256 value) external {
-        uint256 izin = allowance[from][msg.sender];
-        if (izin != type(uint256).max) {
-            if (izin < value) revert IzinKurang();
+        uint256 allowed = allowance[from][msg.sender];
+        if (allowed != type(uint256).max) {
+            if (allowed < value) revert InsufficientAllowance();
             unchecked {
-                allowance[from][msg.sender] = izin - value;
+                allowance[from][msg.sender] = allowed - value;
             }
         }
         _burn(from, value);
     }
 
     function _burn(address from, uint256 value) internal {
-        uint256 saldo = balanceOf[from];
-        if (saldo < value) revert SaldoKurang();
+        uint256 balance = balanceOf[from];
+        if (balance < value) revert InsufficientBalance();
         unchecked {
-            balanceOf[from] = saldo - value;
+            balanceOf[from] = balance - value;
             totalSupply -= value;
         }
         emit Transfer(from, address(0), value);

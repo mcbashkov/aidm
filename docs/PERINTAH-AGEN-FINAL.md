@@ -87,9 +87,32 @@ hanya bahasanya yang berganti.
 sehingga rujukan semacam itu menjadi jalan buntu. Tuliskan alasannya secara utuh
 dan berdiri sendiri di dalam komentar.
 
-Berlaku untuk kontrak yang **belum ter-deploy**. `ReportAttestation.sol` sudah
-live di testnet — jangan disentuh; penyelarasan bahasanya ikut siklus mainnet
-bersama banner.
+**Identifier juga Inggris** — nama error, fungsi publik, state, dan parameter
+ikut masuk ABI dan terbaca auditor saat men-decode revert. Konvensi terpakai:
+
+| Indonesia | Inggris |
+|---|---|
+| `SaldoKurang` / `IzinKurang` / `AlamatNol` | `InsufficientBalance` / `InsufficientAllowance` / `ZeroAddress` |
+| `NonceTerpakai` / `VoucherKedaluwarsa` / `TandaTanganTidakSah` | `NonceAlreadyUsed` / `VoucherExpired` / `InvalidSignature` |
+| `EmberTidakDikenal` / `MelebihiCap` / `JumlahNol` | `UnknownBucket` / `CapExceeded` / `ZeroAmount` |
+| `nonceTerpakai` / `terklaim` / `hariWib` / `sisaJatah` | `nonceUsed` / `claimedOnDay` / `dayUtc7` / `remainingAllowance` |
+| `OFFSET_WIB` | `UTC7_OFFSET` |
+
+**Untuk kontrak yang belum ditulis**, §5–§6 di bawah masih memakai nama
+Indonesia — terjemahkan mengikuti pola yang sama saat mengimplementasikan:
+`capMingguan`→`weeklyCap`, `ambangGlobal`→`globalThreshold`,
+`plafonKumulatif`→`lifetimeCap`, `totalDibakarKumulatif`→`totalBurned`,
+`nonceBerjalan`→`nonceCounter`, `dipakaiMingguan`→`usedThisWeek`,
+`totalMingguan`→`weeklyTotal`, `mingguWib`→`weekUtc7`,
+`sisaJatahMinggu`→`remainingWeeklyAllowance`, `DiBawahMinimum`→`BelowMinimum`,
+`MelebihiCapMingguan`→`WeeklyCapExceeded`,
+`MelebihiPlafonKumulatif`→`LifetimeCapExceeded`,
+`RatchetDilanggar`→`RatchetViolation`, `VoucherJanggal`→`VoucherOutOfRange`,
+`JumlahTerlaluKecil`→`AmountTooSmall`. **Semantiknya tidak berubah sedikit pun.**
+
+`ReportAttestation.sol` **ikut diselaraskan 2026-08-20** (banner + komentar
+Inggris). Identifier-nya memang sudah Inggris sejak awal, jadi **ABI-nya
+IDENTIK** dan kontrak yang sudah live tetap kompatibel — tidak perlu redeploy.
 
 ---
 

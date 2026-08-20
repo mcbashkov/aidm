@@ -68,7 +68,7 @@ contract MissionRewards {
     /// Day index in UTC+7, computed as (timestamp + 7 hours) / 86400. Derived
     /// on-chain so that the day boundary never depends on the clock of
     /// whichever server happens to submit the transaction.
-    uint256 private constant OFFSET_WIB = 7 hours;
+    uint256 private constant UTC7_OFFSET = 7 hours;
 
     bytes32 private constant VOUCHER_TYPEHASH = keccak256(
         "Voucher(address user,uint256 missionId,uint256 amount,uint256 nonce,uint64 deadline,uint8 bucket)"
@@ -87,9 +87,9 @@ contract MissionRewards {
     uint256[2] public caps;
 
     /// user => nonce => already redeemed
-    mapping(address => mapping(uint256 => bool)) public nonceTerpakai;
+    mapping(address => mapping(uint256 => bool)) public nonceUsed;
     /// user => bucket => UTC+7 day => amount already claimed that day
-    mapping(address => mapping(uint8 => mapping(uint256 => uint256))) public terklaim;
+    mapping(address => mapping(uint8 => mapping(uint256 => uint256))) public claimedOnDay;
 
     event Claimed(
         address indexed user,
@@ -108,12 +108,12 @@ contract MissionRewards {
     error NotPendingOwner();
     error ContractPaused();
     error ZeroAddress();
-    error NonceTerpakai();
-    error VoucherKedaluwarsa();
-    error TandaTanganTidakSah();
-    error EmberTidakDikenal();
-    error MelebihiCap();
-    error JumlahNol();
+    error NonceAlreadyUsed();
+    error VoucherExpired();
+    error InvalidSignature();
+    error UnknownBucket();
+    error CapExceeded();
+    error ZeroAmount();
 
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
@@ -161,7 +161,7 @@ contract MissionRewards {
     }
 
     function setCap(uint8 bucket, uint256 cap) external onlyOwner {
-        if (bucket > 1) revert EmberTidakDikenal();
+        if (bucket > 1) revert UnknownBucket();
         caps[bucket] = cap;
         emit CapChanged(bucket, cap);
     }
@@ -192,8 +192,8 @@ contract MissionRewards {
 
     /* ── Claiming ────────────────────────────────────────────────────────── */
 
-    function hariWib(uint256 timestamp) public pure returns (uint256) {
-        return (timestamp + OFFSET_WIB) / 1 days;
+    function dayUtc7(uint256 timestamp) public pure returns (uint256) {
+        return (timestamp + UTC7_OFFSET) / 1 days;
     }
 
     function hashVoucher(Voucher calldata v) public view returns (bytes32) {
@@ -218,48 +218,48 @@ contract MissionRewards {
 
     /// Remaining allowance for a user in a given bucket, for the current
     /// UTC+7 day.
-    function sisaJatah(address user, uint8 bucket) external view returns (uint256) {
+    function remainingAllowance(address user, uint8 bucket) external view returns (uint256) {
         if (bucket > 1) return 0;
-        uint256 dipakai = terklaim[user][bucket][hariWib(block.timestamp)];
-        return dipakai >= caps[bucket] ? 0 : caps[bucket] - dipakai;
+        uint256 used = claimedOnDay[user][bucket][dayUtc7(block.timestamp)];
+        return used >= caps[bucket] ? 0 : caps[bucket] - used;
     }
 
     /**
-     * Tebus voucher. Boleh dipanggil siapa pun — keamanannya bersandar pada
-     * tanda tangan, bukan pada identitas pengirim. Itulah yang membuat mode
-     * gasless (relayer treasury mengirim) dan mode mandiri (user membayar gas
-     * sendiri) memakai jalur kode yang sama persis.
+     * Redeems a voucher. Callable by anyone: security rests on the signature,
+     * not on the identity of the sender. That is precisely what lets sponsored
+     * mode (a treasury relayer submits) and self-service mode (the user pays
+     * their own gas) travel the exact same code path.
      */
     function claim(Voucher calldata v, bytes calldata signature) external {
         if (paused) revert ContractPaused();
-        if (v.amount == 0) revert JumlahNol();
-        if (v.bucket > 1) revert EmberTidakDikenal();
-        if (block.timestamp > v.deadline) revert VoucherKedaluwarsa();
-        if (nonceTerpakai[v.user][v.nonce]) revert NonceTerpakai();
-        if (_pulihkan(hashVoucher(v), signature) != voucherSigner) {
-            revert TandaTanganTidakSah();
+        if (v.amount == 0) revert ZeroAmount();
+        if (v.bucket > 1) revert UnknownBucket();
+        if (block.timestamp > v.deadline) revert VoucherExpired();
+        if (nonceUsed[v.user][v.nonce]) revert NonceAlreadyUsed();
+        if (_recoverSigner(hashVoucher(v), signature) != voucherSigner) {
+            revert InvalidSignature();
         }
 
-        uint256 hari = hariWib(block.timestamp);
-        uint256 dipakai = terklaim[v.user][v.bucket][hari];
-        if (dipakai + v.amount > caps[v.bucket]) revert MelebihiCap();
+        uint256 day = dayUtc7(block.timestamp);
+        uint256 used = claimedOnDay[v.user][v.bucket][day];
+        if (used + v.amount > caps[v.bucket]) revert CapExceeded();
 
         // Effects before interaction: the nonce and the accumulator are
         // written first, so the token transfer below cannot be used to
         // re-enter this function before the state reflects the payout.
-        nonceTerpakai[v.user][v.nonce] = true;
-        terklaim[v.user][v.bucket][hari] = dipakai + v.amount;
+        nonceUsed[v.user][v.nonce] = true;
+        claimedOnDay[v.user][v.bucket][day] = used + v.amount;
 
         token.transfer(v.user, v.amount);
         emit Claimed(v.user, v.missionId, v.amount, v.nonce, v.bucket);
     }
 
-    function _pulihkan(bytes32 digest, bytes calldata sig)
+    function _recoverSigner(bytes32 digest, bytes calldata sig)
         internal
         pure
         returns (address)
     {
-        if (sig.length != 65) revert TandaTanganTidakSah();
+        if (sig.length != 65) revert InvalidSignature();
         bytes32 r;
         bytes32 s;
         uint8 vParam;
@@ -273,10 +273,10 @@ contract MissionRewards {
         // order. Without this check a second, equally valid signature exists
         // for the same voucher (signature malleability).
         if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
-            revert TandaTanganTidakSah();
+            revert InvalidSignature();
         }
         address pemulih = ecrecover(digest, vParam, r, s);
-        if (pemulih == address(0)) revert TandaTanganTidakSah();
+        if (pemulih == address(0)) revert InvalidSignature();
         return pemulih;
     }
 }
