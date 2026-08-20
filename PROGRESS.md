@@ -15,10 +15,16 @@ Diperbarui: **2026-08-20** · cabang `main`
 > suplai 50 miliar, banner) + `deploy-rewards.mjs` diperbarui (cap ember 1 →
 > 450). ✅ Langkah 2 (kode): `IDMReborn.sol` (1 miliar IDM hard-code ke treasury,
 > tanpa owner/mint, burn sejati) + `pnpm deploy:idm-bsc` (wallet lama, 1 tx,
-> validasi treasury sebelum kirim) — teruji penuh di anvil lokal. 🧑 Deploy BSC
-> testnet menunggu `IDM_LEGACY_DEPLOYER_PRIVATE_KEY` + `IDM_TREASURY_ADDRESS`
-> diisi di `.env.local` (+ tBNB di wallet lama). Belum ada yang di-deploy ke
-> testnet. ⬜ Langkah 3–6.
+> validasi treasury sebelum kirim). ✅ Langkah 3–5 (kode): `SwapInitiator.sol`
+> (opBNB — min 500, cap mingguan WIB, breaker 70%/100% dengan tx pemicu lolos,
+> plafon kumulatif) + `SwapClaim.sol` (BSC — voucher EIP-712, ratchet kurs
+> satu arah, fee 1 IDM dibakar, max voucher dalam IDMX) + skrip
+> `pnpm deploy:swap-bsc` / `fund:swap-pool` / `deploy:swap-opbnb`. Uji anvil
+> lokal 36/36 (kriteria §11 kontrak) + audit multi-agen. 🧑 SEMUA deploy testnet
+> menunggu kredensial di `.env.local`: urutannya `deploy:rewards` (opBNB) →
+> `deploy:idm-bsc` (wallet lama) → `deploy:swap-bsc` → `fund:swap-pool`
+> (treasury) → `deploy:swap-opbnb`. Belum ada yang di-deploy.
+> ⬜ Langkah 6 (relayer) + UI + `test:api` jalur penolakan swap.
 
 **Legenda pemilik:** 🧑 = butuh tangan Anda (kunci, dompet, keputusan bisnis,
 perangkat fisik) · 🤖 = bisa saya kerjakan sendiri

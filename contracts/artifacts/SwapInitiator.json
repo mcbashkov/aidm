@@ -1,0 +1,532 @@
+{
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "idmx_",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "weeklyCap_",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "globalThreshold_",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "lifetimeCap_",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "BelowMinimum",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "ContractPaused",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "LifetimeCapExceeded",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "NotOwner",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "NotPendingOwner",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "WeeklyCapExceeded",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "ZeroAddress",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "week",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "totalAfter",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "threshold",
+          "type": "uint256"
+        }
+      ],
+      "name": "BreakerAlert",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "week",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "totalAfter",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "threshold",
+          "type": "uint256"
+        }
+      ],
+      "name": "BreakerTripped",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "threshold",
+          "type": "uint256"
+        }
+      ],
+      "name": "GlobalThresholdChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "cap",
+          "type": "uint256"
+        }
+      ],
+      "name": "LifetimeCapChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        }
+      ],
+      "name": "OwnershipTransferStarted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "paused",
+          "type": "bool"
+        }
+      ],
+      "name": "PausedSet",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "idmxAmount",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "nonce",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "SwapRequested",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "cap",
+          "type": "uint256"
+        }
+      ],
+      "name": "WeeklyCapChanged",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "MIN_SWAP",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "acceptOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "globalThreshold",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "idmx",
+      "outputs": [
+        {
+          "internalType": "contract IIDMX",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "lifetimeCap",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "nonceCounter",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "paused",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "pendingOwner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        }
+      ],
+      "name": "remainingWeeklyAllowance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "threshold",
+          "type": "uint256"
+        }
+      ],
+      "name": "setGlobalThreshold",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "cap",
+          "type": "uint256"
+        }
+      ],
+      "name": "setLifetimeCap",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bool",
+          "name": "paused_",
+          "type": "bool"
+        }
+      ],
+      "name": "setPaused",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "cap",
+          "type": "uint256"
+        }
+      ],
+      "name": "setWeeklyCap",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "idmxAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "swap",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalBurned",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "usedThisWeek",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "weekUtc7",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "weeklyCap",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "weeklyTotal",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x60a060405234801561000f575f80fd5b50604051610bbf380380610bbf83398101604081905261002e9161012b565b6001600160a01b0384166100555760405163d92e233d60e01b815260040160405180910390fd5b5f80546001600160a01b031916331790556001600160a01b0384166080526002839055600382905560048190556040517f4035faa36ff435472935a36465801947eea1dab66d715ac8e0e69520b4fd749f906100b49085815260200190565b60405180910390a16040518281527ff31dd800461dbccb70f80874c9586dbed7c8293c20ff326d061f0c2221a1d3309060200160405180910390a16040518181527fb4e9f7d677181966e1146a326e5505a16bb3601dfb9913440451056a403cb5649060200160405180910390a150505050610172565b5f805f806080858703121561013e575f80fd5b84516001600160a01b0381168114610154575f80fd5b60208601516040870151606090970151919890975090945092505050565b608051610a2e6101915f395f818161015001526106e90152610a2e5ff3fe608060405234801561000f575f80fd5b5060043610610132575f3560e01c80638da5cb5b116100b4578063d89135cd11610079578063d89135cd14610284578063de0097b61461028d578063de780bbd146102b7578063e30c3978146102c0578063e7eb0fc2146102d3578063f2fde38b146102e6575f80fd5b80638da5cb5b1461021a57806394b918de1461022c578063999640c71461023f578063a7a7d61d14610252578063be2d64c014610265575f80fd5b80635c975abb116100fa5780635c975abb146101b857806379ba5097146101dc5780637a41e54d146101e45780637b5dbbdd146101f7578063879b66c914610207575f80fd5b806316c38b3c146101365780631a034bb11461014b5780631c80291e1461018f57806328c4c940146101a65780634f8d32be146101af575b5f80fd5b6101496101443660046108de565b6102f9565b005b6101727f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b61019860035481565b604051908152602001610186565b61019860045481565b61019860025481565b6001546101cc90600160a01b900460ff1681565b6040519015158152602001610186565b61014961037b565b6101496101f23660046108fd565b610408565b610198681b1ae4d6e2ef50000081565b61019861021536600461092f565b610467565b5f54610172906001600160a01b031681565b61014961023a3660046108fd565b6104c0565b61014961024d3660046108fd565b61078c565b6101986102603660046108fd565b6107eb565b6101986102733660046108fd565b60086020525f908152604090205481565b61019860055481565b61019861029b366004610948565b600760209081525f928352604080842090915290825290205481565b61019860065481565b600154610172906001600160a01b031681565b6101496102e13660046108fd565b61080c565b6101496102f436600461092f565b61086b565b5f546001600160a01b03163314610323576040516330cd747160e01b815260040160405180910390fd5b60018054821515600160a01b0260ff60a01b199091161790556040517f40db37ff5c0bdc2c427fbb2078c8f24afea940abac0e3c23bb4ea3bf2da2b2129061037090831515815260200190565b60405180910390a150565b6001546001600160a01b031633146103a657604051630614e5c760e21b815260040160405180910390fd5b6001545f80546040516001600160a01b0393841693909116917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e091a3600180545f80546001600160a01b03199081166001600160a01b03841617909155169055565b5f546001600160a01b03163314610432576040516330cd747160e01b815260040160405180910390fd5b60028190556040518181527f4035faa36ff435472935a36465801947eea1dab66d715ac8e0e69520b4fd749f90602001610370565b6001600160a01b0381165f90815260076020526040812081908161048a426107eb565b81526020019081526020015f205490506002548110156104b757806002546104b29190610984565b6104b9565b5f5b9392505050565b600154600160a01b900460ff16156104eb5760405163ab35696f60e01b815260040160405180910390fd5b681b1ae4d6e2ef5000008110156105155760405163860b82a960e01b815260040160405180910390fd5b5f61051f426107eb565b335f9081526007602090815260408083208484529091529020546002549192509061054a8483610997565b11156105695760405163c80ff02b60e01b815260040160405180910390fd5b5f836005546105789190610997565b905060045481111561059d576040516381b14d6960e01b815260040160405180910390fd5b5f838152600860205260408120546105b6908690610997565b90506105c28584610997565b335f9081526007602090815260408083208884528252808320939093556008905290812082905560058390556006805482906105fd906109aa565b9190508190559050600354821061066b576001805460ff60a01b1916600160a01b1790556003546040805187815260208101859052908101919091527fe2b1c7af717df351b761d9f3059967124f6b6a7aeb64b66c1601c6ddb67d451f9060600160405180910390a16106cd565b6003546106799060076109c2565b61068483600a6109c2565b106106cd57600354604080518781526020810185905280820192909252517fc49325122da317def6f855d9f5910a229b98c5e2ddd7ee6590de92f0197cb9499181900360600190a15b60405163079cc67960e41b8152336004820152602481018790527f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316906379cc6790906044015f604051808303815f87803b158015610732575f80fd5b505af1158015610744573d5f803e3d5ffd5b5050604080518981524260208201528493503392507ffb5bf9703362e5d4cb19614591525a6e07759bdf15086ec69397b5013ec8b13f910160405180910390a3505050505050565b5f546001600160a01b031633146107b6576040516330cd747160e01b815260040160405180910390fd5b60048190556040518181527fb4e9f7d677181966e1146a326e5505a16bb3601dfb9913440451056a403cb56490602001610370565b5f62093a806107fc61627084610997565b61080691906109d9565b92915050565b5f546001600160a01b03163314610836576040516330cd747160e01b815260040160405180910390fd5b60038190556040518181527ff31dd800461dbccb70f80874c9586dbed7c8293c20ff326d061f0c2221a1d33090602001610370565b5f546001600160a01b03163314610895576040516330cd747160e01b815260040160405180910390fd5b600180546001600160a01b0319166001600160a01b0383169081179091556040517fd9be0e8e07417e00f2521db636cb53e316fd288f5051f16d2aa2bf0c3938a876905f90a250565b5f602082840312156108ee575f80fd5b813580151581146104b9575f80fd5b5f6020828403121561090d575f80fd5b5035919050565b80356001600160a01b038116811461092a575f80fd5b919050565b5f6020828403121561093f575f80fd5b6104b982610914565b5f8060408385031215610959575f80fd5b61096283610914565b946020939093013593505050565b634e487b7160e01b5f52601160045260245ffd5b8181038181111561080657610806610970565b8082018082111561080657610806610970565b5f600182016109bb576109bb610970565b5060010190565b808202811582820484141761080657610806610970565b5f826109f357634e487b7160e01b5f52601260045260245ffd5b50049056fea26469706673582212201ef184d7c3ec3a9956011126df67f7e8ad6ae2a0a7f967ac535d583aeee32dee64736f6c634300081a0033",
+  "compiler": "0.8.26+commit.8a97fa7a.Emscripten.clang",
+  "optimizer": {
+    "enabled": true,
+    "runs": 200
+  }
+}

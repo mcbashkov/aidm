@@ -289,9 +289,16 @@ function swap(uint256 idmxAmount) external {
 
 Admin tambahan: `setPlafonKumulatif(uint256)` onlyOwner + event. **Runbook ratchet
 (WAJIB, urutannya tidak boleh dibalik):** sebelum `setRate` di BSC, KETATKAN dulu
-plafon di opBNB → `plafonBaru = totalDibakarKumulatif + (sisaKolamIDM × rateBaru)`.
-Kencangkan dulu, baru longgarkan kurs. Skrip `scripts/ratchet-check.mjs` menghitung
-dan memverifikasi kedua nilai sebelum eksekusi.
+plafon di opBNB →
+`plafonBaru = totalDibakarKumulatif + (sisaKolamIDM × rateBaru) − burnBelumDiklaim`.
+*(Dikoreksi 2026-08-21, temuan audit: suku pengurang `burnBelumDiklaim` — IDMX yang
+sudah dibakar tapi nonce-nya belum terpakai di SwapClaim, relayer tahu persis —
+WAJIB ada. Voucher dibayar pada rate saat KLAIM, jadi burn yang menggantung saat
+ratchet akan menarik kolam LEBIH banyak daripada saat diterima; tanpa pengurang
+ini plafon kelebihan jatah persis sebesar burn menggantung itu dan klaim ekor
+gagal — burn tanpa penebusan.)* Kencangkan dulu, baru longgarkan kurs. Skrip
+`scripts/ratchet-check.mjs` menghitung dan memverifikasi kedua nilai sebelum
+eksekusi.
 
 Admin: `setCapMingguan`, `setAmbangGlobal`, `setPaused` (unpause manual setelah
 breaker), ownable dua langkah, + view `sisaJatahMinggu(address)` untuk UI.
@@ -359,7 +366,10 @@ function claim(SwapVoucher calldata v, bytes calldata sig) external {
 - Admin: `setSwapSigner`, `setPaused`, `setMaxIdmxPerVoucher`, `sweep(to,amount)`
   onlyOwner (penyelamatan/migrasi kolam), ownable dua langkah.
 - `maxIdmxPerVoucher` awal: `2_000e18` (cermin cap mingguan SwapInitiator; naikkan
-  hanya jika cap mingguan dinaikkan).
+  hanya jika cap mingguan dinaikkan — dan **URUTANNYA: naikkan `maxIdmxPerVoucher`
+  di BSC DULU, baru `weeklyCap` di opBNB**. *(Dikoreksi 2026-08-21, temuan audit:
+  urutan sebaliknya membuka jendela burn yang diterima di opBNB tapi voucher-nya
+  ditolak `VoucherOutOfRange` di BSC = burn tanpa penebusan.)*)
 
 ## 7. Relayer swap (off-chain, service baru)
 
