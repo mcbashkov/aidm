@@ -42,10 +42,16 @@ const keMainnet = process.argv.includes("--mainnet");
 const dryRun = process.argv.includes("--dry-run");
 
 /* ── Parameter ekonomi (§8.1 / §7.6) ─────────────────────────────────────── */
-const PASOKAN_IDMX = 10_000_000_000_000n; // 10 triliun (§8.1)
-const DANA_AWAL_IDMX = 100_000_000n; // 100 juta IDMX untuk kontrak reward
-const CAP_HARIAN = 250n; // §7.6
-const CAP_BULANAN = 150n; // §7.6 (cap tersendiri)
+// Angka FINAL dari docs/PERINTAH-AGEN-FINAL.md §0 — jangan ditebak ulang.
+const PASOKAN_IDMX = 50_000_000_000n; // 50 miliar, dicetak penuh ke treasury
+// Float kerja testnet & beta (0,2% suplai). Kontrak reward bisa diisi ulang
+// kapan saja dengan transfer biasa, jadi angka ini tidak mengunci apa pun.
+// Angka pendanaan MAINNET diputuskan di siklus mainnet (C4).
+const DANA_AWAL_IDMX = 100_000_000n; // 100 juta IDMX
+const CAP_HARIAN = 250n; // ember 0 — misi harian & mingguan
+// Ember 1 naik 150 → 450: segel bulanan (150) + runtun 30 hari (300) kini
+// berbagi ember yang sama, dan keduanya bisa diklaim di bulan yang sama.
+const CAP_BULANAN = 450n; // ember 1 — misi bulanan, jatah terpisah
 const WEI = 10n ** 18n;
 
 /* ── 1. Kompilasi ────────────────────────────────────────────────────────── */

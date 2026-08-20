@@ -4,7 +4,16 @@ Pelacak pekerjaan lintas sesi. **README** menjelaskan produk & cara menjalankan;
 berkas ini menjawab satu pertanyaan saja: *apa yang sudah beres, apa berikutnya,
 dan siapa yang mengerjakan.*
 
-Diperbarui: **2026-08-15** · cabang `main` @ `fd8e8ff`
+Diperbarui: **2026-08-20** · cabang `main`
+
+> ⚠️ **Sisi token digantikan `docs/PERINTAH-AGEN-FINAL.md`.** Untuk apa pun yang
+> menyangkut IDMX/IDM Reborn/swap/kurs/tokenomics, dokumen itu sumber kebenaran
+> tunggal — bagian "Ekonomi reward IDMX" di bawah **sudah usang** (masih menyebut
+> suplai & kurs versi lama). Bagian lain papan kerja ini tetap berlaku.
+>
+> **Batch sisi token — kemajuan:** ✅ Langkah 1 (§10): IDMX direvisi (burn sejati,
+> suplai 50 miliar, banner) + `deploy-rewards.mjs` diperbarui (cap ember 1 →
+> 450). Belum di-deploy ke testnet. ⬜ Langkah 2–6.
 
 **Legenda pemilik:** 🧑 = butuh tangan Anda (kunci, dompet, keputusan bisnis,
 perangkat fisik) · 🤖 = bisa saya kerjakan sendiri

@@ -1,5 +1,12 @@
 # Briefing: Ekonomi Token AIDM — untuk diskusi
 
+> ⚠️ **USANG (2026-08-20) — jangan dipakai sebagai acuan angka.** Berkas ini
+> adalah bahan diskusi yang sudah menjalankan tugasnya; seluruh pertanyaan
+> terbukanya kini terjawab di `docs/PERINTAH-AGEN-FINAL.md`. Angka di sini
+> (usulan suplai 10 miliar, kurs yang masih dipertimbangkan) **berbeda dari
+> keputusan final** (suplai 50 miliar, kurs 50:1 ber-ratchet). Disimpan sebagai
+> jejak alasan di balik keputusan, bukan sebagai spesifikasi.
+
 > **Cara pakai berkas ini.** Tempelkan seluruh isinya ke percakapan Claude baru,
 > lalu ajukan pertanyaan Anda. Berkas ini sengaja berdiri sendiri: semua konteks,
 > angka, dan alasan di baliknya ada di sini, sehingga tidak perlu akses ke kode.

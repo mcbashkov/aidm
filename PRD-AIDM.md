@@ -636,6 +636,12 @@ Mengikuti v2.0 (Lighthouse ≥ 90, LCP ≤ 2,5s, INP < 200ms, CLS < 0,1, bundle 
 
 ## 16. Keputusan Terbuka (Product Owner)
 
+> **DIGANTIKAN untuk sisi token (2026-08-20).** Keputusan #5 (kurs IDMX→IDM),
+> #8 (alokasi tokenomics), dan #11 (lintas-chain) **sudah final** di
+> `docs/PERINTAH-AGEN-FINAL.md` — kurs 50:1 ber-ratchet, suplai IDMX 50 miliar,
+> jembatan burn-on-opBNB → claim-on-BSC. Daftar di bawah dipertahankan sebagai
+> catatan sejarah; bila bertentangan, PERINTAH-AGEN-FINAL yang berlaku.
+
 1. **Nama tab & tagline final** — *(selesai)* "Catat" (`nav-items.ts`) + tagline "Catat usahamu, dalam satu ucap." (`login-panel.tsx`) sudah diimplementasikan.
 2. **Domain produk** — *(diputuskan 2026-08-14)* `ai.idmtoken.com` — subdomain dari domain token yang sudah ada.
 3. **Provider embedded wallet** — Privy (default, sudah terpasang). *(selesai)*

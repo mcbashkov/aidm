@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swap sheet AIDM — Tukar IDMX → IDM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#F1EFE8;
+    --ink-card:#1C1810; --ink-inner:#141009; --ink-field:#100C07;
+    --gold:#F1BB0E; --gold-bright:#F3C64A; --gold-muted:#C3AC69;
+    --line-gold:rgba(243,198,74,.14); --line-gold-2:rgba(243,198,74,.26);
+    --dim:#9C917C; --dim-2:#6F6656; --green:#5FBF8A; --amber:#E9B24A;
+    --btn-text:#241B10;
+    --sans:'Plus Jakarta Sans',system-ui,sans-serif;
+    --serif:'Fraunces',Georgia,serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--cream);font-family:var(--sans);color:#2A2016;
+    -webkit-font-smoothing:antialiased;padding:34px 20px 70px}
+  .wrap{max-width:1120px;margin:0 auto}
+  .lbl-sec{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+    color:#B3A891;margin:0 0 16px}
+  .row{display:flex;gap:52px;flex-wrap:wrap;align-items:flex-start}
+
+  /* ===== shared sheet visuals ===== */
+  .sheet{position:relative;background:var(--ink-card);overflow:hidden;
+    border:1px solid rgba(243,198,74,.10)}
+  .sheet::before{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(80% 60% at 100% 0%,rgba(241,187,14,.20),rgba(241,187,14,.03) 46%,transparent 70%)}
+  .sheet > *{position:relative;z-index:1}
+
+  .s-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+  .s-title{font-family:var(--serif);font-weight:500;font-size:23px;letter-spacing:-.01em;color:#F3EEE2}
+  .x{background:transparent;border:0;cursor:pointer;color:var(--dim);padding:6px;border-radius:8px;
+    display:inline-flex;transition:.15s}
+  .x:hover{color:#F3EEE2;background:rgba(255,255,255,.05)}
+
+  .flabel{display:flex;align-items:center;justify-content:space-between;
+    font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:9px}
+  .flabel .bal{letter-spacing:0;text-transform:none;font-weight:500;font-size:12.5px;color:var(--dim)}
+  .flabel .bal b{color:var(--gold-muted);font-weight:600}
+
+  .field{background:var(--ink-field);border:1px solid var(--line-gold);border-radius:15px;
+    padding:16px 18px;display:flex;align-items:center;gap:12px}
+  .field:focus-within{border-color:var(--line-gold-2)}
+  .field input{background:transparent;border:0;outline:0;color:#F3EEE2;font-family:var(--serif);
+    font-weight:500;font-size:32px;letter-spacing:-.01em;width:100%;min-width:0}
+  .field input::placeholder{color:#4A4335}
+  .unit{font-size:13px;font-weight:700;letter-spacing:.05em;color:var(--gold-muted);
+    border:1px solid var(--line-gold-2);border-radius:9px;padding:6px 11px;white-space:nowrap}
+
+  .chips{display:flex;gap:8px;margin-top:12px}
+  .chip{flex:1;background:transparent;border:1px solid var(--line-gold);color:var(--dim);
+    font-family:var(--sans);font-size:13px;font-weight:600;padding:9px 0;border-radius:10px;
+    cursor:pointer;transition:.15s}
+  .chip:hover{border-color:var(--line-gold-2);color:var(--gold-bright)}
+  .chip.on{background:rgba(243,198,74,.10);border-color:var(--line-gold-2);color:var(--gold-bright)}
+
+  .arrow{display:flex;justify-content:center;margin:16px 0}
+  .arrow span{width:38px;height:38px;border-radius:50%;background:var(--ink-inner);
+    border:1px solid var(--line-gold);display:flex;align-items:center;justify-content:center;color:var(--gold-muted)}
+
+  .receive{background:var(--ink-inner);border:1px solid var(--line-gold);border-radius:15px;padding:16px 18px;
+    display:flex;align-items:baseline;gap:11px}
+  .receive .rnum{font-family:var(--serif);font-weight:500;font-size:38px;line-height:.9;color:var(--gold-bright);letter-spacing:-.02em}
+  .receive .runit{font-size:13.5px;font-weight:600;color:var(--dim)}
+
+  .detail{margin-top:20px;border-top:1px solid var(--line-gold);padding-top:16px;display:flex;flex-direction:column;gap:11px}
+  .drow{display:flex;align-items:center;justify-content:space-between;font-size:13px}
+  .drow .k{color:var(--dim)}
+  .drow .v{color:#D9D2C4;font-weight:500}
+  .drow .v.mut{color:var(--dim);font-weight:400}
+  .drow .v .tag{color:var(--dim-2);font-size:11.5px;margin-left:6px}
+  .dest .v{display:inline-flex;align-items:center;gap:7px}
+  .dest .badge-bsc{font-size:10.5px;font-weight:700;letter-spacing:.04em;color:#E7C46A;
+    border:1px solid var(--line-gold-2);border-radius:6px;padding:3px 7px}
+
+  .gasnote{margin-top:16px;background:rgba(233,178,74,.07);border:1px solid rgba(233,178,74,.22);
+    border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start}
+  .gasnote svg{flex:none;color:var(--amber);margin-top:1px}
+  .gasnote p{color:#CDBE9A;font-size:12.5px;line-height:1.5}
+  .gasnote a{color:var(--gold-bright);text-decoration:none;font-weight:600;white-space:nowrap}
+
+  .confirm{margin-top:18px;width:100%;background:var(--gold);color:var(--btn-text);border:0;cursor:pointer;
+    font-family:var(--sans);font-size:15.5px;font-weight:700;letter-spacing:-.01em;padding:16px;border-radius:14px;
+    box-shadow:0 12px 26px -12px rgba(241,187,14,.6);transition:.13s}
+  .confirm:hover{filter:brightness(1.04);transform:translateY(-1px)}
+  .confirm:disabled{background:#3A342A;color:#736A58;box-shadow:none;cursor:not-allowed;transform:none;filter:none}
+  .footline{text-align:center;color:var(--dim-2);font-size:11.5px;margin-top:12px}
+
+  /* ===== mobile bottom sheet in a phone frame ===== */
+  .phone{width:380px;max-width:100%}
+  .phone-frame{background:#0b0906;border-radius:38px;padding:12px;
+    box-shadow:0 30px 70px -30px rgba(40,28,8,.5)}
+  .phone-screen{background:#EDE9DF;border-radius:28px;overflow:hidden;position:relative;height:720px}
+  .backdrop{position:absolute;inset:0;background:rgba(20,14,6,.55);backdrop-filter:blur(1.5px)}
+  .peek{padding:20px 18px}
+  .peek h2{font-family:var(--serif);font-weight:500;font-size:30px;letter-spacing:-.02em;color:#2A2016}
+  .peek p{color:#8A8071;font-size:13px;margin-top:4px}
+  .bottomsheet{position:absolute;left:0;right:0;bottom:0;background:var(--ink-card);
+    border-radius:26px 26px 0 0;padding:22px 22px 26px;border-top:1px solid rgba(243,198,74,.12)}
+  .grip{width:38px;height:4px;border-radius:2px;background:#4A4335;margin:0 auto 16px}
+
+  /* ===== desktop modal ===== */
+  .modal-stage{background:#2A2318;border-radius:22px;padding:40px;position:relative;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;min-height:660px}
+  .modal-stage .glowbg{position:absolute;inset:0;
+    background:radial-gradient(60% 50% at 50% 0%,rgba(241,187,14,.10),transparent 70%)}
+  .modal{width:420px;max-width:100%;border-radius:22px;padding:26px 26px 28px;
+    box-shadow:0 40px 90px -30px rgba(0,0,0,.6);position:relative}
+
+  @media(max-width:900px){.row{gap:36px}.modal-stage{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ================= MOBILE (bottom sheet) ================= -->
+  <div class="lbl-sec">Mobile — bottom sheet</div>
+  <div class="row">
+    <div class="phone">
+      <div class="phone-frame">
+        <div class="phone-screen">
+          <div class="peek">
+            <h2>Warung Abadi</h2>
+            <p>Freelance / jasa · Bekasi</p>
+          </div>
+          <div class="backdrop"></div>
+          <div class="bottomsheet sheet">
+            <div class="grip"></div>
+            <div class="s-head">
+              <span class="s-title">Tukar IDMX → IDM</span>
+              <button class="x" aria-label="Tutup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+            </div>
+
+            <div class="flabel">Kamu tukar <span class="bal">Saldo <b>1.730</b> IDMX</span></div>
+            <div class="field">
+              <input id="amt" type="text" inputmode="numeric" value="1.500">
+              <span class="unit">IDMX</span>
+            </div>
+            <div class="chips">
+              <button class="chip" data-v="500">500</button>
+              <button class="chip on" data-v="1500">1.500</button>
+              <button class="chip" data-v="1730">Maks</button>
+            </div>
+
+            <div class="arrow"><span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m6 13 6 6 6-6"/></svg></span></div>
+
+            <div class="flabel">Kamu terima</div>
+            <div class="receive"><span class="rnum" id="rnum">29</span><span class="runit">IDM Reborn</span></div>
+
+            <div class="detail">
+              <div class="drow"><span class="k">Kurs</span><span class="v">50 IDMX = 1 IDM</span></div>
+              <div class="drow"><span class="k">IDM Reborn (kotor)</span><span class="v mut" id="gross">30 IDM</span></div>
+              <div class="drow"><span class="k">Biaya jaringan</span><span class="v">−1 IDM<span class="tag">sebagian dibakar</span></span></div>
+              <div class="drow dest"><span class="k">Diterima di</span><span class="v">0x94F9…EAc9 <span class="badge-bsc">BSC</span></span></div>
+            </div>
+
+            <div class="gasnote">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+              <p>Klaim ke BSC butuh sedikit BNB untuk ongkos jaringan, dan kamu yang menanggungnya. <a href="#">Cara isi BNB</a></p>
+            </div>
+
+            <button class="confirm">Konfirmasi tukar</button>
+            <div class="footline">Minimum 500 IDMX · sisa jatah minggu ini 2.000 IDMX</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= DESKTOP (modal) ================= -->
+    <div style="flex:1;min-width:420px">
+      <div class="lbl-sec">Desktop — modal</div>
+      <div class="modal-stage">
+        <div class="glowbg"></div>
+        <div class="modal sheet">
+          <div class="s-head">
+            <span class="s-title">Tukar IDMX → IDM</span>
+            <button class="x" aria-label="Tutup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+          </div>
+
+          <div class="flabel">Kamu tukar <span class="bal">Saldo <b>1.730</b> IDMX</span></div>
+          <div class="field">
+            <input id="amt2" type="text" inputmode="numeric" value="1.500">
+            <span class="unit">IDMX</span>
+          </div>
+          <div class="chips">
+            <button class="chip" data-v="500">500</button>
+            <button class="chip on" data-v="1500">1.500</button>
+            <button class="chip" data-v="1730">Maks</button>
+          </div>
+
+          <div class="arrow"><span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m6 13 6 6 6-6"/></svg></span></div>
+
+          <div class="flabel">Kamu terima</div>
+          <div class="receive"><span class="rnum" id="rnum2">29</span><span class="runit">IDM Reborn</span></div>
+
+          <div class="detail">
+            <div class="drow"><span class="k">Kurs</span><span class="v">50 IDMX = 1 IDM</span></div>
+            <div class="drow"><span class="k">IDM Reborn (kotor)</span><span class="v mut" id="gross2">30 IDM</span></div>
+            <div class="drow"><span class="k">Biaya jaringan</span><span class="v">−1 IDM<span class="tag">sebagian dibakar</span></span></div>
+            <div class="drow dest"><span class="k">Diterima di</span><span class="v">0x94F9…EAc9 <span class="badge-bsc">BSC</span></span></div>
+          </div>
+
+          <div class="gasnote">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            <p>Klaim ke BSC butuh sedikit BNB untuk ongkos jaringan, dan kamu yang menanggungnya. <a href="#">Cara isi BNB</a></p>
+          </div>
+
+          <button class="confirm">Konfirmasi tukar</button>
+          <div class="footline">Minimum 500 IDMX · sisa jatah minggu ini 2.000 IDMX</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const KURS=50, FEE=1, MIN=500, CAPWEEK=2000, BAL=1730;
+  function fmt(n){return n.toLocaleString('id-ID');}
+  function parseAmt(s){return parseInt((s||'').replace(/[^\d]/g,''))||0;}
+  function calc(scope){
+    const inp=scope.querySelector('input');
+    const amt=parseAmt(inp.value);
+    const gross=Math.floor(amt/KURS);
+    const net=Math.max(0,gross-FEE);
+    scope.querySelector('[id^=rnum]').textContent=fmt(net);
+    scope.querySelector('[id^=gross]').textContent=fmt(gross)+' IDM';
+    const btn=scope.querySelector('.confirm');
+    const capLeft=CAPWEEK; // demo: full quota
+    let bad=null;
+    if(amt<MIN) bad='Minimum 500 IDMX';
+    else if(amt>BAL) bad='Saldo tidak cukup';
+    else if(amt>capLeft) bad='Melebihi jatah minggu ini';
+    btn.disabled=!!bad;
+    btn.textContent=bad?bad:'Konfirmasi tukar';
+    // sync chip active state
+    scope.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',parseInt(c.dataset.v)===amt));
+  }
+  document.querySelectorAll('.sheet').forEach(scope=>{
+    const inp=scope.querySelector('input');
+    inp.addEventListener('input',()=>{
+      const raw=parseAmt(inp.value);
+      inp.value=raw?fmt(raw):'';
+      calc(scope);
+    });
+    scope.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+      inp.value=fmt(parseInt(c.dataset.v));calc(scope);
+    }));
+    calc(scope);
+  });
+</script>
+</body>
+</html>

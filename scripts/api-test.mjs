@@ -588,8 +588,11 @@ async function main() {
 
     cek("cap harian dilaporkan (§7.6)",
       r.body?.capHarian?.batas === 250, `dapat ${r.body?.capHarian?.batas}`);
+    // 450 = segel bulanan (150) + runtun 30 hari (300); WAJIB sama dengan
+    // caps[1] di MissionRewards, kalau tidak server menolak klaim yang sah
+    // on-chain (PERINTAH-AGEN-FINAL §0).
     cek("cap bulanan terpisah dari cap harian",
-      r.body?.capBulanan?.batas === 150, `dapat ${r.body?.capBulanan?.batas}`);
+      r.body?.capBulanan?.batas === 450, `dapat ${r.body?.capBulanan?.batas}`);
   }
   {
     // AC §7.6: menghapus transaksi mengurangi progres misi terkait.

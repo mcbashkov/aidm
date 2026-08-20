@@ -1,4 +1,26 @@
 // SPDX-License-Identifier: MIT
+/**
+ *  ██╗██████╗ ███╗   ███╗    ██████╗ ███████╗██████╗  ██████╗ ██████╗ ███╗   ██╗
+ *  ██║██╔══██╗████╗ ████║    ██╔══██╗██╔════╝██╔══██╗██╔═══██╗██╔══██╗████╗  ██║
+ *  ██║██║  ██║██╔████╔██║    ██████╔╝█████╗  ██████╔╝██║   ██║██████╔╝██╔██╗ ██║
+ *  ██║██║  ██║██║╚██╔╝██║    ██╔══██╗██╔══╝  ██╔══██╗██║   ██║██╔══██╗██║╚██╗██║
+ *  ██║██████╔╝██║ ╚═╝ ██║    ██║  ██║███████╗██████╔╝╚██████╔╝██║  ██║██║ ╚████║
+ *  ╚═╝╚═════╝ ╚═╝     ╚═╝    ╚═╝  ╚═╝╚══════╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝
+ *
+ *                                                                  by MC Basyar
+ *
+ *  ─────────────────────────────────────────────────────────────────────────────
+ *  IDM Reborn — Official Channels
+ *  ─────────────────────────────────────────────────────────────────────────────
+ *  Website   : https://idmtoken.com/
+ *  Telegram  : https://t.me/IDM_Token
+ *
+ *  Creator — MC Basyar
+ *  Website   : https://mcbasyar.org
+ *  Twitter/X : https://x.com/MCBasyar_IDM
+ *  Instagram : https://www.instagram.com/mc_basyar
+ *  ─────────────────────────────────────────────────────────────────────────────
+ */
 pragma solidity 0.8.26;
 
 /**
@@ -8,10 +30,11 @@ pragma solidity 0.8.26;
  * ReportAttestation: seluruh kode yang diaudit ada di satu berkas, dan hasil
  * kompilasi tidak bergeser karena versi library).
  *
- * Pasokan 10 triliun dicetak SELURUHNYA saat deploy ke treasury — tidak ada
- * fungsi `mint` sama sekali. Ini keputusan sadar: kontrak reward mendistribusi
- * dari saldo yang sudah ada, sehingga tidak ada satu pun jalur kode yang bisa
- * menambah pasokan setelah deploy, apa pun yang terjadi pada kunci treasury.
+ * Pasokan ditetapkan SEKALI saat deploy (50 miliar — lihat scripts/deploy-rewards.mjs)
+ * dan dicetak SELURUHNYA ke treasury. Tidak ada fungsi `mint` sama sekali:
+ * setelah deploy, pasokan hanya bisa BERKURANG lewat burn, tidak pernah
+ * bertambah — apa pun yang terjadi pada kunci treasury. Kontrak reward
+ * mendistribusi dari saldo yang sudah ada, bukan dari pencetakan baru.
  *
  * IDMX BUKAN Token IDM Reborn (§8.1) — IDM Reborn hidup di BSC dengan pasokan
  * 1 miliar. Keduanya sengaja terpisah.
@@ -21,13 +44,16 @@ contract IDMX {
     string public constant symbol = "IDMX";
     uint8 public constant decimals = 18;
 
-    uint256 public immutable totalSupply;
+    // Storage biasa, BUKAN immutable: burn menurunkan nilainya. Tetap tanpa
+    // fungsi mint, jadi arah perubahannya hanya satu — turun.
+    uint256 public totalSupply;
 
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowance;
 
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
+    event Burned(address indexed from, uint256 value);
 
     error SaldoKurang();
     error IzinKurang();
@@ -77,5 +103,38 @@ contract IDMX {
             balanceOf[to] += value;
         }
         emit Transfer(from, to, value);
+    }
+
+    /* ── Burn (§7.5 tukar IDMX → IDM) ────────────────────────────────────── */
+    // Burn SEJATI: totalSupply berkurang dan `Transfer(from, 0x0)` membuat
+    // opBNBScan menampilkannya sebagai pembakaran serta menurunkan Total Supply
+    // di halaman token. Mengirim ke alamat 0xdead hanya "menyembunyikan" token
+    // tanpa mengubah angka pasokan — itu bukan yang diminta di sini.
+
+    function burn(uint256 value) external {
+        _burn(msg.sender, value);
+    }
+
+    /// Untuk SwapInitiator: bakar atas izin (allowance) user.
+    function burnFrom(address from, uint256 value) external {
+        uint256 izin = allowance[from][msg.sender];
+        if (izin != type(uint256).max) {
+            if (izin < value) revert IzinKurang();
+            unchecked {
+                allowance[from][msg.sender] = izin - value;
+            }
+        }
+        _burn(from, value);
+    }
+
+    function _burn(address from, uint256 value) internal {
+        uint256 saldo = balanceOf[from];
+        if (saldo < value) revert SaldoKurang();
+        unchecked {
+            balanceOf[from] = saldo - value;
+            totalSupply -= value;
+        }
+        emit Transfer(from, address(0), value);
+        emit Burned(from, value);
     }
 }

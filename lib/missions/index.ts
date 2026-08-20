@@ -60,8 +60,11 @@ export const DEFAULT_MISSIONS: DefaultMission[] = [
 export const CAP_HARIAN_IDMX = 250;
 
 /** Cap misi bulanan (§7.6 "misi bulanan di luar cap harian, cap tersendiri").
- *  Sebesar satu reward segel: satu periode hanya bisa diklaim sekali. */
-export const CAP_BULANAN_IDMX = 150;
+ *  WAJIB sama dengan `caps[1]` di MissionRewards — bila server lebih ketat
+ *  daripada kontrak, klaim yang sah on-chain akan ditolak lebih dulu di API
+ *  dan pengguna melihat penolakan yang tidak punya sebab. Nilai 450 = segel
+ *  bulanan (150) + runtun 30 hari (300), keduanya di ember 1. */
+export const CAP_BULANAN_IDMX = 450;
 
 /** Misi bulanan tidak ikut menghabiskan jatah harian. */
 export function ikutCapHarian(tipe: MissionTipe): boolean {
