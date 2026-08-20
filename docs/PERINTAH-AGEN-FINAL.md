@@ -74,8 +74,22 @@ Ikuti gaya yang sudah terbukti di repo: Solidity **0.8.26**, **tanpa dependensi
 eksternal** (tidak ada OpenZeppelin — seluruh kode auditable dalam satu berkas),
 custom errors (bukan string revert), event untuk setiap perubahan state penting,
 ownable **dua langkah** (transferOwnership → acceptOwnership), pausable per
-kontrak, checks-effects-interactions. Komentar berbahasa Indonesia menjelaskan
-KENAPA, seperti di kontrak yang sudah ada.
+kontrak, checks-effects-interactions.
+
+**Bahasa komentar: INGGRIS** *(diubah PO 2026-08-20 — menggantikan instruksi
+"komentar berbahasa Indonesia" di versi sebelumnya).* Kontrak adalah artefak
+publik yang akan dibaca auditor pihak ketiga (mis. CertiK) dan siapa pun di
+block explorer. Komentar tetap menjelaskan **KENAPA**, bukan sekadar apa —
+hanya bahasanya yang berganti.
+
+**Dilarang merujuk dokumen internal di dalam kontrak** — tidak ada `PRD §8.1`,
+`AC §7.6`, dan sejenisnya. Pembaca di luar tim tidak punya akses ke dokumen itu,
+sehingga rujukan semacam itu menjadi jalan buntu. Tuliskan alasannya secara utuh
+dan berdiri sendiri di dalam komentar.
+
+Berlaku untuk kontrak yang **belum ter-deploy**. `ReportAttestation.sol` sudah
+live di testnet — jangan disentuh; penyelarasan bahasanya ikut siklus mainnet
+bersama banner.
 
 ---
 

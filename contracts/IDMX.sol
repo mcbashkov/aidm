@@ -24,28 +24,29 @@
 pragma solidity 0.8.26;
 
 /**
- * IDMX — token reward in-app AIDM di opBNB (PRD §8.1).
+ * IDMX — in-app reward token of the AIDM application, deployed on opBNB.
  *
- * ERC-20 minimal, tanpa dependensi eksternal (alasan sama seperti
- * ReportAttestation: seluruh kode yang diaudit ada di satu berkas, dan hasil
- * kompilasi tidak bergeser karena versi library).
+ * Minimal ERC-20 with no external dependencies. This is deliberate: every line
+ * subject to audit lives in this single file, and the compiled output does not
+ * shift because of a library version bump.
  *
- * Pasokan ditetapkan SEKALI saat deploy (50 miliar — lihat scripts/deploy-rewards.mjs)
- * dan dicetak SELURUHNYA ke treasury. Tidak ada fungsi `mint` sama sekali:
- * setelah deploy, pasokan hanya bisa BERKURANG lewat burn, tidak pernah
- * bertambah — apa pun yang terjadi pada kunci treasury. Kontrak reward
- * mendistribusi dari saldo yang sudah ada, bukan dari pencetakan baru.
+ * The total supply is fixed ONCE at deployment and minted in full to the
+ * treasury address. There is no `mint` function anywhere in this contract, so
+ * after deployment the supply can only ever DECREASE through burning — never
+ * increase, regardless of what happens to the treasury key. Reward
+ * distribution draws from an existing balance, never from fresh issuance.
  *
- * IDMX BUKAN Token IDM Reborn (§8.1) — IDM Reborn hidup di BSC dengan pasokan
- * 1 miliar. Keduanya sengaja terpisah.
+ * IDMX is NOT the IDM Reborn token. IDM Reborn is a separate ERC-20 deployed on
+ * BNB Smart Chain; the two are intentionally distinct assets on distinct
+ * networks. IDMX is earned in-app and can be burned to claim IDM Reborn.
  */
 contract IDMX {
     string public constant name = "IDMX";
     string public constant symbol = "IDMX";
     uint8 public constant decimals = 18;
 
-    // Storage biasa, BUKAN immutable: burn menurunkan nilainya. Tetap tanpa
-    // fungsi mint, jadi arah perubahannya hanya satu — turun.
+    // Plain storage rather than `immutable`, because burning decreases it.
+    // With no mint function, this value can only move in one direction: down.
     uint256 public totalSupply;
 
     mapping(address => uint256) public balanceOf;
@@ -82,8 +83,9 @@ contract IDMX {
         returns (bool)
     {
         uint256 izin = allowance[from][msg.sender];
-        // type(uint256).max = izin tak terbatas, tidak dikurangi tiap transfer
-        // (pola umum; menghemat gas untuk kontrak reward yang menarik berkali-kali).
+        // type(uint256).max means an unlimited approval and is not decremented
+        // on each transfer. This is the conventional pattern and saves gas for
+        // contracts that pull from the same allowance repeatedly.
         if (izin != type(uint256).max) {
             if (izin < value) revert IzinKurang();
             unchecked {
@@ -105,17 +107,20 @@ contract IDMX {
         emit Transfer(from, to, value);
     }
 
-    /* ── Burn (§7.5 tukar IDMX → IDM) ────────────────────────────────────── */
-    // Burn SEJATI: totalSupply berkurang dan `Transfer(from, 0x0)` membuat
-    // opBNBScan menampilkannya sebagai pembakaran serta menurunkan Total Supply
-    // di halaman token. Mengirim ke alamat 0xdead hanya "menyembunyikan" token
-    // tanpa mengubah angka pasokan — itu bukan yang diminta di sini.
+    /* ── Burning ─────────────────────────────────────────────────────────── */
+    // A real burn: `totalSupply` is reduced, and emitting `Transfer(from, 0x0)`
+    // is what makes block explorers report the burn and lower the token's
+    // reported Total Supply. Sending tokens to a dead address such as 0xdead
+    // would merely park them at an unspendable address while leaving the supply
+    // figure untouched, which is not the intended behaviour here.
 
     function burn(uint256 value) external {
         _burn(msg.sender, value);
     }
 
-    /// Untuk SwapInitiator: bakar atas izin (allowance) user.
+    /// Burns on behalf of `from`, consuming the caller's allowance. Used by
+    /// the swap contract to burn a user's IDMX as the first leg of a
+    /// cross-chain claim.
     function burnFrom(address from, uint256 value) external {
         uint256 izin = allowance[from][msg.sender];
         if (izin != type(uint256).max) {

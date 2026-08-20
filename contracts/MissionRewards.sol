@@ -29,37 +29,45 @@ interface IERC20 {
 }
 
 /**
- * MissionRewards — klaim reward misi lewat voucher bertanda tangan (PRD §7.6).
+ * MissionRewards — pays out in-app mission rewards against signed vouchers.
  *
- * Alur: server menghitung progres misi lalu MENANDATANGANI voucher (EIP-712).
- * Voucher ditebus on-chain — oleh relayer treasury (gasless bagi user) maupun
- * oleh user sendiri. Yang menerima IDMX SELALU `user` di dalam voucher, siapa
- * pun pengirim transaksinya.
+ * Flow: the backend evaluates a user's mission progress and, when a reward is
+ * earned, SIGNS an EIP-712 voucher for it. The voucher is redeemed on-chain,
+ * either by a treasury relayer (so the user pays no gas) or by the user
+ * directly. The recipient is ALWAYS the `user` field inside the voucher,
+ * regardless of who submits the transaction — the security of this contract
+ * rests on the signature, not on the identity of the sender.
  *
- * Dua jaminan yang diminta AC §7.6 ditegakkan DI KONTRAK, bukan di server:
+ * Two guarantees are enforced HERE, in the contract, rather than in the
+ * backend:
  *
- *   1. **Replay voucher gagal.** Tiap voucher punya `nonce`; nonce yang sudah
- *      terpakai ditolak permanen. Server yang bocor pun tidak bisa membayar
- *      voucher yang sama dua kali.
- *   2. **Cap harian ditegakkan kontrak.** Akumulasi per hari WIB dijaga di
- *      sini. Bug atau kompromi di server tidak bisa menembusnya — inilah
- *      alasan cap tidak cukup dicek di API saja.
+ *   1. Voucher replay fails. Every voucher carries a `nonce`; a nonce that has
+ *      been used is rejected permanently. Even a fully compromised backend
+ *      cannot cause the same voucher to be paid twice.
+ *   2. Payout caps are enforced on-chain. Per-day accumulation is tracked
+ *      here, so a bug or a compromise in the backend cannot exceed it. This is
+ *      precisely why checking the cap in the API alone would be insufficient.
  *
- * Cap dipisah dua ember (§7.6 "misi bulanan di luar cap harian, cap
- * tersendiri"): ember 0 = harian, ember 1 = bulanan.
+ * Caps are split into two independent buckets so that a low-frequency,
+ * higher-value reward does not consume the allowance meant for everyday
+ * rewards: bucket 0 is the daily allowance, bucket 1 is the monthly one.
+ *
+ * All day boundaries follow Western Indonesia Time (UTC+7), the timezone of
+ * the application's users.
  */
 contract MissionRewards {
     struct Voucher {
         address user;
-        uint256 missionId; // hash kode misi — kontrak tidak perlu tahu artinya
+        uint256 missionId; // hash of the mission code; opaque to this contract
         uint256 amount;
         uint256 nonce;
         uint64 deadline;
-        uint8 bucket; // 0 = cap harian · 1 = cap bulanan
+        uint8 bucket; // 0 = daily allowance, 1 = monthly allowance
     }
 
-    /// Hari WIB = (timestamp + 7 jam) / 86400. Dihitung on-chain supaya
-    /// pergantian hari tidak bergantung pada jam server yang mengirim.
+    /// Day index in UTC+7, computed as (timestamp + 7 hours) / 86400. Derived
+    /// on-chain so that the day boundary never depends on the clock of
+    /// whichever server happens to submit the transaction.
     uint256 private constant OFFSET_WIB = 7 hours;
 
     bytes32 private constant VOUCHER_TYPEHASH = keccak256(
@@ -71,16 +79,16 @@ contract MissionRewards {
 
     address public owner;
     address public pendingOwner;
-    /// Alamat yang tanda tangannya diakui sebagai voucher sah.
+    /// The only address whose signature makes a voucher valid.
     address public voucherSigner;
     bool public paused;
 
-    /// Batas per ember, dalam satuan token terkecil (wei IDMX).
+    /// Per-bucket cap, denominated in the token's smallest unit.
     uint256[2] public caps;
 
-    /// user => nonce => sudah terpakai
+    /// user => nonce => already redeemed
     mapping(address => mapping(uint256 => bool)) public nonceTerpakai;
-    /// user => ember => hari WIB => sudah diklaim hari itu
+    /// user => bucket => UTC+7 day => amount already claimed that day
     mapping(address => mapping(uint8 => mapping(uint256 => uint256))) public terklaim;
 
     event Claimed(
@@ -144,7 +152,7 @@ contract MissionRewards {
         emit CapChanged(1, capBulanan);
     }
 
-    /* ── Administrasi ────────────────────────────────────────────────────── */
+    /* ── Administration ──────────────────────────────────────────────────── */
 
     function setVoucherSigner(address signer) external onlyOwner {
         if (signer == address(0)) revert ZeroAddress();
@@ -163,7 +171,8 @@ contract MissionRewards {
         emit PausedSet(paused_);
     }
 
-    /// Tarik sisa IDMX kembali ke treasury (mis. saat migrasi kontrak).
+    /// Withdraws remaining tokens back to the treasury, e.g. when migrating
+    /// to a successor contract.
     function sweep(address to, uint256 amount) external onlyOwner {
         if (to == address(0)) revert ZeroAddress();
         token.transfer(to, amount);
@@ -181,7 +190,7 @@ contract MissionRewards {
         pendingOwner = address(0);
     }
 
-    /* ── Klaim ───────────────────────────────────────────────────────────── */
+    /* ── Claiming ────────────────────────────────────────────────────────── */
 
     function hariWib(uint256 timestamp) public pure returns (uint256) {
         return (timestamp + OFFSET_WIB) / 1 days;
@@ -207,7 +216,8 @@ contract MissionRewards {
         );
     }
 
-    /// Sisa jatah user pada ember tertentu untuk hari WIB berjalan.
+    /// Remaining allowance for a user in a given bucket, for the current
+    /// UTC+7 day.
     function sisaJatah(address user, uint8 bucket) external view returns (uint256) {
         if (bucket > 1) return 0;
         uint256 dipakai = terklaim[user][bucket][hariWib(block.timestamp)];
@@ -234,8 +244,9 @@ contract MissionRewards {
         uint256 dipakai = terklaim[v.user][v.bucket][hari];
         if (dipakai + v.amount > caps[v.bucket]) revert MelebihiCap();
 
-        // Efek sebelum interaksi: nonce & akumulasi ditandai lebih dulu supaya
-        // transfer token tidak bisa dipakai untuk masuk kembali.
+        // Effects before interaction: the nonce and the accumulator are
+        // written first, so the token transfer below cannot be used to
+        // re-enter this function before the state reflects the payout.
         nonceTerpakai[v.user][v.nonce] = true;
         terklaim[v.user][v.bucket][hari] = dipakai + v.amount;
 
@@ -258,8 +269,9 @@ contract MissionRewards {
             vParam := byte(0, calldataload(add(sig.offset, 64)))
         }
         if (vParam < 27) vParam += 27;
-        // Tolak s bagian atas kurva: mencegah tanda tangan kembar (malleability)
-        // yang menghasilkan digest sah kedua untuk voucher yang sama.
+        // Reject signatures whose `s` lies in the upper half of the curve
+        // order. Without this check a second, equally valid signature exists
+        // for the same voucher (signature malleability).
         if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
             revert TandaTanganTidakSah();
         }
