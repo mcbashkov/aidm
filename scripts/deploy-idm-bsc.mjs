@@ -35,7 +35,15 @@ try {
   for (const l of readFileSync(join(root, ".env.local"), "utf8").split("\n")) {
     if (/^[A-Z_][A-Z0-9_]*=/.test(l)) {
       const i = l.indexOf("=");
-      env[l.slice(0, i)] ??= l.slice(i + 1).replace(/^["']|["']$/g, "");
+      // Buang komentar sebaris (hanya bila didahului spasi — password di
+      // SUPABASE_DB_URL boleh mengandung "#") lalu trim: alamat/kunci yang
+      // kecolongan spasi ekor gagal validasi dengan pesan membingungkan.
+      const nilai = l
+        .slice(i + 1)
+        .replace(/\s+#.*$/, "")
+        .trim()
+        .replace(/^["']|["']$/g, "");
+      env[l.slice(0, i)] ??= nilai;
     }
   }
 } catch {
