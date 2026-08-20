@@ -110,6 +110,17 @@ Indonesia — terjemahkan mengikuti pola yang sama saat mengimplementasikan:
 `RatchetDilanggar`→`RatchetViolation`, `VoucherJanggal`→`VoucherOutOfRange`,
 `JumlahTerlaluKecil`→`AmountTooSmall`. **Semantiknya tidak berubah sedikit pun.**
 
+**Nilai balik ERC-20 WAJIB diperiksa** *(ditambahkan 2026-08-20, hasil review
+eksternal)*: setiap `transfer`/`transferFrom` dibungkus
+`if (!token.transfer(...)) revert TransferFailed();`. IDMX/IDM kita memang
+revert sendiri saat gagal, tapi guard ini menutup jalur kehilangan dana bila
+transfer mengembalikan `false` setelah state (nonce, akumulator) sudah ditulis —
+di **SwapClaim** ini pengaman invariant §6 (IDMX sudah terbakar di opBNB sebelum
+voucher terbit; transfer gagal senyap = burn tanpa penebusan). Cukup cek
+boolean — **jangan** pakai SafeERC20: kedua token milik kita dan patuh standar,
+SafeERC20 hanya menambah kompleksitas untuk token nyeleneh yang tidak kita
+pakai. Sudah diterapkan di MissionRewards (`claim` + `sweep`).
+
 `ReportAttestation.sol` **ikut diselaraskan 2026-08-20** (banner + komentar
 Inggris). Identifier-nya memang sudah Inggris sejak awal, jadi **ABI-nya
 IDENTIK** dan kontrak yang sudah live tetap kompatibel — tidak perlu redeploy.

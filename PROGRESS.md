@@ -220,6 +220,12 @@ reward* — dan itu justru keputusan §16 #8 yang masih terbuka.
 
 ## Catatan yang menghemat waktu nanti
 
+- **Source `ReportAttestation.sol` di repo ≠ byte-per-byte dengan yang live di
+  testnet** (`0xa83c...84c4`). Penyelarasan 2026-08-20 (banner + komentar
+  Inggris) hanya menggeser ekor metadata bytecode — logika dan ABI identik,
+  tidak perlu redeploy. Relevan nanti saat verifikasi source di explorer:
+  verifikasi harus memakai source persis saat deploy (commit sebelum f73a7fa),
+  bukan versi repo sekarang.
 - **Uji lapangan wajib untuk hal yang menyentuh perangkat.** Bug service worker
   yang membekukan login baru tidak muncul di localhost sama sekali — SW memang
   dimatikan saat `NODE_ENV=development`. Bug apa pun di SW secara struktural

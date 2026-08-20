@@ -114,6 +114,7 @@ contract MissionRewards {
     error UnknownBucket();
     error CapExceeded();
     error ZeroAmount();
+    error TransferFailed();
 
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
@@ -123,8 +124,8 @@ contract MissionRewards {
     constructor(
         address token_,
         address voucherSigner_,
-        uint256 capHarian,
-        uint256 capBulanan
+        uint256 dailyCap,
+        uint256 monthlyCap
     ) {
         if (token_ == address(0) || voucherSigner_ == address(0)) {
             revert ZeroAddress();
@@ -132,8 +133,8 @@ contract MissionRewards {
         owner = msg.sender;
         token = IERC20(token_);
         voucherSigner = voucherSigner_;
-        caps[0] = capHarian;
-        caps[1] = capBulanan;
+        caps[0] = dailyCap;
+        caps[1] = monthlyCap;
 
         domainSeparator = keccak256(
             abi.encode(
@@ -148,8 +149,8 @@ contract MissionRewards {
         );
 
         emit SignerChanged(voucherSigner_);
-        emit CapChanged(0, capHarian);
-        emit CapChanged(1, capBulanan);
+        emit CapChanged(0, dailyCap);
+        emit CapChanged(1, monthlyCap);
     }
 
     /* ── Administration ──────────────────────────────────────────────────── */
@@ -175,7 +176,7 @@ contract MissionRewards {
     /// to a successor contract.
     function sweep(address to, uint256 amount) external onlyOwner {
         if (to == address(0)) revert ZeroAddress();
-        token.transfer(to, amount);
+        if (!token.transfer(to, amount)) revert TransferFailed();
     }
 
     function transferOwnership(address to) external onlyOwner {
@@ -250,7 +251,11 @@ contract MissionRewards {
         nonceUsed[v.user][v.nonce] = true;
         claimedOnDay[v.user][v.bucket][day] = used + v.amount;
 
-        token.transfer(v.user, v.amount);
+        // The nonce is already burned above, so a transfer that failed by
+        // returning false (instead of reverting) would silently consume the
+        // voucher without paying the user. Revert instead, which also
+        // un-burns the nonce.
+        if (!token.transfer(v.user, v.amount)) revert TransferFailed();
         emit Claimed(v.user, v.missionId, v.amount, v.nonce, v.bucket);
     }
 
@@ -275,8 +280,8 @@ contract MissionRewards {
         if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
             revert InvalidSignature();
         }
-        address pemulih = ecrecover(digest, vParam, r, s);
-        if (pemulih == address(0)) revert InvalidSignature();
-        return pemulih;
+        address recovered = ecrecover(digest, vParam, r, s);
+        if (recovered == address(0)) revert InvalidSignature();
+        return recovered;
     }
 }
