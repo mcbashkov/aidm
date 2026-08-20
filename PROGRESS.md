@@ -13,7 +13,12 @@ Diperbarui: **2026-08-20** · cabang `main`
 >
 > **Batch sisi token — kemajuan:** ✅ Langkah 1 (§10): IDMX direvisi (burn sejati,
 > suplai 50 miliar, banner) + `deploy-rewards.mjs` diperbarui (cap ember 1 →
-> 450). Belum di-deploy ke testnet. ⬜ Langkah 2–6.
+> 450). ✅ Langkah 2 (kode): `IDMReborn.sol` (1 miliar IDM hard-code ke treasury,
+> tanpa owner/mint, burn sejati) + `pnpm deploy:idm-bsc` (wallet lama, 1 tx,
+> validasi treasury sebelum kirim) — teruji penuh di anvil lokal. 🧑 Deploy BSC
+> testnet menunggu `IDM_LEGACY_DEPLOYER_PRIVATE_KEY` + `IDM_TREASURY_ADDRESS`
+> diisi di `.env.local` (+ tBNB di wallet lama). Belum ada yang di-deploy ke
+> testnet. ⬜ Langkah 3–6.
 
 **Legenda pemilik:** 🧑 = butuh tangan Anda (kunci, dompet, keputusan bisnis,
 perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
