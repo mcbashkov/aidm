@@ -22,7 +22,8 @@ Diperbarui: **2026-08-22** · cabang `main`
 > konfirmasi), kursor di DB. Teruji terhadap testnet sungguhan. Operasinya:
 > `docs/RELAYER-SWAP.md`. ✅ **Penjadwal terpasang 2026-08-22** — project
 > dipindahkan ke tim Vercel **Pro** (jadwal 1 menit menggagalkan build di Hobby),
-> `vercel.json` menjadwalkan `/api/relayer/tick` tiap menit. ⬜ Sisa:
+> `vercel.json` menjadwalkan `/api/relayer/tick` tiap menit. ⚠️ **Belum terbukti
+> berputar** — dua pemblokir pasca-transfer di bawah. ⬜ Sisa:
 > UI Tukar (§9), `scripts/ratchet-check.mjs` (§5), dust top-up opBNB, dan
 > **verifikasi source keenam kontrak di explorer** (§10 — banner PO baru tampil
 > setelah terverifikasi; sekaligus gladi resik sebelum mainnet).
@@ -46,9 +47,11 @@ perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
 | M7 Play & App Store | ⬜ belum mulai | — |
 
 **Gerbang otomatis terkini:** `test:parser` 200/200 · `test:canonical` 23/23 ·
-`test:api` 123/123 · typecheck · lint · build · CI hijau.
+`test:api` 123/123 · typecheck bersih. Dijalankan ulang 2026-08-22, semua hijau.
 
-**Produksi:** `ai.idmtoken.com` (Vercel) — auto-deploy dari `main`.
+**Produksi:** `aidm-idmtoken.vercel.app` (tim Vercel **Pro** `idmtoken`) —
+auto-deploy dari `main`. Domain `ai.idmtoken.com` **sengaja belum dipasang**;
+menyusul saat siap live.
 
 **On-chain — SEMUA ter-deploy 2026-08-21 (belum diverifikasi source):**
 
@@ -69,28 +72,64 @@ Keadaan terverifikasi on-chain: IDMX 50 miliar · MissionRewards terdanai 100 ju
 IDMX · IDMReborn 1 miliar (treasury 850 juta, SwapClaim 150 juta) · SwapClaim
 rate 50, max voucher 2.000 IDMX, signer `0xBc2b…3c97` · SwapInitiator min 500,
 cap 2.000/minggu, ambang 100.000, plafon 200.000 IDMX (angka testnet §10.5),
-`nonceCounter` 0 (belum ada swap). Kursor relayer bootstrap: blok `193867692`.
+`nonceCounter` 0 (belum ada swap). **Dibaca ulang dari rantai 2026-08-22 — semua
+angka masih persis sama.**
+
+Kursor relayer di DB (`relayer_state`): blok `193874875`, terakhir maju
+2026-08-21 02:07 UTC dari laptop. Env `SWAP_RELAYER_CURSOR_BLOCK` sudah tidak
+berlaku sejak baris itu ada — karena itu ia sengaja TIDAK dipasang di Vercel.
 
 ---
 
 ## Berikutnya — berurutan
 
-### 1. 🧑 Tuntaskan klaim misi (menutup M4 sepenuhnya)
+### 1. 🧑 Dua pemblokir sisa transfer ke Vercel Pro — **paling atas**
 
-Kontraknya **sudah ter-deploy & terdanai** — `.env.local` lokal sudah terisi.
-Yang belum: produksi masih buta terhadap alamat-alamat itu.
+Keduanya lahir dari pindah tim 2026-08-22, keduanya hanya bisa ditekan dari
+dashboard, dan **selama keduanya belum beres, cron relayer tidak menghasilkan
+apa pun.**
+
+- [ ] **Redeploy.** Delapan env on-chain masuk 21:21–21:40 UTC, sedangkan
+      deployment terakhir jadi 21:14:57 UTC — **enam menit lebih awal.** Vercel
+      mengikat env ke deployment saat dibuat, jadi build yang sedang berjalan
+      belum melihat satu pun dari delapan itu. Tanpa redeploy tick dijawab 404
+      (tak ada `CRON_SECRET`) dan kursor tidak akan pernah maju.
+- [ ] **Matikan Vercel Authentication untuk Production.** Settings → Deployment
+      Protection. Sekarang **setiap path** (`/`, `/masuk`, `/api/*`) menjawab 302
+      ke `vercel.com/sso-api` — aplikasinya terkunci total dari publik. Ini
+      bawaan tim Pro, bukan sesuatu yang kita nyalakan. Setelan yang benar:
+      lindungi **Preview saja**. *(Vercel Cron memang menembus proteksi ini, jadi
+      cron bisa jalan diam-diam; tapi uji `curl` manual dan penjadwal luar mana
+      pun akan tertahan — dan beta tertutup M6 mustahil dengan pintu ini.)*
+
+Bukti bahwa keduanya belum beres: kursor `relayer_state` masih di `193874875`
+dan `updated_at` sudah berumur >19 jam. Kalau cron hidup, angka itu bergerak
+tiap menit — itu ukuran yang paling jujur, bukan tampilan dashboard.
+
+### 2. 🧑 Tuntaskan klaim misi (menutup M4 sepenuhnya)
+
+Kontraknya **sudah ter-deploy & terdanai**, dan env produksi **sudah terisi**
+2026-08-22 — tinggal menunggu redeploy di atas.
 
 - [x] `pnpm deploy:rewards` — IDMX + MissionRewards live, kolam 100 juta IDMX
-- [ ] Salin env on-chain (6 alamat + `AIDM_REWARD_CHAIN` + kunci penandatangan)
-      ke Environment Variables Vercel → **redeploy**
+- [x] Env on-chain masuk Vercel: `NEXT_PUBLIC_IDMX_ADDRESS`,
+      `NEXT_PUBLIC_MISSION_REWARDS_ADDRESS`, `NEXT_PUBLIC_SWAP_INITIATOR_ADDRESS`,
+      `NEXT_PUBLIC_SWAP_CLAIM_ADDRESS`, `NEXT_PUBLIC_IDM_REBORN_ADDRESS`,
+      `CRON_SECRET`, `SWAP_SIGNER_PRIVATE_KEY`, `MISSION_VOUCHER_PRIVATE_KEY`
 - [ ] Uji jalur sukses: buka tab Misi, klaim "Catat transaksi pertama hari ini"
       → IDMX masuk, tautan opBNBScan tampil *(jalur sukses on-chain memang tidak
       diuji otomatis — lihat catatan di bawah)*
 
-Sampai env produksi diisi: tombol Klaim nonaktif berketerangan, API menjawab 501.
-Aman berada di produksi — tidak ada yang rusak, hanya belum aktif.
+`MISSION_RELAYER_PRIVATE_KEY` sengaja tidak dipasang: kodenya jatuh ke
+`SEAL_RELAYER_PRIVATE_KEY` yang sudah ada, dan komentar di `klaim-server.ts`
+menyatakan itu memang boleh — perannya identik, sama-sama membayar gas.
 
-### 2. 🤖 Hidupkan tab Misi tiap hari — **disepakati 2026-08-15, siap dikerjakan**
+**Tiga kunci deploy JANGAN pernah masuk Vercel** — `DEPLOYER_PRIVATE_KEY`,
+`IDM_LEGACY_DEPLOYER_PRIVATE_KEY`, `IDM_TREASURY_PRIVATE_KEY`. Tidak ada kode di
+`app/` atau `lib/` yang membacanya (hanya `scripts/`, yang jalan di laptop), dan
+yang treasury memegang 850 juta IDM.
+
+### 3. 🤖 Hidupkan tab Misi tiap hari — **disepakati 2026-08-15, siap dikerjakan**
 
 Masalahnya nyata: di hari biasa hanya **2 misi** yang bisa diklaim. Setelah
 keduanya selesai, tab Misi jadi layar mati sampai besok. Empat misi berikut
@@ -112,7 +151,7 @@ Dampak: 4 misi/hari (dari 2) · 70 → **105 IDMX/hari** · 32.600 → **50.535
 IDMX/tahun**. Cap harian 250 tidak perlu diubah (masih ada ruang 2,4×). Kolam
 100 juta tetap cukup untuk beta 100 user selama ~20 tahun (dari 31).
 
-### 3. 🤖 Utang teknis kecil
+### 4. 🤖 Utang teknis kecil
 
 - [ ] Peringatan saldo kontrak reward menipis — kalau habis, klaim *revert* dan
       user melihat kegagalan membingungkan, bukan penjelasan
@@ -122,20 +161,20 @@ IDMX/tahun**. Cap harian 250 tidak perlu diubah (masih ada ruang 2,4×). Kolam
 - [ ] 4 tombol Pengaturan di `/akun` masih mati (gaya bahasa AI, notifikasi,
       kebijakan privasi, ekspor wallet)
 
-### 4. 🧑 Verifikasi lapangan yang belum dilakukan
+### 5. 🧑 Verifikasi lapangan yang belum dilakukan
 
 - [ ] Prompt instal PWA di Android (ikon maskable sudah lengkap sejak M0 — kalau
       gagal, penyebabnya bukan itu)
 - [ ] Serahkan 1 PDF ke petugas bank/koperasi sungguhan — **ini gerbang wajib M6**,
       dan satu-satunya yang tidak bisa disimulasikan
 
-### 5. 🤖 M5 — premium di balik kredit
+### 6. 🤖 M5 — premium di balik kredit
 
 - [ ] Fitur riset & konten dipagari Kredit AI (§7.8)
 - [ ] Pembelian kredit Midtrans (QRIS/VA) — env sudah di-scaffold
 - [ ] Hardening PDP: purge `raw_input` 90 hari (§16 #10, sudah diputuskan)
 
-### 6. 🧑 M6 — mainnet & beta tertutup 100 user
+### 7. 🧑 M6 — mainnet & beta tertutup 100 user
 
 Prasyarat sebelum mulai: keputusan §16 #5, #8, #11 (lihat di bawah).
 

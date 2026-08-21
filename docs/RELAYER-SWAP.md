@@ -45,10 +45,19 @@ siapa saja.
 Uji manual:
 
 ```bash
-curl -X POST https://ai.idmtoken.com/api/relayer/tick \
+curl -X POST https://aidm-idmtoken.vercel.app/api/relayer/tick \
   -H "authorization: Bearer $CRON_SECRET"
 # → {"ok":true,"dariBlok":"…","sampaiBlok":"…","voucherBaru":0,…}
 ```
+
+**Kalau jawabannya `302` ke `vercel.com/sso-api`, bukan endpoint ini yang salah**
+— Deployment Protection tim Pro sedang mencegat seluruh aplikasi sebelum request
+sampai ke kode. Matikan Vercel Authentication untuk Production (Settings →
+Deployment Protection; lindungi Preview saja), atau pakai Protection Bypass for
+Automation. Vercel Cron sendiri menembus proteksi ini, jadi cron bisa hidup
+padahal `curl` Anda tertahan — **jangan simpulkan relayer mati dari 302 saja.**
+Ukuran yang jujur ada di bagian Kursor: kalau `updated_at` bergerak tiap menit,
+relayer bekerja.
 
 ### Penjadwal — **Vercel Cron** (dipakai sejak 2026-08-22)
 
