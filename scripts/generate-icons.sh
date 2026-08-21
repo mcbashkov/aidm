@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
-# Regenerasi ikon PWA dari logo brand (public/brand/logo_idm.png) memakai ImageMagick.
+# Regenerasi ikon PWA dari lambang brand (public/brand/idmlogo.png) memakai ImageMagick.
 # Ikon hasil sudah di-commit; jalankan hanya bila logo berubah:  pnpm icons
+#
+# Sumbernya sengaja LAMBANG BERLIAN saja, bukan kunci horizontal
+# (idmtokenlogo.png). Ikon selalu dirender di kotak — kunci 4,5:1 akan menyusut
+# jadi garis tipis yang tak terbaca di 192px, apalagi 16px favicon.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SRC="$ROOT/public/brand/logo_idm.png"
+SRC="$ROOT/public/brand/idmlogo.png"
 ICO="$ROOT/public/icons"
 APP="$ROOT/app"
 

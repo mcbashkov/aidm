@@ -13,6 +13,11 @@ import { Button } from "@/components/ui/button";
  * Logo + judul + sub jadi satu blok (§ revisi header, logo±32px di atas
  * judul) — AuthLayout tidak lagi merender logo terpisah untuk /masuk supaya
  * seluruh blok bisa di-center bersama di viewport.
+ *
+ * Di sinilah kunci horizontal IDM TOKEN dipakai, bukan lambang berliannya:
+ * layar ini satu-satunya yang punya lebar bebas. Kunci itu sudah memuat
+ * wordmark-nya sendiri, jadi teks "AIDM" di sebelahnya dihapus — dua wordmark
+ * berdampingan hanya saling berebut perhatian.
  */
 function Intro() {
   return (
@@ -23,15 +28,17 @@ function Intro() {
           /masuk?next=/beranda, dan rantai pengalihan itulah yang lewat service
           worker sebelum login selesai. Tidak ada gunanya memuat awal halaman
           yang pasti dipantulkan. */}
-      <Link
-        href="/beranda"
-        prefetch={false}
-        className="mb-8 flex items-center gap-2"
-      >
-        <Image src="/icons/icon-192.png" alt="AIDM" width={30} height={30} />
-        <span className="font-serif text-[20px] font-semibold tracking-tight text-ink">
-          AIDM
-        </span>
+      <Link href="/beranda" prefetch={false} className="mb-8 flex">
+        {/* 136×30 = rasio asli 1729:381 setelah dipangkas. Angkanya dikunci
+            supaya kunci logo tidak pernah gepeng kalau ada yang menyetel
+            ulang tinggi blok ini. */}
+        <Image
+          src="/brand/idmtokenlogo.png"
+          alt="IDM TOKEN"
+          width={136}
+          height={30}
+          priority
+        />
       </Link>
       <div className="space-y-3">
         <h1>Catat usahamu, dalam satu ucap.</h1>

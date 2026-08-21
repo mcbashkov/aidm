@@ -74,7 +74,9 @@ export function Providers({ children }: { children: ReactNode }) {
     appearance: {
       theme: "light",
       accentColor: "#F0B90B",
-      logo: "/brand/logo_idm.png",
+      // Modal Privy memberi slot lebar untuk logo, jadi kunci horizontal yang
+      // dipakai di sini — sama dengan layar /masuk yang memanggilnya.
+      logo: "/brand/idmtokenlogo.png",
       walletChainType: "ethereum-only",
     },
   };
