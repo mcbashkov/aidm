@@ -47,6 +47,14 @@ const SECRET = env.SESSION_SECRET || env.PRIVY_APP_SECRET;
 const BASE = process.env.BASE_URL || "http://localhost:3000";
 const PREFIX = "did:privy:__test__";
 
+// Alamat & nonce uji swap. Dibuat mencolok supaya mustahil tertukar dengan
+// data nyata, dan supaya pembersihannya bisa menyasar tepat baris ini —
+// `swap_vouchers.user_id` sengaja `on delete set null` (voucher hidup lebih
+// lama daripada akun), jadi menghapus user uji TIDAK ikut membawa vouchernya.
+const SWAP_ADDR_A = "0x00000000000000000000000000000000000a1d11";
+const SWAP_ADDR_B = "0x00000000000000000000000000000000000b2d22";
+const SWAP_NONCE_B = "999000000000000001";
+
 if (!DB_URL) throw new Error("SUPABASE_DB_URL belum diisi di .env.local");
 if (!SECRET) throw new Error("SESSION_SECRET belum diisi di .env.local");
 
@@ -658,6 +666,75 @@ async function main() {
     cek("penolakan tidak meninggalkan baris klaim yatim", n === "0", `dapat ${n}`);
   }
 
+  console.log("\n── 15. Swap: voucher & relayer (§7.7) ──");
+  {
+    const r = await api("/api/swap/vouchers");
+    cek("voucher tanpa sesi → 401", r.status === 401, `dapat ${r.status}`);
+  }
+  {
+    // Endpoint relayer menjawab 404 (bukan 401) untuk pemanggil tak sah:
+    // keberadaannya sengaja tidak dikonfirmasi kepada pemindai.
+    const r = await api("/api/relayer/tick", { method: "POST" });
+    cek("tick tanpa secret → 404", r.status === 404, `dapat ${r.status}`);
+
+    const rSalah = await fetch(`${BASE}/api/relayer/tick`, {
+      method: "POST",
+      headers: { authorization: "Bearer salah-sekali" },
+    });
+    cek("tick dengan secret salah → 404", rSalah.status === 404,
+      `dapat ${rSalah.status}`);
+
+    // Panjang yang sama persis dengan secret asli — memastikan yang menolak
+    // adalah perbandingan isinya, bukan sekadar beda panjang.
+    const asli = env.CRON_SECRET ?? "";
+    if (asli) {
+      const rSamaPanjang = await fetch(`${BASE}/api/relayer/tick`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${"x".repeat(asli.length)}` },
+      });
+      cek("tick, secret salah tapi sepanjang aslinya → 404",
+        rSamaPanjang.status === 404, `dapat ${rSamaPanjang.status}`);
+    }
+  }
+  {
+    // Isolasi voucher — properti keamanan inti endpoint ini. Tanda tangan di
+    // dalam voucher bernilai uang; bocor ke akun lain berarti orang lain bisa
+    // menebusnya lebih dulu di waktu yang tidak dikehendaki pemiliknya.
+    sql(`insert into wallets (user_id, address) values
+      ('${uidA}','${SWAP_ADDR_A}'), ('${uidB}','${SWAP_ADDR_B}')
+      on conflict (user_id) do update set address = excluded.address`);
+    sql(`insert into swap_vouchers
+      (nonce, user_address, user_id, idmx_burned, burn_tx_hash, burn_block, deadline, signature)
+      values (${SWAP_NONCE_B}, '${SWAP_ADDR_B}', '${uidB}', 500000000000000000000,
+        '0x${"b".repeat(64)}', 1, now() + interval '30 days', '0x${"c".repeat(130)}')`);
+
+    const rA = await api("/api/swap/vouchers", { cookie: A });
+    const rB = await api("/api/swap/vouchers", { cookie: B });
+
+    if (rA.status === 501) {
+      cek("tanpa kontrak swap → 501 jujur", rB.status === 501);
+    } else {
+      const punyaA = (rA.body?.vouchers ?? []).some(
+        (v) => v.nonce === String(SWAP_NONCE_B),
+      );
+      cek("voucher akun lain TIDAK bocor ke A", rA.status === 200 && !punyaA,
+        `status ${rA.status}, ${(rA.body?.vouchers ?? []).length} voucher`);
+
+      const milikB = (rB.body?.vouchers ?? []).find(
+        (v) => v.nonce === String(SWAP_NONCE_B),
+      );
+      cek("B melihat vouchernya sendiri", rB.status === 200 && !!milikB,
+        `status ${rB.status}`);
+      // Wei WAJIB dikirim apa adanya: memanggil kontrak dengan angka desimal
+      // hasil pembulatan membuat tanda tangan tidak lagi cocok.
+      cek("voucher membawa idmxBurned dalam wei (bukan desimal)",
+        milikB?.idmxBurned === "500000000000000000000",
+        `dapat ${milikB?.idmxBurned}`);
+      cek("voucher membawa tanda tangan & status",
+        typeof milikB?.signature === "string" && milikB?.status === "signed");
+    }
+  }
+
   console.log("\n── 12. DELETE /api/akun (§12 hak penghapusan) ──");
   {
     const uidC = sql(
@@ -706,6 +783,10 @@ async function main() {
 try {
   await main();
 } finally {
+  // Voucher dibersihkan TERPISAH dan lebih dulu: `on delete set null` membuat
+  // baris voucher selamat dari penghapusan user, jadi tanpa baris ini sampah
+  // uji akan menumpuk di database yang sama dengan produksi.
+  sql(`delete from swap_vouchers where user_address in ('${SWAP_ADDR_A}','${SWAP_ADDR_B}')`);
   sql(`delete from users where privy_did like '${PREFIX}%'`);
   console.log("(user uji dibersihkan)");
 }
