@@ -4,27 +4,22 @@ Pelacak pekerjaan lintas sesi. **README** menjelaskan produk & cara menjalankan;
 berkas ini menjawab satu pertanyaan saja: *apa yang sudah beres, apa berikutnya,
 dan siapa yang mengerjakan.*
 
-Diperbarui: **2026-08-20** · cabang `main`
+Diperbarui: **2026-08-21** · cabang `main`
 
 > ⚠️ **Sisi token digantikan `docs/PERINTAH-AGEN-FINAL.md`.** Untuk apa pun yang
 > menyangkut IDMX/IDM Reborn/swap/kurs/tokenomics, dokumen itu sumber kebenaran
 > tunggal — bagian "Ekonomi reward IDMX" di bawah **sudah usang** (masih menyebut
 > suplai & kurs versi lama). Bagian lain papan kerja ini tetap berlaku.
 >
-> **Batch sisi token — kemajuan:** ✅ Langkah 1 (§10): IDMX direvisi (burn sejati,
-> suplai 50 miliar, banner) + `deploy-rewards.mjs` diperbarui (cap ember 1 →
-> 450). ✅ Langkah 2 (kode): `IDMReborn.sol` (1 miliar IDM hard-code ke treasury,
-> tanpa owner/mint, burn sejati) + `pnpm deploy:idm-bsc` (wallet lama, 1 tx,
-> validasi treasury sebelum kirim). ✅ Langkah 3–5 (kode): `SwapInitiator.sol`
-> (opBNB — min 500, cap mingguan WIB, breaker 70%/100% dengan tx pemicu lolos,
-> plafon kumulatif) + `SwapClaim.sol` (BSC — voucher EIP-712, ratchet kurs
-> satu arah, fee 1 IDM dibakar, max voucher dalam IDMX) + skrip
-> `pnpm deploy:swap-bsc` / `fund:swap-pool` / `deploy:swap-opbnb`. Uji anvil
-> lokal 36/36 (kriteria §11 kontrak) + audit multi-agen. 🧑 SEMUA deploy testnet
-> menunggu kredensial di `.env.local`: urutannya `deploy:rewards` (opBNB) →
-> `deploy:idm-bsc` (wallet lama) → `deploy:swap-bsc` → `fund:swap-pool`
-> (treasury) → `deploy:swap-opbnb`. Belum ada yang di-deploy.
-> ⬜ Langkah 6 (relayer) + UI + `test:api` jalur penolakan swap.
+> **Batch sisi token — kemajuan:** ✅ **Langkah 1–5 SELESAI & TER-DEPLOY ke
+> testnet 2026-08-21** (alamat lengkap di tabel On-chain di bawah). Enam kontrak
+> hidup: IDMX 50 miliar + MissionRewards terdanai + SwapInitiator di opBNB;
+> IDMReborn 1 miliar + SwapClaim berkolam 150 juta IDM di BSC. Uji anvil
+> `pnpm test:swap` 36/36 (kriteria §11 kontrak) + audit multi-agen lolos.
+> ⬜ Sisa: langkah 6 (relayer `/api/relayer/tick`), UI Tukar (§9),
+> `scripts/ratchet-check.mjs` (§5), `test:api` jalur penolakan swap, dan
+> **verifikasi source keenam kontrak di explorer** (§10 — banner PO baru tampil
+> setelah terverifikasi; sekaligus gladi resik sebelum mainnet).
 
 **Legenda pemilik:** 🧑 = butuh tangan Anda (kunci, dompet, keputusan bisnis,
 perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
@@ -49,26 +44,44 @@ perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
 
 **Produksi:** `ai.idmtoken.com` (Vercel) — auto-deploy dari `main`.
 
-**On-chain (opBNB testnet, chainId 5611):**
-`ReportAttestation` = `0xa83c201c3759fa1a92bd17dbebb46b85029a84c4`
+**On-chain — SEMUA ter-deploy 2026-08-21 (belum diverifikasi source):**
+
+| Kontrak | Jaringan | Alamat |
+|---|---|---|
+| ReportAttestation | opBNB testnet 5611 | `0xa83c201c3759fa1a92bd17dbebb46b85029a84c4` |
+| IDMX | opBNB testnet 5611 | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` |
+| MissionRewards | opBNB testnet 5611 | `0xbc6f412024cee7e8117bd1ee35759d027fce11e5` |
+| SwapInitiator | opBNB testnet 5611 | `0xa4f00039540dfdd040635a17090bf4e797168b63` |
+| IDMReborn | BSC testnet 97 | `0x78c7e68142e7e1b564c0fd342954aa515a3d2f5b` |
+| SwapClaim | BSC testnet 97 | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` |
+
+Alamat IDMX dan SwapClaim **memang identik** — deployer & nonce yang sama di dua
+chain berbeda menghasilkan alamat yang sama. Bukan salah tempel; sudah
+diverifikasi ke rantainya (`SwapClaim.idm()` menunjuk IDMReborn dengan benar).
+
+Keadaan terverifikasi on-chain: IDMX 50 miliar · MissionRewards terdanai 100 juta
+IDMX · IDMReborn 1 miliar (treasury 850 juta, SwapClaim 150 juta) · SwapClaim
+rate 50, max voucher 2.000 IDMX, signer `0xBc2b…3c97` · SwapInitiator min 500,
+cap 2.000/minggu, ambang 100.000, plafon 200.000 IDMX (angka testnet §10.5),
+`nonceCounter` 0 (belum ada swap). Kursor relayer bootstrap: blok `193867692`.
 
 ---
 
 ## Berikutnya — berurutan
 
-### 1. 🧑 Aktifkan klaim misi (menutup M4 sepenuhnya)
+### 1. 🧑 Tuntaskan klaim misi (menutup M4 sepenuhnya)
 
-```bash
-pnpm deploy:rewards          # deploy IDMX + MissionRewards + danai kontrak
-```
+Kontraknya **sudah ter-deploy & terdanai** — `.env.local` lokal sudah terisi.
+Yang belum: produksi masih buta terhadap alamat-alamat itu.
 
-- [ ] Wallet deployer terisi tBNB **opBNB Testnet (5611)** — bukan BSC Testnet (97)
-- [ ] Jalankan skrip, salin 4 env yang dicetak ke `.env.local`
-- [ ] Salin 4 env yang sama ke Environment Variables Vercel → **redeploy**
-- [ ] Uji: buka tab Misi, klaim "Catat transaksi pertama hari ini" → IDMX masuk,
-      tautan opBNBScan tampil
+- [x] `pnpm deploy:rewards` — IDMX + MissionRewards live, kolam 100 juta IDMX
+- [ ] Salin env on-chain (6 alamat + `AIDM_REWARD_CHAIN` + kunci penandatangan)
+      ke Environment Variables Vercel → **redeploy**
+- [ ] Uji jalur sukses: buka tab Misi, klaim "Catat transaksi pertama hari ini"
+      → IDMX masuk, tautan opBNBScan tampil *(jalur sukses on-chain memang tidak
+      diuji otomatis — lihat catatan di bawah)*
 
-Sampai ini selesai: tombol Klaim nonaktif berketerangan, API menjawab 501.
+Sampai env produksi diisi: tombol Klaim nonaktif berketerangan, API menjawab 501.
 Aman berada di produksi — tidak ada yang rusak, hanya belum aktif.
 
 ### 2. 🤖 Hidupkan tab Misi tiap hari — **disepakati 2026-08-15, siap dikerjakan**
