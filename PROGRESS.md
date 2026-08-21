@@ -22,8 +22,8 @@ Diperbarui: **2026-08-22** · cabang `main`
 > konfirmasi), kursor di DB. Teruji terhadap testnet sungguhan. Operasinya:
 > `docs/RELAYER-SWAP.md`. ✅ **Penjadwal terpasang 2026-08-22** — project
 > dipindahkan ke tim Vercel **Pro** (jadwal 1 menit menggagalkan build di Hobby),
-> `vercel.json` menjadwalkan `/api/relayer/tick` tiap menit. ⚠️ **Belum terbukti
-> berputar** — dua pemblokir pasca-transfer di bawah. ⬜ Sisa:
+> `vercel.json` menjadwalkan `/api/relayer/tick` tiap menit — **terbukti berputar
+> sendiri di produksi 2026-08-21 23:16 UTC**, kursor menyusul kepala rantai. ⬜ Sisa:
 > UI Tukar (§9), `scripts/ratchet-check.mjs` (§5), dust top-up opBNB, dan
 > **verifikasi source keenam kontrak di explorer** (§10 — banner PO baru tampil
 > setelah terverifikasi; sekaligus gladi resik sebelum mainnet).
@@ -75,36 +75,37 @@ cap 2.000/minggu, ambang 100.000, plafon 200.000 IDMX (angka testnet §10.5),
 `nonceCounter` 0 (belum ada swap). **Dibaca ulang dari rantai 2026-08-22 — semua
 angka masih persis sama.**
 
-Kursor relayer di DB (`relayer_state`): blok `193874875`, terakhir maju
-2026-08-21 02:07 UTC dari laptop. Env `SWAP_RELAYER_CURSOR_BLOCK` sudah tidak
-berlaku sejak baris itu ada — karena itu ia sengaja TIDAK dipasang di Vercel.
+Kursor relayer di DB (`relayer_state`): **dikendalikan cron produksi sejak
+2026-08-21 23:16 UTC**, maju tiap menit dan menempel di kepala rantai (menahan 15
+konfirmasi). Env `SWAP_RELAYER_CURSOR_BLOCK` sudah tidak berlaku sejak baris itu
+ada — karena itu ia sengaja TIDAK dipasang di Vercel.
 
 ---
 
 ## Berikutnya — berurutan
 
-### 1. 🧑 Dua pemblokir sisa transfer ke Vercel Pro — **paling atas**
+### ~~1. Dua pemblokir sisa transfer ke Vercel Pro~~ — ✅ **BERES 2026-08-22**
 
-Keduanya lahir dari pindah tim 2026-08-22, keduanya hanya bisa ditekan dari
-dashboard, dan **selama keduanya belum beres, cron relayer tidak menghasilkan
-apa pun.**
+Keduanya lahir dari pindah tim dan sudah ditutup pada hari yang sama:
 
-- [ ] **Redeploy.** Delapan env on-chain masuk 21:21–21:40 UTC, sedangkan
-      deployment terakhir jadi 21:14:57 UTC — **enam menit lebih awal.** Vercel
-      mengikat env ke deployment saat dibuat, jadi build yang sedang berjalan
-      belum melihat satu pun dari delapan itu. Tanpa redeploy tick dijawab 404
-      (tak ada `CRON_SECRET`) dan kursor tidak akan pernah maju.
-- [ ] **Matikan Vercel Authentication untuk Production.** Settings → Deployment
-      Protection. Sekarang **setiap path** (`/`, `/masuk`, `/api/*`) menjawab 302
-      ke `vercel.com/sso-api` — aplikasinya terkunci total dari publik. Ini
-      bawaan tim Pro, bukan sesuatu yang kita nyalakan. Setelan yang benar:
-      lindungi **Preview saja**. *(Vercel Cron memang menembus proteksi ini, jadi
-      cron bisa jalan diam-diam; tapi uji `curl` manual dan penjadwal luar mana
-      pun akan tertahan — dan beta tertutup M6 mustahil dengan pintu ini.)*
+- [x] **Redeploy.** Delapan env on-chain masuk 21:21–21:40 UTC, sedangkan
+      deployment saat itu jadi 21:14:57 UTC — **enam menit lebih awal.** Vercel
+      mengikat env ke deployment saat dibuat, jadi build lama tidak pernah
+      melihatnya dan tick dijawab 404. Push `c8e6af0` memicu build baru yang
+      membawa kedelapan env.
+- [x] **Vercel Authentication dimatikan untuk Production.** Sebelumnya *setiap*
+      path (`/`, `/masuk`, `/api/*`) menjawab 302 ke `vercel.com/sso-api` —
+      aplikasi terkunci total dari publik, bawaan tim Pro. Sekarang `/masuk`
+      menjawab 200. Preview tetap dilindungi.
 
-Bukti bahwa keduanya belum beres: kursor `relayer_state` masih di `193874875`
-dan `updated_at` sudah berumur >19 jam. Kalau cron hidup, angka itu bergerak
-tiap menit — itu ukuran yang paling jujur, bukan tampilan dashboard.
+**Relayer terbukti berputar sendiri** (diverifikasi 2026-08-21 23:16–23:20 UTC):
+tick pertama menjawab `{"ok":true,"tertinggal":"204343"}`, lalu kursor maju
+`194074875 → 194109875` dalam 30 detik **tanpa panggilan manual**, dan menyusul
+kepala rantai (selisih ~4.700 blok) dalam tiga menit.
+
+**Pelajaran yang menghemat waktu nanti:** ukuran paling jujur bahwa relayer hidup
+bukan tampilan dashboard Vercel, melainkan `updated_at` di `relayer_state`. Kalau
+ia bergerak tiap menit, cron bekerja — titik.
 
 ### 2. 🧑 Tuntaskan klaim misi (menutup M4 sepenuhnya)
 
