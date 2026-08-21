@@ -50,22 +50,29 @@ curl -X POST https://ai.idmtoken.com/api/relayer/tick \
 # → {"ok":true,"dariBlok":"…","sampaiBlok":"…","voucherBaru":0,…}
 ```
 
-### Penjadwal — pilih SALAH SATU
+### Penjadwal — **Vercel Cron** (dipakai sejak 2026-08-22)
 
-Interval yang dituju **1 menit**. Kodenya identik untuk ketiganya; yang berbeda
-hanya siapa yang menekan tombolnya.
-
-| Opsi | Interval | Catatan |
-|---|---|---|
-| **Vercel Cron** | 1 menit (**paket Pro**) | Paling rapi. Vercel mengirim `Authorization: Bearer $CRON_SECRET` otomatis bila env itu ada. **Hobby hanya mengizinkan sekali sehari — `vercel.json` dengan jadwal lebih rapat akan MENGGAGALKAN build.** Karena itu `vercel.json` sengaja belum dibuat di repo ini. |
-| **cron-job.org** | 1 menit | Gratis, tidak bergantung paket Vercel. Header `Authorization` diisi manual di dashboard-nya. |
-| **GitHub Actions** | 5 menit (minimum) | Gratis, tapi jadwalnya sering meleset beberapa menit saat runner sibuk. |
-
-Kalau memakai Vercel Cron (Pro), buat `vercel.json`:
+`vercel.json` di akar repo menjadwalkan `/api/relayer/tick` tiap menit:
 
 ```json
 { "crons": [{ "path": "/api/relayer/tick", "schedule": "* * * * *" }] }
 ```
+
+Tiga hal yang perlu diketahui tentang jadwal ini:
+
+- **Butuh paket Pro.** Hobby hanya mengizinkan sekali sehari, dan `vercel.json`
+  dengan jadwal lebih rapat **menggagalkan build** — bukan diam-diam melambat.
+  Project ini dipindahkan ke tim Pro lebih dulu, karena itu berkas ini ada.
+- **Header otorisasi dikirim Vercel sendiri**, bukan ditulis di `vercel.json`.
+  Syaratnya env `CRON_SECRET` ada di project — kalau tidak, tick dijawab 404 dan
+  relayer diam tanpa suara. Env itu wajib ikut ada di tim Pro setelah transfer.
+- **Cron hanya hidup di deployment Production.** Preview/branch deployment tidak
+  menjalankannya; jadwal terdaftar saat deployment production baru dipromosikan.
+
+Kalau suatu saat paket Vercel turun lagi ke Hobby, endpointnya tidak berubah —
+tinggal hapus `vercel.json` dan tunjuk penjadwal luar ke URL yang sama:
+**cron-job.org** (gratis, 1 menit, header `Authorization` diisi manual) atau
+**GitHub Actions** (gratis, minimum 5 menit, sering meleset saat runner sibuk).
 
 Latensi ~1 menit memang terlihat user, dan itu jujur ditampilkan UI sebagai
 **Diproses → Siap diklaim → Selesai**.

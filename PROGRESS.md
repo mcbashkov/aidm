@@ -4,7 +4,7 @@ Pelacak pekerjaan lintas sesi. **README** menjelaskan produk & cara menjalankan;
 berkas ini menjawab satu pertanyaan saja: *apa yang sudah beres, apa berikutnya,
 dan siapa yang mengerjakan.*
 
-Diperbarui: **2026-08-21** · cabang `main`
+Diperbarui: **2026-08-22** · cabang `main`
 
 > ⚠️ **Sisi token digantikan `docs/PERINTAH-AGEN-FINAL.md`.** Untuk apa pun yang
 > menyangkut IDMX/IDM Reborn/swap/kurs/tokenomics, dokumen itu sumber kebenaran
@@ -20,8 +20,9 @@ Diperbarui: **2026-08-21** · cabang `main`
 > `SwapRequested`, menandatangani voucher EIP-712, memperpanjang yang mendekati
 > kedaluwarsa, menandai yang tertebus. Idempoten (nonce = PK), tahan reorg (15
 > konfirmasi), kursor di DB. Teruji terhadap testnet sungguhan. Operasinya:
-> `docs/RELAYER-SWAP.md`. ⬜ Sisa: **penjadwal 1 menit belum dipasang** (pilih
-> Vercel Cron Pro / cron-job.org / GitHub Actions — lihat README relayer),
+> `docs/RELAYER-SWAP.md`. ✅ **Penjadwal terpasang 2026-08-22** — project
+> dipindahkan ke tim Vercel **Pro** (jadwal 1 menit menggagalkan build di Hobby),
+> `vercel.json` menjadwalkan `/api/relayer/tick` tiap menit. ⬜ Sisa:
 > UI Tukar (§9), `scripts/ratchet-check.mjs` (§5), dust top-up opBNB, dan
 > **verifikasi source keenam kontrak di explorer** (§10 — banner PO baru tampil
 > setelah terverifikasi; sekaligus gladi resik sebelum mainnet).
