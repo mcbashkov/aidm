@@ -16,8 +16,13 @@ Diperbarui: **2026-08-21** · cabang `main`
 > hidup: IDMX 50 miliar + MissionRewards terdanai + SwapInitiator di opBNB;
 > IDMReborn 1 miliar + SwapClaim berkolam 150 juta IDM di BSC. Uji anvil
 > `pnpm test:swap` 36/36 (kriteria §11 kontrak) + audit multi-agen lolos.
-> ⬜ Sisa: langkah 6 (relayer `/api/relayer/tick`), UI Tukar (§9),
-> `scripts/ratchet-check.mjs` (§5), `test:api` jalur penolakan swap, dan
+> ✅ **Langkah 6 (relayer) SELESAI** — `POST /api/relayer/tick` memindai
+> `SwapRequested`, menandatangani voucher EIP-712, memperpanjang yang mendekati
+> kedaluwarsa, menandai yang tertebus. Idempoten (nonce = PK), tahan reorg (15
+> konfirmasi), kursor di DB. Teruji terhadap testnet sungguhan. Operasinya:
+> `docs/RELAYER-SWAP.md`. ⬜ Sisa: **penjadwal 1 menit belum dipasang** (pilih
+> Vercel Cron Pro / cron-job.org / GitHub Actions — lihat README relayer),
+> UI Tukar (§9), `scripts/ratchet-check.mjs` (§5), dust top-up opBNB, dan
 > **verifikasi source keenam kontrak di explorer** (§10 — banner PO baru tampil
 > setelah terverifikasi; sekaligus gladi resik sebelum mainnet).
 
@@ -40,7 +45,7 @@ perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
 | M7 Play & App Store | ⬜ belum mulai | — |
 
 **Gerbang otomatis terkini:** `test:parser` 200/200 · `test:canonical` 23/23 ·
-`test:api` 115/115 · typecheck · lint · build · CI hijau.
+`test:api` 123/123 · typecheck · lint · build · CI hijau.
 
 **Produksi:** `ai.idmtoken.com` (Vercel) — auto-deploy dari `main`.
 
