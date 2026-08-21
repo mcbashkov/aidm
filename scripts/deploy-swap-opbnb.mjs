@@ -125,7 +125,12 @@ if (dryRun) {
 const { createWalletClient, createPublicClient, http, isAddress, getAddress } =
   await import("viem");
 const { privateKeyToAccount } = await import("viem/accounts");
-const { opbnb, opbnbTestnet } = await import("viem/chains");
+// opBNB TIDAK ada di viem/chains bawaan (beda dengan bsc/bscTestnet) — pakai
+// definisi chain kustom repo yang sama dipakai deploy-rewards.mjs, sudah
+// membaca NEXT_PUBLIC_OPBNB(_TESTNET)_RPC_URL dari .env.local dengan fallback.
+const { opbnb, opbnbTestnet } = await import(
+  new URL(join(root, "lib/chains/opbnb.ts"), "file://").href
+);
 
 const chain = keMainnet ? opbnb : opbnbTestnet;
 
