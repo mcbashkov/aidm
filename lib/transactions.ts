@@ -3,7 +3,7 @@
  *
  * Semua nominal adalah **integer rupiah**. Tidak ada float di mana pun untuk
  * uang (§12 integritas angka) — pembulatan float merusak total laporan yang
- * nantinya dibawa ke bank.
+ * nantinya disegel on-chain, dan hash yang salah tidak bisa ditarik kembali.
  */
 
 export type Jenis = "masuk" | "keluar";

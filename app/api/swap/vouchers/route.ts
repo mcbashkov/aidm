@@ -76,7 +76,15 @@ export async function GET() {
       // membuat tanda tangan tidak cocok. `idmx` hanya untuk ditampilkan.
       idmxBurned: String(v.idmx_burned),
       idmx: Number(formatEther(BigInt(v.idmx_burned))),
-      deadline: v.deadline as string,
+      // Dua bentuk, alasannya sama dengan `idmxBurned` di atas. `deadline`
+      // adalah DETIK UNIX — satuan yang ditandatangani dan yang diminta
+      // kontrak (uint64). Konversi dilakukan di server supaya tidak ada klien
+      // yang menafsirkan sendiri kolom timestamptz-nya; salah satu detik saja
+      // dan tanda tangan tidak lagi cocok.
+      deadline: String(
+        Math.floor(new Date(v.deadline as string).getTime() / 1000),
+      ),
+      deadlineIso: v.deadline as string,
       signature: v.signature as `0x${string}`,
       status: v.status as "signed" | "claimed",
       burnTxUrl: explorerBurnTxUrl(v.burn_tx_hash as string),

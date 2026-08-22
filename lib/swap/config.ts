@@ -28,6 +28,17 @@ export const SWAP_INITIATOR_ABI = parseAbi([
   "event SwapRequested(address indexed user, uint256 idmxAmount, uint256 indexed nonce, uint256 timestamp)",
 ]);
 
+/**
+ * IDMX dari sisi klien. `approve` ada di sini karena SwapInitiator membakar
+ * lewat `burnFrom` — tanpa izin dari pemiliknya, `swap()` akan revert. Itu
+ * sebabnya alur Tukar selalu dua tanda tangan pada pemakaian pertama.
+ */
+export const IDMX_ABI = parseAbi([
+  "function balanceOf(address owner) view returns (uint256)",
+  "function allowance(address owner, address spender) view returns (uint256)",
+  "function approve(address spender, uint256 value) returns (bool)",
+]);
+
 export const SWAP_CLAIM_ABI = parseAbi([
   "struct SwapVoucher { address user; uint256 idmxBurned; uint256 nonce; uint64 deadline; }",
   "function claim((address,uint256,uint256,uint64) v, bytes signature)",
@@ -78,6 +89,12 @@ export function swapClaimAddress(): `0x${string}` | null {
 
 export function idmRebornAddress(): `0x${string}` | null {
   return alamat(process.env.NEXT_PUBLIC_IDM_REBORN_ADDRESS);
+}
+
+/** IDMX di opBNB — token yang dibakar, sekaligus yang saldonya tampil di
+ *  kartu wallet. */
+export function idmxAddress(): `0x${string}` | null {
+  return alamat(process.env.NEXT_PUBLIC_IDMX_ADDRESS);
 }
 
 /** Kedua kaki kontrak sudah nyata? Selama false, UI Tukar nonaktif dan API

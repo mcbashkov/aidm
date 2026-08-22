@@ -133,9 +133,21 @@ export async function tandatanganiVoucherSwap(
   });
 }
 
+/**
+ * Kedua bentuk WAJIB berasal dari satu nilai detik yang sama.
+ *
+ * Yang ditandatangani adalah `detik` (uint64), sedangkan yang tersimpan di DB
+ * adalah `iso` — dan klien harus bisa memulihkan `detik` persis dari `iso`,
+ * karena angka itulah yang dipakai memanggil kontrak. Sebelumnya `iso` dibuat
+ * dari milidetik mentah sementara `detik` dibulatkan ke bawah, sehingga
+ * keduanya berbeda hingga 999 ms. Pemulihan dengan pembulatan ke bawah memang
+ * kebetulan menghasilkan angka yang benar, tapi kebenaran yang bergantung pada
+ * kebetulan tidak layak dipegang saat taruhannya voucher yang ditolak
+ * `InvalidSignature` atas IDMX yang sudah terbakar.
+ */
 function deadlineBaru(): { detik: bigint; iso: string } {
-  const ms = Date.now() + UMUR_VOUCHER_HARI * 86_400_000;
-  return { detik: BigInt(Math.floor(ms / 1000)), iso: new Date(ms).toISOString() };
+  const detik = Math.floor((Date.now() + UMUR_VOUCHER_HARI * 86_400_000) / 1000);
+  return { detik: BigInt(detik), iso: new Date(detik * 1000).toISOString() };
 }
 
 export interface HasilTick {

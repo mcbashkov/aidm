@@ -1,19 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  MessageSquare,
-  Bell,
-  Shield,
-  KeyRound,
-  ChevronRight,
-  Sparkles,
-} from "lucide-react";
+import { ChevronRight, Sparkles } from "lucide-react";
 import { WalletCard } from "@/components/wallet/wallet-card";
+import { SwapSheet } from "@/components/wallet/swap-sheet";
+import { VoucherPanel } from "@/components/wallet/voucher-panel";
+import { SettingsList } from "@/components/account/settings-list";
 import { LogoutButton } from "@/components/account/logout-button";
 import { DeleteAccount } from "@/components/account/delete-account";
 import { earnerLabel } from "@/lib/earner";
+import { panggil } from "@/lib/api/panggil";
+import { isPrivyConfigured } from "@/lib/privy/config";
+import { chainDariId } from "@/lib/swap/chains-klien";
+import type { SwapConfig } from "@/lib/swap/tipe";
 
 interface Me {
   authenticated: boolean;
@@ -24,25 +24,30 @@ interface Me {
     kota?: string;
   } | null;
   wallet?: { address?: string } | null;
-  idmx?: number;
-  idm?: number;
+  idmx?: number | null;
 }
-
-const SETTINGS = [
-  { icon: MessageSquare, label: "Gaya bahasa jawaban AI" },
-  { icon: Bell, label: "Notifikasi" },
-  { icon: Shield, label: "Kebijakan privasi (UU PDP)" },
-  { icon: KeyRound, label: "Ekspor wallet" },
-];
 
 export default function AkunPage() {
   const [me, setMe] = useState<Me | null>(null);
+  const [swapConfig, setSwapConfig] = useState<SwapConfig | null>(null);
+  const [sheetTerbuka, setSheetTerbuka] = useState(false);
+  // Dinaikkan setiap kali burn berhasil — memberi tahu panel voucher bahwa ada
+  // sesuatu yang layak ditunggu, sekaligus menyegarkan saldo.
+  const [pemicuMuat, setPemicuMuat] = useState(0);
+
+  const muatMe = useCallback(async () => {
+    const hasil = await panggil<Me>("/api/me");
+    setMe(hasil.ok ? hasil.data : { authenticated: false });
+  }, []);
 
   useEffect(() => {
-    fetch("/api/me")
-      .then((r) => r.json())
-      .then((d: Me) => setMe(d))
-      .catch(() => setMe({ authenticated: false }));
+    void muatMe();
+  }, [muatMe, pemicuMuat]);
+
+  useEffect(() => {
+    void panggil<SwapConfig>("/api/swap/config").then((h) => {
+      if (h.ok && h.data.configured) setSwapConfig(h.data);
+    });
   }, []);
 
   const kota = me?.user?.kota;
@@ -55,6 +60,27 @@ export default function AkunPage() {
       ? "Pemilik usaha"
       : "Mode demo";
 
+  const alamat = me?.wallet?.address ?? null;
+  const idmx = me?.idmx ?? null;
+
+  // Urutan alasan mengikuti urutan yang bisa diperbaiki pengguna: yang paling
+  // bisa ia tindaklanjuti disebut lebih dulu.
+  const swapAlasan = !alamat
+    ? "Dompet belum siap."
+    : !swapConfig
+      ? "Fitur Tukar belum aktif di server ini."
+      : idmx === null
+        ? "Saldo belum bisa dibaca dari jaringan."
+        : idmx === 0
+          ? "Belum ada IDMX untuk ditukar. Selesaikan misi dulu ya."
+          : null;
+
+  const burnChain = chainDariId(swapConfig?.burnChainId);
+  const explorerUrl =
+    alamat && burnChain?.blockExplorers?.default.url
+      ? `${burnChain.blockExplorers.default.url}/address/${alamat}`
+      : null;
+
   return (
     <div className="space-y-section">
       <header>
@@ -66,10 +92,20 @@ export default function AkunPage() {
       </header>
 
       <WalletCard
-        address={me?.wallet?.address ?? null}
-        idmx={me?.idmx ?? 0}
-        idm={me?.idm ?? 0}
+        address={alamat}
+        idmx={idmx}
+        swapAlasan={swapAlasan}
+        onSwap={() => setSheetTerbuka(true)}
+        explorerUrl={explorerUrl}
       />
+
+      {swapConfig && alamat && isPrivyConfigured ? (
+        <VoucherPanel
+          config={swapConfig}
+          address={alamat}
+          pemicuMuat={pemicuMuat}
+        />
+      ) : null}
 
       {/* Pintu masuk fitur premium — bukan bottom-nav lagi (§7.8 / §13 #10) */}
       <Link
@@ -93,23 +129,22 @@ export default function AkunPage() {
       <section className="space-y-2">
         <h2 className="px-1">Pengaturan</h2>
         <div className="card overflow-hidden divide-y divide-line p-0">
-          {SETTINGS.map(({ icon: Icon, label }) => (
-            <button
-              key={label}
-              type="button"
-              className="flex w-full items-center gap-3 px-5 py-4 text-left transition-colors active:bg-surface-warm"
-            >
-              <Icon className="h-5 w-5 shrink-0 text-ink-subtle" aria-hidden />
-              <span className="flex-1 text-[14px] text-ink">{label}</span>
-              <ChevronRight className="h-4 w-4 text-ink-subtle" aria-hidden />
-            </button>
-          ))}
+          <SettingsList />
           {/* Hapus akun punya alur konfirmasinya sendiri (§12 hak penghapusan). */}
           <DeleteAccount />
         </div>
       </section>
 
       <LogoutButton />
+
+      {sheetTerbuka && swapConfig && alamat && isPrivyConfigured ? (
+        <SwapSheet
+          config={swapConfig}
+          address={alamat}
+          onClose={() => setSheetTerbuka(false)}
+          onBerhasil={() => setPemicuMuat((n) => n + 1)}
+        />
+      ) : null}
     </div>
   );
 }

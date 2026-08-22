@@ -166,8 +166,18 @@ IDMX/tahun**. Cap harian 250 tidak perlu diubah (masih ada ruang 2,4×). Kolam
 
 - [ ] Prompt instal PWA di Android (ikon maskable sudah lengkap sejak M0 — kalau
       gagal, penyebabnya bukan itu)
-- [ ] Serahkan 1 PDF ke petugas bank/koperasi sungguhan — **ini gerbang wajib M6**,
-      dan satu-satunya yang tidak bisa disimulasikan
+- ~~Serahkan 1 PDF ke petugas bank/koperasi~~ — **DICABUT** (PO, 2026-08-15;
+  ditegaskan ulang 2026-08-22). Gerbang itu ada untuk memverifikasi janji
+  "laporan siap diajukan ke bank", dan janji itu sendiri sudah dibatalkan —
+  tanpa janjinya, gerbang ini kehilangan tujuan. PRD §14 dan
+  BRIEF-EKONOMI-TOKEN.md #9 sudah mencatatnya; baris ini yang tertinggal.
+
+  **Batas produk yang berlaku sekarang:** AIDM membantu sampai laporan jadi PDF
+  dan tersegel on-chain. Titik. Mau dibawa ke bank atau tidak adalah urusan
+  pengguna, dan penerimaan berkas adalah wewenang penilai — bukan sesuatu yang
+  boleh dijanjikan pembuat alat. Nilai lanjutannya ada di **B2B**: basis data
+  rekam usaha terverifikasi untuk koperasi/BPR/fintech (PRD P5, Fase 3), bukan
+  pada klaim kelayakan kredit per pengguna.
 
 ### 6. 🤖 M5 — premium di balik kredit
 

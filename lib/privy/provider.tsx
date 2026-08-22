@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { PrivyProvider } from "@privy-io/react-auth";
 import type { PrivyClientConfig } from "@privy-io/react-auth";
 import { DEFAULT_CHAIN, SUPPORTED_CHAINS } from "@/lib/chains/opbnb";
+import { bsc, bscTestnet } from "@/lib/chains/bsc";
 import {
   PRIVY_APP_ID,
   PRIVY_LOGIN_METHODS,
@@ -70,7 +71,12 @@ export function Providers({ children }: { children: ReactNode }) {
     loginMethods:
       PRIVY_LOGIN_METHODS as unknown as PrivyClientConfig["loginMethods"],
     defaultChain: DEFAULT_CHAIN,
-    supportedChains: [...SUPPORTED_CHAINS],
+    // BSC ikut didaftarkan meski aplikasi berumah di opBNB: langkah kedua alur
+    // Tukar menebus IDM Reborn di BSC, dan `switchChain` ke jaringan yang tidak
+    // terdaftar di sini akan MELEMPAR — voucher yang sah pun jadi tak bisa
+    // diklaim. Keduanya (mainnet + testnet) didaftarkan sekaligus supaya
+    // pergantian fase tidak menuntut perubahan di berkas ini.
+    supportedChains: [...SUPPORTED_CHAINS, bsc, bscTestnet],
     appearance: {
       theme: "light",
       accentColor: "#F0B90B",

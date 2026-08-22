@@ -28,7 +28,7 @@ export const maxDuration = 30;
 const BULAN_TABEL = 12;
 
 /**
- * GET /api/laporan/pdf?period=2026-08 (§11) — laporan siap dibawa ke bank.
+ * GET /api/laporan/pdf?period=2026-08 (§11) — laporan keuangan siap cetak.
  *
  * Dirender di server, bukan di browser: berkas ini harus identik untuk periode
  * yang sama siapa pun yang mengunduhnya (§7.5 — nanti hash-nya disegel

@@ -4,6 +4,7 @@ import { readSessionValue } from "@/lib/auth/session-cookie";
 import { SESSION_COOKIE } from "@/lib/auth/constants";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { ensureDailyFree } from "@/lib/credits";
+import { saldoIdmx } from "@/lib/token/saldo";
 
 export const runtime = "nodejs";
 
@@ -26,7 +27,7 @@ export async function GET() {
       supa
         .from("users")
         .select(
-          "id, role, earner_type, nama_usaha, kategori_id, sub_kategori, kota, provinsi, email, phone, categories:kategori_id(slug)",
+          "id, role, earner_type, nama_usaha, kategori_id, sub_kategori, kota, provinsi, email, phone, gaya_bahasa, categories:kategori_id(slug)",
         )
         .eq("id", uid)
         .single(),
@@ -53,14 +54,20 @@ export async function GET() {
       unknown
     >;
 
-    // Saldo token dibaca on-chain di milestone selanjutnya (M4/M5).
+    // Saldo IDMX dibaca on-chain (§9). `null` = belum bisa dipastikan, dan itu
+    // BUKAN hal yang sama dengan nol — lihat lib/token/saldo.ts.
+    //
+    // Tidak ada `idm` di sini dengan sengaja: IDM Reborn hidup di BSC dan tidak
+    // pernah menyentuh opBNB (Opsi B §9), jadi kartu wallet aplikasi hanya
+    // berbicara tentang IDMX. Saldo IDM dilihat pengguna di wallet BSC-nya.
+    const idmx = wallet?.address ? await saldoIdmx(wallet.address) : null;
+
     return NextResponse.json({
       authenticated: true,
       user: user ? { ...userRest, kategori_slug } : user,
       wallet,
       credits,
-      idmx: 0,
-      idm: 0,
+      idmx,
     });
   } catch {
     return NextResponse.json({ authenticated: true, unconfigured: true });
@@ -93,6 +100,16 @@ export async function PATCH(req: Request) {
     )
   ) {
     update.earner_type = patch.earner_type;
+  }
+  // Gaya bahasa ikut masuk prompt model (lib/agent/system-prompt.ts), jadi
+  // daftar putihnya ditegakkan di sini SEBELUM menyentuh database — bukan
+  // hanya mengandalkan CHECK constraint. Dua lapis, karena nilai yang lolos
+  // ke prompt adalah permukaan serangan, bukan sekadar data yang jelek.
+  if (
+    typeof patch.gaya_bahasa === "string" &&
+    ["santai", "netral", "formal"].includes(patch.gaya_bahasa)
+  ) {
+    update.gaya_bahasa = patch.gaya_bahasa;
   }
   if (typeof patch.nama_usaha === "string")
     update.nama_usaha = patch.nama_usaha.slice(0, 120);

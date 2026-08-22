@@ -176,7 +176,7 @@ GET /api/laporan?period=2026-08 | 30d | today
   → ringkasan + grafik harian   : daily_rollups  (O(hari), bukan O(transaksi))
   → rincian kategori            : RPC laporan_kategori (GROUP BY, migrasi 0015)
   → status segel                : report_seals
-GET /api/laporan/pdf?period=…   → A4 siap dibawa ke bank (@react-pdf/renderer)
+GET /api/laporan/pdf?period=…   → laporan A4 siap cetak (@react-pdf/renderer)
 ```
 
 Seluruh agregasi di server; layar tidak pernah menjumlah transaksi sendiri. Batas

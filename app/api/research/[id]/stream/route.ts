@@ -103,7 +103,7 @@ export async function GET(
         // Konteks profil user (§7.1 AC: dipakai agen sebagai konteks default).
         const { data: profile } = await supa
           .from("users")
-          .select("role, kota, categories:kategori_id(nama)")
+          .select("role, kota, gaya_bahasa, categories:kategori_id(nama)")
           .eq("id", uid)
           .maybeSingle();
         const kategoriRel = profile?.categories as
@@ -116,7 +116,12 @@ export async function GET(
 
         const result = await runResearchAgent(
           query.input_text ?? "",
-          { role: profile?.role, kategori, kota: profile?.kota },
+          {
+            role: profile?.role,
+            kategori,
+            kota: profile?.kota,
+            gaya: profile?.gaya_bahasa,
+          },
           (event) => send(event),
           { forceFresh },
         );

@@ -20,8 +20,9 @@ export interface Me {
   } | null;
   wallet?: { address?: string } | null;
   credits?: number;
-  idmx?: number;
-  idm?: number;
+  /** Saldo IDMX on-chain. `null`/undefined = belum bisa dipastikan (RPC gagal
+   *  atau kontrak belum dikonfigurasi) — sengaja dibedakan dari nol. */
+  idmx?: number | null;
 }
 
 const MeContext = createContext<Me | null>(null);
