@@ -123,10 +123,13 @@ lewat SQL langsung, jadi tidak menambah biaya model.
 ```
 app/
   (auth)/            masuk + onboarding (peran, usaha) — fokus tunggal per layar
-  (app)/             shell + Beranda · Catat · Laporan · Misi · Akun (+ /riwayat, /premium)
+  (app)/             shell + Beranda · Catat · Laporan · Misi · Akun
+                     (+ /riwayat, /premium, /kebijakan-privasi)
   api/               auth/session · me · akun · catat · catat/konfirmasi · transaksi ·
                      laporan · laporan/pdf · laporan/segel · missions · missions/klaim ·
-                     verify (publik) · research
+                     swap/config · swap/vouchers · relayer/tick · verify (publik) · research
+  not-found.tsx      404 berbahasa Indonesia
+  error.tsx          layar galat tak terduga
   manifest.ts        manifest PWA
   sw.ts              service worker Serwist (di-exclude dari tsc)
   ~offline/          halaman offline (memuat form catat offline)
@@ -136,7 +139,9 @@ components/
   laporan/           SummaryCards · CashflowChart · CategoryBreakdown · SealCard
   layout/            BottomNav (<1024px) · TopNav (≥1024px) · HeaderStats · MobileTopBar
   research/          RisetView · AnswerArticle — kini di balik /premium
-  wallet/  pwa/  ui/  providers/
+  wallet/            WalletCard · SwapSheet (burn opBNB) · VoucherPanel (klaim BSC)
+  account/           SettingsList · LogoutButton · DeleteAccount
+  pwa/  ui/  providers/
 lib/
   parse/             index (orkestrasi) · llm (Haiku §17.1) · fallback (regex) · validate
   catat/             server (helper API) · client (pembungkus fetch)
@@ -236,6 +241,24 @@ Pola layout: <1024px memakai pola mobile (bottom-nav 5 tab + baris status tanpa 
   ditambahkan.
 - **Bundle ≤ 200 KB (§12):** target optimasi lanjutan (lazy-load Privy, code-split)
   digarap pada milestone kualitas M5. SDK Privy saat ini masuk shared bundle.
+- **Chain fitur Tukar dirakit di server, bukan di klien.** `AIDM_REWARD_CHAIN` dan
+  `AIDM_SWAP_CHAIN` sengaja TIDAK berawalan `NEXT_PUBLIC_`, jadi di browser keduanya
+  `undefined` dan resolver akan diam-diam jatuh ke `NEXT_PUBLIC_DEFAULT_CHAIN` — nilai
+  yang saat ini menunjuk **mainnet** padahal seluruh kontrak hidup di testnet. Komponen
+  klien karena itu menerima nomor chain dari `GET /api/swap/config` dan tidak pernah
+  menghitungnya sendiri. Salah chain di sini bukan sekadar gagal: transaksi terkirim ke
+  alamat yang di jaringan itu tidak berisi kontrak apa pun.
+- **Saldo IDMX dibaca server, bukan browser.** Satu pembacaan melayani semua tab,
+  alamat pengguna tidak bocor ke penyedia RPC tiap muat halaman, dan `/api/me` — yang
+  dipanggil pada SETIAP navigasi — dilindungi batas 2,5 detik plus cache 60 detik per
+  alamat. Saldo yang tidak bisa dipastikan dikembalikan `null`, bukan 0; "belum tahu"
+  dan "dompetmu kosong" adalah dua pernyataan berbeda kepada pengguna.
+- **Tukar = dua transaksi, dua jaringan, dikirim dompet pengguna sendiri.** `swap()`
+  membakar IDMX di opBNB; relayer menerbitkan voucher EIP-712; `claim()` menebusnya di
+  BSC dengan gas ditanggung pengguna (garis monetisasi yang disengaja — jangan tambahkan
+  jalur relayer-submit). Seluruh penolakan ditegakkan kontrak sebelum burn; UI hanya
+  mencerminkannya lebih awal supaya tidak ada gas terbuang untuk transaksi yang pasti
+  revert.
 
 ## Milestone selanjutnya (§14)
 

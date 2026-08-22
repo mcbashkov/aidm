@@ -23,8 +23,10 @@ Diperbarui: **2026-08-22** · cabang `main`
 > `docs/RELAYER-SWAP.md`. ✅ **Penjadwal terpasang 2026-08-22** — project
 > dipindahkan ke tim Vercel **Pro** (jadwal 1 menit menggagalkan build di Hobby),
 > `vercel.json` menjadwalkan `/api/relayer/tick` tiap menit — **terbukti berputar
-> sendiri di produksi 2026-08-21 23:16 UTC**, kursor menyusul kepala rantai. ⬜ Sisa:
-> UI Tukar (§9), `scripts/ratchet-check.mjs` (§5), dust top-up opBNB, dan
+> sendiri di produksi 2026-08-21 23:16 UTC**, kursor menyusul kepala rantai.
+> ✅ **UI Tukar (§9) SELESAI 2026-08-22** — lembar burn opBNB + panel voucher klaim
+> BSC, chain dirakit server (`/api/swap/config`) supaya klien tidak jatuh ke
+> mainnet. ⬜ Sisa: `scripts/ratchet-check.mjs` (§5), dust top-up opBNB, dan
 > **verifikasi source keenam kontrak di explorer** (§10 — banner PO baru tampil
 > setelah terverifikasi; sekaligus gladi resik sebelum mainnet).
 
@@ -37,17 +39,23 @@ perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
 
 | Milestone | Status | Bukti |
 |---|---|---|
-| M0 fondasi | ✅ selesai | migrasi 0001–0017, rute & onboarding v3.0 |
+| M0 fondasi | ✅ selesai | migrasi 0001–0020, rute & onboarding v3.0 |
 | M1 parser & tab Catat | ✅ selesai | `test:parser` 200/200 |
 | M2 suara & offline | ✅ selesai | uji lapangan Android 2026-08-14 (3 akun nyata) |
 | M3 Laporan & PDF | ✅ selesai | `test:api` mem-baca ulang isi PDF, bukan cuma header |
-| M4 segel + misi | ✅ kode selesai | segel **live di opBNB testnet**; misi tinggal deploy kontrak |
+| M4 segel + misi | ✅ kode selesai | segel & misi **live di opBNB testnet**; sisa: satu klaim manual |
 | M5 premium & kredit | ⬜ belum mulai | — |
 | M6 mainnet & beta | ⬜ belum mulai | — |
 | M7 Play & App Store | ⬜ belum mulai | — |
 
-**Gerbang otomatis terkini:** `test:parser` 200/200 · `test:canonical` 23/23 ·
-`test:api` 123/123 · typecheck bersih. Dijalankan ulang 2026-08-22, semua hijau.
+**Gerbang otomatis terkini (2026-08-22):** `test:parser` 200/200 ·
+`test:canonical` 23/23 · typecheck bersih · lint bersih · build sukses.
+
+⚠️ **`test:api` belum bisa dituntaskan di mesin pengembangan sekarang** — bukan
+karena gagal, tapi karena harness-nya putus di tengah (lihat §5 utang teknis).
+Angka 123/123 yang terakhir sah tercatat pada run 2026-08-22 pagi, sebelum batch
+UI. Jangan tulis ulang angka itu sebagai "hijau hari ini" sampai ada satu run
+yang benar-benar selesai.
 
 **Produksi:** `aidm-idmtoken.vercel.app` (tim Vercel **Pro** `idmtoken`) —
 auto-deploy dari `main`. Domain `ai.idmtoken.com` **sengaja belum dipasang**;
@@ -109,8 +117,14 @@ ia bergerak tiap menit, cron bekerja — titik.
 
 ### 2. 🧑 Tuntaskan klaim misi (menutup M4 sepenuhnya)
 
-Kontraknya **sudah ter-deploy & terdanai**, dan env produksi **sudah terisi**
-2026-08-22 — tinggal menunggu redeploy di atas.
+Kontraknya **sudah ter-deploy & terdanai**, env produksi **sudah terisi**, dan
+deployment-nya sudah membawa env itu. Yang tersisa murni satu ketukan jari Anda
+di aplikasi — tidak ada lagi yang memblokirnya dari sisi kode.
+
+Catatan yang menghemat kebingungan: dompet uji sekarang bersaldo **0 IDMX**
+(dibaca dari rantai 2026-08-22), jadi tombol Tukar di kartu wallet memang tampil
+nonaktif dengan keterangan "Belum ada IDMX untuk ditukar". Itu perilaku yang
+benar, bukan fitur yang rusak — ia hidup begitu misi pertama diklaim.
 
 - [x] `pnpm deploy:rewards` — IDMX + MissionRewards live, kolam 100 juta IDMX
 - [x] Env on-chain masuk Vercel: `NEXT_PUBLIC_IDMX_ADDRESS`,
@@ -130,7 +144,25 @@ menyatakan itu memang boleh — perannya identik, sama-sama membayar gas.
 `app/` atau `lib/` yang membacanya (hanya `scripts/`, yang jalan di laptop), dan
 yang treasury memegang 850 juta IDM.
 
-### 3. 🤖 Hidupkan tab Misi tiap hari — **disepakati 2026-08-15, siap dikerjakan**
+### ~~3. Batch UI cangkang~~ — ✅ **SELESAI 2026-08-22**
+
+Dikerjakan sebagai satu batch atas keputusan PO: layar yang **bentuknya adalah
+barangnya** diselesaikan lebih dulu, supaya rangka aplikasi stabil sebelum
+mesin-mesin dibangun di atasnya. Merombak nav/layout belakangan jauh lebih mahal
+daripada menambah isi.
+
+- [x] Saldo IDMX on-chain + kartu wallet sesuai mockup
+- [x] **UI Tukar** — lembar burn opBNB + panel voucher klaim BSC
+- [x] Empat baris Pengaturan hidup + halaman Kebijakan Privasi
+- [x] Halaman 404 & error berbahasa Indonesia
+
+**Yang sengaja TIDAK ikut batch ini**, karena UI-nya cuma kulit tipis di atas
+mesin yang belum ada: Generator Konten, Wizard Peluang, pembelian kredit
+Midtrans, panel admin. Membangun cangkangnya lebih dulu hanya menghasilkan
+halaman yang tampak jadi tapi tidak melakukan apa-apa — dan besar kemungkinan
+dibongkar lagi begitu ketahuan bentuk keluaran mesinnya.
+
+### 4. 🤖 Hidupkan tab Misi tiap hari — **disepakati 2026-08-15, siap dikerjakan**
 
 Masalahnya nyata: di hari biasa hanya **2 misi** yang bisa diklaim. Setelah
 keduanya selesai, tab Misi jadi layar mati sampai besok. Empat misi berikut
@@ -152,17 +184,29 @@ Dampak: 4 misi/hari (dari 2) · 70 → **105 IDMX/hari** · 32.600 → **50.535
 IDMX/tahun**. Cap harian 250 tidak perlu diubah (masih ada ruang 2,4×). Kolam
 100 juta tetap cukup untuk beta 100 user selama ~20 tahun (dari 31).
 
-### 4. 🤖 Utang teknis kecil
+### 5. 🤖 Utang teknis kecil
 
 - [ ] Peringatan saldo kontrak reward menipis — kalau habis, klaim *revert* dan
       user melihat kegagalan membingungkan, bukan penjelasan
-- [ ] Saldo IDMX di header/Akun masih hardcode `0` — kontraknya sudah ada,
-      tinggal dibaca on-chain
+- [x] ~~Saldo IDMX hardcode `0`~~ — dibaca on-chain 2026-08-22
+      (`lib/token/saldo.ts`, batas 2,5 dtk + cache 60 dtk; `null` ≠ 0)
 - [ ] Bundle `/masuk` 848 KB vs target §12 ≤200 KB — SDK Privy, perlu lazy-load
-- [ ] 4 tombol Pengaturan di `/akun` masih mati (gaya bahasa AI, notifikasi,
-      kebijakan privasi, ekspor wallet)
+- [x] ~~4 tombol Pengaturan mati~~ — dihidupkan 2026-08-22. Gaya bahasa AI
+      tersimpan (migrasi 0020) dan masuk prompt lewat peta nilai; kebijakan
+      privasi jadi halaman; ekspor wallet lewat Privy. **Notifikasi sengaja
+      tetap menyatakan "belum tersedia"** — push infrastructure memang belum
+      ada, dan meminta izin notifikasi untuk sesuatu yang belum bisa dikirim
+      lebih buruk daripada mengakuinya.
+- [ ] **`test:api` rapuh di mesin lambat** — `next start` menutup koneksi
+      menganggur setelah 5 detik, sedangkan harness memanggil `psql` di antara
+      request; di mesin yang sedang penuh, spawn `psql` melewati batas itu dan
+      fetch berikutnya mati `SocketError: other side closed` di titik yang
+      berpindah-pindah. Server tidak pernah mati dan log-nya bersih; request
+      yang "gagal" berhasil 200 saat dijalankan sendiri. Perbaikannya di
+      harness (matikan keep-alive atau naikkan `keepAliveTimeout`), bukan di
+      aplikasi.
 
-### 5. 🧑 Verifikasi lapangan yang belum dilakukan
+### 6. 🧑 Verifikasi lapangan yang belum dilakukan
 
 - [ ] Prompt instal PWA di Android (ikon maskable sudah lengkap sejak M0 — kalau
       gagal, penyebabnya bukan itu)
@@ -179,13 +223,13 @@ IDMX/tahun**. Cap harian 250 tidak perlu diubah (masih ada ruang 2,4×). Kolam
   rekam usaha terverifikasi untuk koperasi/BPR/fintech (PRD P5, Fase 3), bukan
   pada klaim kelayakan kredit per pengguna.
 
-### 6. 🤖 M5 — premium di balik kredit
+### 7. 🤖 M5 — premium di balik kredit
 
 - [ ] Fitur riset & konten dipagari Kredit AI (§7.8)
 - [ ] Pembelian kredit Midtrans (QRIS/VA) — env sudah di-scaffold
 - [ ] Hardening PDP: purge `raw_input` 90 hari (§16 #10, sudah diputuskan)
 
-### 7. 🧑 M6 — mainnet & beta tertutup 100 user
+### 8. 🧑 M6 — mainnet & beta tertutup 100 user
 
 Prasyarat sebelum mulai: keputusan §16 #5, #8, #11 (lihat di bawah).
 
