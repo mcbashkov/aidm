@@ -281,6 +281,13 @@ Pola layout: <1024px memakai pola mobile (bottom-nav 5 tab + baris status tanpa 
   pengurutan seri sepenuhnya. Tanpa pemecah seri, Postgres mengembalikan urutan
   fisik — yang TERLAMA di atas — sehingga "Transaksi terakhir" justru tidak
   pernah menampilkan yang baru dicatat.
+- **Jam transaksi tidak pernah ditampilkan — tanggal saja.** AIDM tidak
+  mengetahui jam kejadian: parser hanya menghasilkan tanggal, `occurred_at`
+  dipatok 12.00 WIB, dan `created_at` adalah jam MENCATAT (pelaku mikro sering
+  mencatat borongan malam hari). Keduanya karangan bila dibaca sebagai jam
+  transaksi, dan label tidak menolong — pengguna membaca posisi itu sebagai jam
+  kejadian apa pun tulisannya. Tidak ada keputusan usaha yang bergantung pada
+  jam transaksi. Berlaku di baris transaksi, ekspor CSV, dan PDF laporan.
 - **Tukar = dua transaksi, dua jaringan, dikirim dompet pengguna sendiri.** `swap()`
   membakar IDMX di opBNB; relayer menerbitkan voucher EIP-712; `claim()` menebusnya di
   BSC dengan gas ditanggung pengguna (garis monetisasi yang disengaja — jangan tambahkan

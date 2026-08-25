@@ -7,7 +7,6 @@ import {
   Mic,
 } from "lucide-react";
 import {
-  formatJamID,
   formatRupiahSigned,
   formatTanggalPendekID,
   isTerverifikasi,
@@ -20,7 +19,12 @@ import { cn } from "@/lib/utils";
 interface TransactionRowProps {
   tx: Transaction;
   onClick?: (tx: Transaction) => void;
-  /** Tampilkan tanggal (daftar lintas hari) atau jam saja (dalam satu hari). */
+  /**
+   * Tampilkan tanggal. Matikan hanya kalau daftarnya sudah dikelompokkan per
+   * hari dengan judul tanggal di atasnya (Riwayat) — di situ tanggal per baris
+   * cuma pengulangan. Jam tidak pernah ditampilkan: AIDM tidak tahu jam
+   * kejadian, `occurred_at` dipatok 12.00 WIB (lihat app/api/catat/route.ts).
+   */
   showDate?: boolean;
 }
 
@@ -76,12 +80,12 @@ export function TransactionRow({
             ) : null}
             {paymentLabel(tx.paymentMethod)}
           </span>
-          <span aria-hidden>·</span>
-          <span>
-            {showDate
-              ? formatTanggalPendekID(tx.occurredAt)
-              : formatJamID(tx.occurredAt)}
-          </span>
+          {showDate ? (
+            <>
+              <span aria-hidden>·</span>
+              <span>{formatTanggalPendekID(tx.occurredAt)}</span>
+            </>
+          ) : null}
         </span>
       </span>
 

@@ -217,10 +217,28 @@ mekanisme yang dipasang untuk sesuatu yang tidak mengerjakan apa-apa.
 kembali dari tab lain. Korektness benar, terasa lambat, sebabnya tidak ada
 cache klien — dikerjakan bersama P1-3 sebagai satu mekanisme, bukan tambalan.
 
-**Usulan menunggu keputusan PO:** Riwayat menampilkan jam asli (`created_at`)
-alih-alih 12.00 di setiap baris, yang sekarang terlihat seperti data palsu.
-Batasnya: `created_at` adalah waktu MENCATAT, bukan waktu kejadian — untuk
-catatan susulan jamnya akan menyesatkan bila dibaca sebagai jam transaksi.
+- [x] **Jam transaksi dihapus dari UI — keputusan PO 2026-08-25.** Usulan
+      mengganti 12.00 dengan `created_at` DITOLAK, dan alasannya adalah aturan
+      produk: **AIDM tidak pernah tahu jam kejadian, jadi jangan berpura-pura
+      tahu.** `created_at` adalah jam MENCATAT — pelaku mikro lazim mencatat
+      borongan malam hari, sehingga seluruh transaksi sehari akan tampil jam
+      21.00: sama menyesatkannya dengan 12.00. Batas ini tidak bisa
+      diselesaikan dengan label, karena pengguna membaca posisi itu sebagai jam
+      kejadian apa pun tulisannya. Dan tidak ada keputusan usaha yang
+      bergantung pada jam transaksi. `transaction-row.tsx` kini menampilkan
+      tanggal saja; helper `formatJamID` dihapus dari `lib/transactions.ts` dan
+      diganti komentar penjelas supaya tidak lahir kembali.
+
+**Pindaian tempat lain yang menampilkan jam transaksi — tidak ada.** Ekspor CSV
+(`riwayat-view.tsx`) sudah menulis `occurredAt.slice(0, 10)`, tanggal saja. PDF
+laporan (`lib/laporan/pdf.tsx`) tidak memuat baris transaksi sama sekali, hanya
+ringkasan periode bertanggal WIB. Sheet detail (`transaction-sheet.tsx`) hanya
+punya `<input type="date">`; komponen jam ISO tetap dibawa apa adanya saat
+menyimpan — tidak ditampilkan, tapi menyetelnya ke 00.00 bisa menggeser tanggal
+WIB baris itu bila dibaca dari zona lain. Jadi seluruh permukaan sudah seragam
+tanggal-saja; `created_at` tetap dipakai sebagai pemecah seri di query dan tidak
+masuk `TX_COLUMNS` maupun tipe `Transaction` — Supabase bisa mengurutkannya
+tanpa menyeleksinya, dan kolom yang tidak dirender tidak perlu ikut ke klien.
 
 ### 5. 🤖 Hidupkan tab Misi tiap hari — **disepakati 2026-08-15, siap dikerjakan**
 

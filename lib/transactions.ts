@@ -137,13 +137,11 @@ export function formatPeriodeID(periodKey: string): string {
   return `${BULAN[(m ?? 1) - 1]} ${y}`;
 }
 
-/** "08.30" — jam WIB dari ISO. */
-export function formatJamID(iso: string): string {
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}.${String(
-    d.getMinutes(),
-  ).padStart(2, "0")}`;
-}
+// Sengaja TIDAK ada formatJam*: AIDM tidak pernah tahu jam kejadian sebuah
+// transaksi. Parser hanya menghasilkan tanggal dan `occurred_at` dipatok ke
+// 12.00 WIB (app/api/catat/route.ts), jadi jam apa pun yang ditampilkan adalah
+// karangan — dan pengguna membaca posisi itu sebagai jam kejadian, label apa
+// pun yang dipasang. UI menampilkan tanggal saja.
 
 /** Persentase bulat untuk perbandingan periode: 0.1234 → "12%". */
 export function formatPersen(rasio: number): string {

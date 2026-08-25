@@ -87,7 +87,9 @@ export function TransactionSheet({
       amount: Math.round(nominal),
       kategori,
       paymentMethod: metode,
-      // Pertahankan jam asli entri; hanya tanggalnya yang bisa diubah di sheet.
+      // Hanya tanggal yang bisa diubah. Komponen jam ISO dibawa apa adanya:
+      // tidak pernah ditampilkan di UI, tapi menyetelnya ke 00.00 bisa
+      // menggeser tanggal WIB baris ini kalau dibaca dari zona lain.
       occurredAt: `${tanggal}T${transaction.occurredAt.slice(11)}`,
       catatan: catatan.trim() || null,
       parsedBy: "manual",
