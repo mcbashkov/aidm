@@ -14,6 +14,7 @@
  */
 
 import { parseAbi, type Chain } from "viem";
+import { envPertama } from "@/lib/env";
 import { opbnb, opbnbTestnet, DEFAULT_CHAIN } from "@/lib/chains/opbnb";
 import { bsc, bscTestnet } from "@/lib/chains/bsc";
 
@@ -55,7 +56,7 @@ export const SWAP_CLAIM_ABI = parseAbi([
  * berada di jaringan yang sama atau alurnya patah.
  */
 export function swapBurnChain(): Chain {
-  const pilihan = process.env.AIDM_REWARD_CHAIN ?? process.env.AIDM_SEAL_CHAIN;
+  const pilihan = envPertama("AIDM_REWARD_CHAIN", "AIDM_SEAL_CHAIN");
   if (pilihan === "opbnb") return opbnb;
   if (pilihan === "opbnb-testnet") return opbnbTestnet;
   return DEFAULT_CHAIN;

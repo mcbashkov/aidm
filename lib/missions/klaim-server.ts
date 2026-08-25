@@ -22,6 +22,7 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { opbnb, opbnbTestnet, DEFAULT_CHAIN } from "@/lib/chains/opbnb";
+import { envPertama } from "@/lib/env";
 import { CAP_HARIAN_IDMX, CAP_BULANAN_IDMX } from "@/lib/missions";
 
 export const MISSION_REWARDS_ABI = parseAbi([
@@ -33,7 +34,7 @@ export const MISSION_REWARDS_ABI = parseAbi([
 
 /** Chain kontrak reward — dipisah dari chain default app, sama seperti segel. */
 export function rewardChain(): Chain {
-  const pilihan = process.env.AIDM_REWARD_CHAIN ?? process.env.AIDM_SEAL_CHAIN;
+  const pilihan = envPertama("AIDM_REWARD_CHAIN", "AIDM_SEAL_CHAIN");
   if (pilihan === "opbnb") return opbnb;
   if (pilihan === "opbnb-testnet") return opbnbTestnet;
   return DEFAULT_CHAIN;
@@ -53,9 +54,12 @@ function signerKey(): `0x${string}` | null {
 
 function relayerKey(): `0x${string}` | null {
   // Relayer boleh sama dengan relayer segel — perannya identik: membayar gas.
-  const k =
-    process.env.MISSION_RELAYER_PRIVATE_KEY ??
-    process.env.SEAL_RELAYER_PRIVATE_KEY;
+  // `envPertama`, bukan `??`: variabel yang ADA tapi KOSONG adalah keadaan
+  // normal di proyek ini, dan `??` akan menganggapnya nilai yang sah.
+  const k = envPertama(
+    "MISSION_RELAYER_PRIVATE_KEY",
+    "SEAL_RELAYER_PRIVATE_KEY",
+  );
   if (!k) return null;
   const hex = k.startsWith("0x") ? k : `0x${k}`;
   return /^0x[0-9a-fA-F]{64}$/.test(hex) ? (hex as `0x${string}`) : null;

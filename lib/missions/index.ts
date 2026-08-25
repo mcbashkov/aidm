@@ -1,3 +1,5 @@
+import type { KodeGalatKlaim } from "@/lib/missions/galat";
+
 /** Misi default v3.0 (§7.6) — pemicunya bergeser dari riset ke pencatatan.
  *  Dipakai sebagai fallback tampilan (mode demo) dan sebagai daftar target
  *  yang dievaluasi server di `lib/missions/server.ts`. */
@@ -89,6 +91,10 @@ export interface MisiProgress extends DefaultMission {
   statusKlaim?: "signed" | "submitted" | "confirmed" | "failed";
   /** Alasan misi belum bisa diklaim meski selesai (cap harian tercapai, dll). */
   alasanTerkunci?: string;
+  /** Kode mesin untuk `alasanTerkunci`. Ada supaya endpoint klaim menolak
+   *  dengan kode yang sama persis yang dipakai layar untuk mematikan tombol —
+   *  tanpa satu pun pihak menebak sebabnya dari isi kalimat. */
+  kodeTerkunci?: KodeGalatKlaim;
 }
 
 export interface MisiResponse {

@@ -138,6 +138,43 @@ benar, bukan fitur yang rusak — ia hidup begitu misi pertama diklaim.
 `MISSION_RELAYER_PRIVATE_KEY` sengaja tidak dipasang: kodenya jatuh ke
 `SEAL_RELAYER_PRIVATE_KEY` yang sudah ada, dan komentar di `klaim-server.ts`
 menyatakan itu memang boleh — perannya identik, sama-sama membayar gas.
+**Catatan penting sejak batch P0-2 A:** cadangan itu dulu memakai `??`, yang
+hanya jatuh pada `undefined`. Di Vercel variabelnya memang TIDAK ADA sehingga
+cadangan bekerja; tapi di `.env.local` ia ADA dan KOSONG — dan `""` bukan
+nullish, jadi klaim menjawab 501 "belum dikonfigurasi" di setiap mesin lokal.
+Sekarang dibaca lewat `envPertama()` (`lib/env.ts`): **nilai pertama yang tidak
+kosong**, sesuai aturan yang tertulis di kepala `.env.local.example`.
+
+#### P0-2 batch A — sebab 500 ditemukan & dicabut (2026-08-26)
+
+**Sebabnya bukan balapan wallet, bukan kuota.** Log Vercel (5 kejadian, 4 user,
+2026-08-22..25) menunjuk satu hal: `SQLSTATE 22003 — value "16213509590252896750"
+is out of range for type bigint`. `nonceBaru()` menghasilkan bilangan acak
+**unsigned 64-bit**, sedangkan `mission_claims.nonce` bertipe `bigint` yang
+**signed** — maksimum 2^63-1. **Separuh dari semua nonce ditolak Postgres**,
+jadi setiap ketukan Klaim adalah lemparan koin. Itulah kenapa gejalanya terlihat
+seperti kondisi balapan: gagal, gagal, lalu tiba-tiba berhasil tanpa ada yang
+berubah. Keempat nonce di log semuanya di paruh atas.
+
+- [x] **0021** — `mission_claims.nonce` → `text` + CHECK bentuk kanonik, sejajar
+      `swap_vouchers.nonce` (0019). Bukan mask 63-bit di aplikasi: nonce adalah
+      `uint256` di kontrak, dan mengecilkan domain agar muat ke tipe penyimpanan
+      yang salah adalah menyesuaikan kebenaran pada wadahnya. Diverifikasi di
+      produksi: 2^64-1 masuk, `'007'` ditolak CHECK, 10 baris lama utuh.
+- [x] **Taksonomi galat** `lib/missions/galat.ts` — `{ code, message }` dengan
+      status 4xx/503 untuk setiap kondisi yang bisa diprediksi. 500 hanya untuk
+      yang benar-benar tak terduga, dan SQLSTATE-nya WAJIB ikut ter-log.
+      SQLSTATE dipetakan: 23505→ALREADY_CLAIMED, 23503→MISSION_UNKNOWN,
+      22003/22P02/23514→CLAIM_STORAGE_REJECTED.
+- [x] **Tombol Klaim** — penjaga ganti dari state ke `ref` (dua ketukan dalam
+      satu frame sama-sama membaca state lama; ref berubah seketika). Setelah
+      gagal, tombol hidup lagi HANYA untuk kode yang layak diulang; retryabilitas
+      tinggal di tabel taksonomi, dipakai server dan layar dari satu sumber.
+
+**Yang TIDAK dikerjakan di batch A, sesuai keputusan PO:** klaim asinkron
+(batch B), lubang wallet di hulu (B3), dan poin "upsert kuota" yang dicabut —
+tidak ada baris kuota misi yang dibaca, angkanya diturunkan dari
+`mission_claims`.
 
 **Tiga kunci deploy JANGAN pernah masuk Vercel** — `DEPLOYER_PRIVATE_KEY`,
 `IDM_LEGACY_DEPLOYER_PRIVATE_KEY`, `IDM_TREASURY_PRIVATE_KEY`. Tidak ada kode di

@@ -281,6 +281,25 @@ Pola layout: <1024px memakai pola mobile (bottom-nav 5 tab + baris status tanpa 
   pengurutan seri sepenuhnya. Tanpa pemecah seri, Postgres mengembalikan urutan
   fisik — yang TERLAMA di atas — sehingga "Transaksi terakhir" justru tidak
   pernah menampilkan yang baru dicatat.
+- **Nilai on-chain disimpan sebagai `text`, tidak pernah tipe numerik.**
+  `uint256` tidak muat di `bigint` (yang signed, jadi separuh ruang nonce ditolak
+  22003) dan `numeric` dikembalikan PostgREST sebagai number JavaScript yang
+  kehilangan presisi di atas 2^53. Keduanya sudah pernah jadi bug: 0019 untuk
+  voucher swap, 0021 untuk nonce klaim misi. `text` + CHECK `^(0|[1-9][0-9]*)$`
+  menjaga ketepatan secara struktural, bukan bergantung pada setiap query ingat
+  menulis cast.
+- **Kondisi yang bisa diprediksi tidak pernah dijawab 500.** 500 berarti "kami
+  tidak tahu apa yang terjadi"; memakainya untuk jatah habis atau dompet belum
+  siap membuat pengguna membaca "coba lagi" lalu menabrak dinding yang sama.
+  Taksonomi `{ code, message }` di `lib/missions/galat.ts` menyimpan status DAN
+  retryabilitas di satu tabel, dipakai server untuk menolak dan dipakai layar
+  untuk mematikan tombol — dua daftar terpisah pasti berbeda pendapat cepat atau
+  lambat.
+- **Cadangan env dibaca dengan `envPertama()`, bukan `??`.** Proyek ini
+  mendeteksi konfigurasi dari "string tidak kosong" dan menganjurkan field yang
+  belum siap dibiarkan KOSONG — sementara `""` bukan nullish, sehingga `??`
+  mengembalikan string kosong dan cadangannya tidak pernah terpakai. Kegagalannya
+  diam: fitur mengaku belum dikonfigurasi padahal kuncinya ada.
 - **Jam transaksi tidak pernah ditampilkan — tanggal saja.** AIDM tidak
   mengetahui jam kejadian: parser hanya menghasilkan tanggal, `occurred_at`
   dipatok 12.00 WIB, dan `created_at` adalah jam MENCATAT (pelaku mikro sering

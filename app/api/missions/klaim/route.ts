@@ -4,6 +4,11 @@ import { currentUserId } from "@/lib/catat/server";
 import { evaluasiMisi } from "@/lib/missions/server";
 import { ikutCapHarian } from "@/lib/missions";
 import {
+  GALAT_KLAIM,
+  kodeDariSqlstate,
+  type KodeGalatKlaim,
+} from "@/lib/missions/galat";
+import {
   idmxKeWei,
   isKlaimConfigured,
   missionIdOnChain,
@@ -19,6 +24,43 @@ export const maxDuration = 60;
 /** Voucher berlaku 10 menit — cukup panjang untuk jaringan lambat, cukup
  *  pendek supaya voucher yang bocor tidak berumur panjang. */
 const VOUCHER_TTL_DETIK = 600;
+
+/**
+ * Satu bentuk penolakan untuk seluruh handler: `{ code, message }`.
+ *
+ * `pesan` hanya diisi bila kita punya kalimat yang LEBIH spesifik daripada
+ * kalimat baku kode itu (mis. cap harian yang menyebut angkanya). Statusnya
+ * selalu dari tabel — supaya satu kode tidak pernah keluar dengan dua status
+ * berbeda tergantung cabang mana yang memanggilnya.
+ */
+function tolak(kode: KodeGalatKlaim, pesan?: string) {
+  const def = GALAT_KLAIM[kode];
+  return NextResponse.json(
+    { code: kode, message: pesan ?? def.message },
+    { status: def.status },
+  );
+}
+
+/** SQLSTATE dari galat PostgREST, bila galatnya memang datang dari Postgres. */
+function sqlstate(err: unknown): string | undefined {
+  if (err && typeof err === "object" && "code" in err) {
+    const c = (err as { code?: unknown }).code;
+    if (typeof c === "string") return c;
+  }
+  return undefined;
+}
+
+/**
+ * Kegagalan mengirim transaksi: bedakan "jaringan lambat" dari "relayer tidak
+ * bisa dipakai". Keduanya 503 dan keduanya boleh dicoba lagi — yang berbeda
+ * hanya kalimatnya, dan pengguna berhak tahu mana yang sedang terjadi.
+ */
+function kodeGalatRantai(err: unknown): KodeGalatKlaim {
+  const pesan = err instanceof Error ? `${err.name} ${err.message}` : `${err}`;
+  return /timeout|timed out|deadline/i.test(pesan)
+    ? "CHAIN_TIMEOUT"
+    : "RELAYER_UNAVAILABLE";
+}
 
 /**
  * POST /api/missions/klaim — {code} (§7.6 / §11).
@@ -41,16 +83,9 @@ export async function POST(req: Request) {
   } catch {
     /* ditolak di bawah */
   }
-  if (!code) {
-    return NextResponse.json({ error: "Misi tidak dikenal." }, { status: 400 });
-  }
+  if (!code) return tolak("MISSION_UNKNOWN");
 
-  if (!isKlaimConfigured()) {
-    return NextResponse.json(
-      { error: "Klaim on-chain belum dikonfigurasi di server ini." },
-      { status: 501 },
-    );
-  }
+  if (!isKlaimConfigured()) return tolak("CLAIM_NOT_CONFIGURED");
 
   let supa;
   try {
@@ -65,23 +100,12 @@ export async function POST(req: Request) {
   try {
     const hasil = await evaluasiMisi(supa, uid, true);
     const misi = hasil.misi.find((m) => m.code === code);
-    if (!misi) {
-      return NextResponse.json({ error: "Misi tidak dikenal." }, { status: 400 });
-    }
-    if (!misi.selesai) {
-      return NextResponse.json(
-        { error: "Misi ini belum selesai." },
-        { status: 400 },
-      );
-    }
-    if (misi.diklaim) {
-      return NextResponse.json(
-        { error: "Misi ini sudah diklaim untuk periode ini." },
-        { status: 409 },
-      );
-    }
+    if (!misi) return tolak("MISSION_UNKNOWN");
+    if (!misi.selesai) return tolak("MISSION_NOT_COMPLETE");
+    if (misi.diklaim) return tolak("ALREADY_CLAIMED");
     if (misi.alasanTerkunci) {
-      return NextResponse.json({ error: misi.alasanTerkunci }, { status: 429 });
+      // Kode datang dari evaluator, bukan disimpulkan dari isi kalimat.
+      return tolak(misi.kodeTerkunci ?? "UNEXPECTED", misi.alasanTerkunci);
     }
 
     const { data: w } = await supa
@@ -91,10 +115,9 @@ export async function POST(req: Request) {
       .maybeSingle();
     const wallet = w?.address as `0x${string}` | undefined;
     if (!wallet || !/^0x[0-9a-fA-F]{40}$/.test(wallet)) {
-      return NextResponse.json(
-        { error: "Akun belum punya wallet — masuk ulang untuk membuatnya." },
-        { status: 400 },
-      );
+      // 409, bukan 400: permintaannya benar, keadaannya yang belum siap. Baris
+      // `wallets` bisa memang belum ada saat embedded wallet Privy belum jadi.
+      return tolak("WALLET_NOT_READY");
     }
 
     const { data: misiRow } = await supa
@@ -102,9 +125,7 @@ export async function POST(req: Request) {
       .select("id")
       .eq("code", code)
       .maybeSingle();
-    if (!misiRow) {
-      return NextResponse.json({ error: "Misi tidak aktif." }, { status: 400 });
-    }
+    if (!misiRow) return tolak("MISSION_UNKNOWN");
 
     const nonce = nonceBaru();
     // Baris ditulis SEBELUM transaksi dikirim: indeks unik (user, misi,
@@ -123,13 +144,18 @@ export async function POST(req: Request) {
       .select("id")
       .single();
     if (errKlaim || !klaimRow) {
-      if (`${errKlaim?.code}`.startsWith("23")) {
-        return NextResponse.json(
-          { error: "Misi ini sudah diklaim untuk periode ini." },
-          { status: 409 },
+      const kode = kodeDariSqlstate(sqlstate(errKlaim));
+      // Bentrok indeks periode adalah jalan kerja normal (dua tab, dua ketukan)
+      // — bukan insiden. Sisanya dicatat LENGKAP dengan SQLSTATE-nya: kode
+      // itulah yang membuat 22003 bisa dikenali dalam hitungan menit, bukan
+      // hari, ketika kelas galat berikutnya muncul.
+      if (kode !== "ALREADY_CLAIMED") {
+        console.error(
+          `[misi] insert klaim gagal (sqlstate=${sqlstate(errKlaim) ?? "-"}, kode=${kode}):`,
+          errKlaim,
         );
       }
-      throw errKlaim ?? new Error("insert klaim gagal");
+      return tolak(kode);
     }
 
     const voucher = {
@@ -156,11 +182,9 @@ export async function POST(req: Request) {
         .from("mission_claims")
         .update({ status: "failed" })
         .eq("id", klaimRow.id);
-      console.error("[misi] klaim gagal:", err);
-      return NextResponse.json(
-        { error: "Klaim gagal dikirim ke jaringan. Coba lagi ya." },
-        { status: 502 },
-      );
+      const kode = kodeGalatRantai(err);
+      console.error(`[misi] klaim gagal dikirim (kode=${kode}):`, err);
+      return tolak(kode);
     }
 
     await supa
@@ -179,10 +203,14 @@ export async function POST(req: Request) {
       status: tx.confirmed ? "confirmed" : "submitted",
     });
   } catch (err) {
-    console.error("[misi] klaim gagal:", err);
-    return NextResponse.json(
-      { error: "Gagal mengklaim misi. Coba lagi ya." },
-      { status: 500 },
+    // Hanya sampai sini bila kita benar-benar tidak tahu apa yang terjadi.
+    // SQLSTATE ikut dicatat kalau ada — galat Postgres yang lolos ke sini
+    // berarti ada cabang yang belum dipetakan, dan kodenya yang menunjukkan
+    // cabang mana.
+    console.error(
+      `[misi] klaim gagal tak terduga (sqlstate=${sqlstate(err) ?? "-"}):`,
+      err,
     );
+    return tolak("UNEXPECTED");
   }
 }

@@ -16,6 +16,7 @@ import {
   type MisiProgress,
   type MisiResponse,
 } from "@/lib/missions";
+import { bisaDicobaLagi } from "@/lib/missions/galat";
 import { ambilMisi, klaimMisi } from "@/lib/missions/client";
 import { cn } from "@/lib/utils";
 
@@ -45,14 +46,20 @@ function misiDemo(): MisiResponse {
 function KartuMisi({
   m,
   memproses,
+  galatLokal,
   onKlaim,
 }: {
   m: MisiProgress;
   memproses: boolean;
+  /** Penolakan terakhir yang TIDAK layak dicoba ulang (sudah diklaim, jatah
+   *  habis). Selama terisi, tombolnya mati — menawarkan ketukan yang pasti
+   *  ditolak lagi hanya memindahkan kegagalan, bukan menghilangkannya. */
+  galatLokal?: string;
   onKlaim: () => void;
 }) {
   const rasio = m.target > 0 ? Math.min(1, m.progress / m.target) : 0;
-  const bisaKlaim = m.selesai && !m.diklaim && !m.alasanTerkunci && !memproses;
+  const bisaKlaim =
+    m.selesai && !m.diklaim && !m.alasanTerkunci && !galatLokal && !memproses;
 
   return (
     <div className="card space-y-3 p-4">
@@ -93,7 +100,7 @@ function KartuMisi({
               type="button"
               onClick={onKlaim}
               disabled={!bisaKlaim}
-              title={m.alasanTerkunci}
+              title={m.alasanTerkunci ?? galatLokal}
               className="flex min-h-[32px] items-center gap-1.5 rounded-pill bg-cta px-3.5 py-1.5 text-[11px] font-semibold text-ink-invert disabled:opacity-40"
             >
               {memproses ? (
@@ -135,9 +142,9 @@ function KartuMisi({
         </a>
       ) : null}
 
-      {m.alasanTerkunci && !m.diklaim ? (
+      {(m.alasanTerkunci ?? galatLokal) && !m.diklaim ? (
         <p className="text-[11px] leading-relaxed text-ink-subtle">
-          {m.alasanTerkunci}
+          {m.alasanTerkunci ?? galatLokal}
         </p>
       ) : null}
     </div>
@@ -158,8 +165,15 @@ export function MisiView() {
   const [galat, setGalat] = useState<string | null>(null);
   const [galatKlaim, setGalatKlaim] = useState<string | null>(null);
   const [sedangKlaim, setSedangKlaim] = useState<string | null>(null);
+  // Misi yang ditolak dengan alasan yang tidak akan berubah oleh ketukan
+  // berikutnya (sudah diklaim, jatah habis) — kode → kalimat penolakan.
+  const [kunciGagal, setKunciGagal] = useState<Record<string, string>>({});
   const [percobaan, setPercobaan] = useState(0);
   const reqSeq = useRef(0);
+  // Penjaga klaim ganda. HARUS ref, bukan state: dua ketukan dalam satu frame
+  // sama-sama membaca state lama (React belum sempat menggambar ulang tombol
+  // yang sudah disabled), sedangkan ref berubah seketika di ketukan pertama.
+  const klaimBerjalan = useRef<string | null>(null);
 
   useEffect(() => {
     const seq = ++reqSeq.current;
@@ -170,6 +184,12 @@ export function MisiView() {
       if (res.ok) {
         setDemo(false);
         setData(res.data);
+        // Kunci lokal hanya menambal jendela antara penolakan dan pembacaan
+        // ulang. Begitu server berbicara, dialah yang berwenang: kalau ia
+        // masih menolak, `diklaim`/`alasanTerkunci` yang mematikan tombol.
+        // Membiarkan kunci lokal hidup lebih lama akan mematikan tombol di
+        // hari berikutnya, saat misinya sudah layak diklaim lagi.
+        setKunciGagal({});
       } else if (res.demo) {
         setDemo(true);
         setData(misiDemo());
@@ -186,18 +206,38 @@ export function MisiView() {
   }, [percobaan]);
 
   const klaim = useCallback(async (code: string) => {
+    // Diambil SEBELUM await pertama — inilah yang menutup ketukan ganda.
+    if (klaimBerjalan.current) return;
+    klaimBerjalan.current = code;
+
     setSedangKlaim(code);
     setGalatKlaim(null);
-    const res = await klaimMisi(code);
-    if (res.ok) {
-      // Muat ulang dari server supaya status & cap datang dari satu sumber.
-      setPercobaan((n) => n + 1);
-    } else {
-      setGalatKlaim(
-        res.offline ? "Kamu sedang offline — klaim butuh koneksi." : res.error,
-      );
+    try {
+      const res = await klaimMisi(code);
+      if (res.ok) {
+        // Muat ulang dari server supaya status & cap datang dari satu sumber.
+        setPercobaan((n) => n + 1);
+        return;
+      }
+
+      const pesan = res.offline
+        ? "Kamu sedang offline — klaim butuh koneksi."
+        : res.error;
+      setGalatKlaim(pesan);
+
+      // Offline selalu layak dicoba ulang; selebihnya taksonomi yang memutuskan
+      // (lib/missions/galat.ts), bukan daftar kedua di layar ini.
+      if (!res.offline && !bisaDicobaLagi(res.kode)) {
+        setKunciGagal((k) => ({ ...k, [code]: pesan }));
+        // Penolakan permanen berarti server tahu sesuatu yang layar ini belum
+        // tahu — mis. klaimnya memang sudah tercatat. Muat ulang supaya kartu
+        // menampilkan keadaan sebenarnya, bukan sekadar tombol mati.
+        setPercobaan((n) => n + 1);
+      }
+    } finally {
+      setSedangKlaim(null);
+      klaimBerjalan.current = null;
     }
-    setSedangKlaim(null);
   }, []);
 
   const totalHarian = DEFAULT_MISSIONS.filter((m) => m.tipe === "daily").reduce(
@@ -281,6 +321,7 @@ export function MisiView() {
               key={m.code}
               m={m}
               memproses={sedangKlaim === m.code}
+              galatLokal={kunciGagal[m.code]}
               onKlaim={() => void klaim(m.code)}
             />
           ))}

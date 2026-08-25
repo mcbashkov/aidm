@@ -21,6 +21,7 @@ import {
   type MisiProgress,
   type MisiResponse,
 } from "@/lib/missions";
+import type { KodeGalatKlaim } from "@/lib/missions/galat";
 import { todayWib } from "@/lib/parse/validate";
 import { geserHari } from "@/lib/laporan/periode";
 
@@ -215,19 +216,27 @@ export async function evaluasiMisi(
     // Reward diambil dari DB bila ada (admin bisa mengubah tanpa deploy, §16 #7).
     const reward = misiByCode.get(d.code)?.reward ?? d.reward;
 
+    // Kode dan kalimatnya lahir bersama: endpoint klaim menolak dengan kode
+    // ini, layar mematikan tombolnya dari kode yang sama. Kalimat di sini lebih
+    // spesifik daripada pesan generik taksonomi (menyebut angka capnya), jadi
+    // yang dikirim ke layar tetap kalimat ini.
     let alasanTerkunci: string | undefined;
+    let kodeTerkunci: KodeGalatKlaim | undefined;
     if (selesai && !k) {
       if (!klaimSiap) {
+        kodeTerkunci = "CLAIM_NOT_CONFIGURED";
         alasanTerkunci = "Klaim on-chain belum aktif di server ini.";
       } else if (
         ikutCapHarian(d.tipe) &&
         capHarianTerpakai + reward > CAP_HARIAN_IDMX
       ) {
+        kodeTerkunci = "DAILY_QUOTA_EXCEEDED";
         alasanTerkunci = `Batas ${CAP_HARIAN_IDMX} IDMX/hari sudah tercapai. Coba lagi besok.`;
       } else if (
         !ikutCapHarian(d.tipe) &&
         capBulananTerpakai + reward > CAP_BULANAN_IDMX
       ) {
+        kodeTerkunci = "MONTHLY_QUOTA_EXCEEDED";
         alasanTerkunci = `Batas misi bulanan ${CAP_BULANAN_IDMX} IDMX sudah tercapai.`;
       }
     }
@@ -242,6 +251,7 @@ export async function evaluasiMisi(
       txHash: k?.tx_hash ?? undefined,
       statusKlaim: k?.status,
       alasanTerkunci,
+      kodeTerkunci,
     };
   });
 
