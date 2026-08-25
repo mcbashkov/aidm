@@ -93,8 +93,23 @@ export async function GET(req: Request) {
       }
     }
 
+    // `created_at` adalah PEMECAH SERI, bukan hiasan.
+    //
+    // `occurred_at` dipatok ke 12.00 WIB pada hari kejadiannya (lihat
+    // app/api/catat/route.ts) supaya tanggal laporan stabil lintas timezone —
+    // itu keputusan yang benar dan tidak diubah di sini. Efek sampingnya:
+    // SELURUH transaksi pada hari yang sama punya timestamp identik, sehingga
+    // `ORDER BY occurred_at DESC` seri sepenuhnya dan Postgres bebas
+    // mengembalikan urutan apa pun. Praktiknya ia mengembalikan urutan fisik,
+    // yaitu yang TERLAMA di atas.
+    //
+    // Akibatnya terlihat di Beranda: "Transaksi terakhir" justru menampilkan
+    // tiga catatan PERTAMA hari itu, dan catatan yang baru saja ditulis
+    // pengguna tidak pernah muncul — meski totalnya sudah ikut berubah. Bukan
+    // masalah kesegaran data, murni masalah urutan.
     const { data, count, error } = await query
       .order("occurred_at", { ascending: false })
+      .order("created_at", { ascending: false })
       .range(page * pageSize, page * pageSize + pageSize - 1);
     if (error) {
       return jsonPribadi(

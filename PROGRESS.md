@@ -4,7 +4,7 @@ Pelacak pekerjaan lintas sesi. **README** menjelaskan produk & cara menjalankan;
 berkas ini menjawab satu pertanyaan saja: *apa yang sudah beres, apa berikutnya,
 dan siapa yang mengerjakan.*
 
-Diperbarui: **2026-08-22** · cabang `main`
+Diperbarui: **2026-08-25** · cabang `main`
 
 > ⚠️ **Sisi token digantikan `docs/PERINTAH-AGEN-FINAL.md`.** Untuk apa pun yang
 > menyangkut IDMX/IDM Reborn/swap/kurs/tokenomics, dokumen itu sumber kebenaran
@@ -48,11 +48,11 @@ perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
 | M6 mainnet & beta | ⬜ belum mulai | — |
 | M7 Play & App Store | ⬜ belum mulai | — |
 
-**Gerbang otomatis terkini (2026-08-22):** `test:parser` 200/200 ·
+**Gerbang otomatis terkini (2026-08-25):** `test:parser` 200/200 ·
 `test:canonical` 23/23 · typecheck bersih · lint bersih · build sukses.
 
 ⚠️ **`test:api` belum bisa dituntaskan di mesin pengembangan sekarang** — bukan
-karena gagal, tapi karena harness-nya putus di tengah (lihat §5 utang teknis).
+karena gagal, tapi karena harness-nya putus di tengah (lihat §6 utang teknis).
 Angka 123/123 yang terakhir sah tercatat pada run 2026-08-22 pagi, sebelum batch
 UI. Jangan tulis ulang angka itu sebagai "hijau hari ini" sampai ada satu run
 yang benar-benar selesai.
@@ -162,7 +162,67 @@ Midtrans, panel admin. Membangun cangkangnya lebih dulu hanya menghasilkan
 halaman yang tampak jadi tapi tidak melakukan apa-apa — dan besar kemungkinan
 dibongkar lagi begitu ketahuan bentuk keluaran mesinnya.
 
-### 4. 🤖 Hidupkan tab Misi tiap hari — **disepakati 2026-08-15, siap dikerjakan**
+### ~~4. P0-1 — kebenaran data di layar~~ — ✅ **SELESAI 2026-08-25**
+
+Batch perbaikan korektness (bukan kosmetik), dipicu rekaman layar PO. Semua
+sudah diuji PO di browser & PWA HP.
+
+**Empat bug, satu kelas yang sama:** layar menggambar nilai yang belum pasti
+seolah ia benar. Di aplikasi pembukuan itu bukan kekurangan tampilan — angka
+uang yang salah selama satu detik tetap angka yang salah.
+
+- [x] **Mock 12 Agustus.** Beranda memakai `lib/mock/finance.ts`
+      (`MOCK_ANCHOR = 2026-08-12`, angka dari PRNG) sebagai *initial state*
+      `useState`, jadi render pertama selalu menampilkan Rp614.000 milik
+      dataset contoh sebelum data asli tiba ~1 detik kemudian. Mock kini HANYA
+      dipakai saat server belum dikonfigurasi (401/501).
+- [x] **`/api/*` tercache 24 jam di service worker.** `defaultCache` bawaan
+      `@serwist/next` menampung setiap `GET /api/*` ke cache `apis`
+      (NetworkFirst, 86400 dtk) — termasuk `/api/me`, `/api/transaksi`,
+      `/api/laporan`. Risiko nyatanya bukan cuma angka basi: cache SW hidup
+      per-origin, bukan per-sesi, jadi satu perangkat dua akun bisa saling
+      melihat. Kini seluruh `/api/*` `NetworkOnly`.
+- [x] **Offline merender Rp0 + "Belum ada transaksi"** pada akun yang punya
+      Rp5,65 juta. Lebih berbahaya daripada mock: mock menampilkan angka orang
+      lain, ini menampilkan nol milik dirinya sendiri sambil menuduh pengguna
+      belum pernah mencatat. Disiplin tiga keadaan (`lib/api/keadaan.ts`)
+      diterapkan ke Beranda & Riwayat.
+- [x] **Pil kredit 10 → nilai asli.** Nilai cadangan hardcoded, kelas bug yang
+      sama. Dicabut, diganti shimmer.
+
+**Perbaikan turunan yang ikut ketemu:**
+
+- [x] `/api/me` dipecah — identitas (Postgres, selalu cepat) vs saldo IDMX
+      (`/api/wallet/saldo`, RPC opBNB yang bisa gagal). Sebelumnya nama usaha
+      tersandera pembacaan rantai sampai 2,5 detik. **Prinsipnya berlaku
+      umum: satu endpoint tidak boleh mencampur data yang selalu tersedia
+      dengan data yang bisa gagal.** Pindaian seluruh `app/api`: hanya
+      `/api/me` yang berpola begitu.
+- [x] Header `private, no-store` + `force-dynamic` di 4 route data, lewat
+      `lib/api/respons.ts` — berlaku juga di browser tanpa SW dan di perantara.
+- [x] **Urutan "Transaksi terakhir".** `occurred_at` dipatok 12.00 WIB
+      (benar, melindungi stabilitas tanggal lintas timezone), akibatnya semua
+      transaksi sehari punya timestamp identik dan `ORDER BY occurred_at DESC`
+      seri seluruhnya — Postgres mengembalikan urutan fisik, yaitu terlama di
+      atas. Ditambahkan `created_at DESC` sebagai pemecah seri. Hanya ada satu
+      tempat pengurutan transaksi di repo (`/api/transaksi`), dan ia melayani
+      Beranda maupun Riwayat.
+
+**Yang dibuktikan TIDAK perlu:** invalidasi setelah mencatat. Total Beranda
+sudah berubah benar tanpa mekanisme apa pun (Beranda client component,
+refetch tiap mount) — gejalanya murni urutan, bukan kesegaran. Tidak ada
+mekanisme yang dipasang untuk sesuatu yang tidak mengerjakan apa-apa.
+
+**Sisa terkait, dijadwalkan ke P1-3:** skeleton Beranda diulang dari nol tiap
+kembali dari tab lain. Korektness benar, terasa lambat, sebabnya tidak ada
+cache klien — dikerjakan bersama P1-3 sebagai satu mekanisme, bukan tambalan.
+
+**Usulan menunggu keputusan PO:** Riwayat menampilkan jam asli (`created_at`)
+alih-alih 12.00 di setiap baris, yang sekarang terlihat seperti data palsu.
+Batasnya: `created_at` adalah waktu MENCATAT, bukan waktu kejadian — untuk
+catatan susulan jamnya akan menyesatkan bila dibaca sebagai jam transaksi.
+
+### 5. 🤖 Hidupkan tab Misi tiap hari — **disepakati 2026-08-15, siap dikerjakan**
 
 Masalahnya nyata: di hari biasa hanya **2 misi** yang bisa diklaim. Setelah
 keduanya selesai, tab Misi jadi layar mati sampai besok. Empat misi berikut
@@ -184,7 +244,7 @@ Dampak: 4 misi/hari (dari 2) · 70 → **105 IDMX/hari** · 32.600 → **50.535
 IDMX/tahun**. Cap harian 250 tidak perlu diubah (masih ada ruang 2,4×). Kolam
 100 juta tetap cukup untuk beta 100 user selama ~20 tahun (dari 31).
 
-### 5. 🤖 Utang teknis kecil
+### 6. 🤖 Utang teknis kecil
 
 - [ ] Peringatan saldo kontrak reward menipis — kalau habis, klaim *revert* dan
       user melihat kegagalan membingungkan, bukan penjelasan
@@ -206,7 +266,7 @@ IDMX/tahun**. Cap harian 250 tidak perlu diubah (masih ada ruang 2,4×). Kolam
       harness (matikan keep-alive atau naikkan `keepAliveTimeout`), bukan di
       aplikasi.
 
-### 6. 🧑 Verifikasi lapangan yang belum dilakukan
+### 7. 🧑 Verifikasi lapangan yang belum dilakukan
 
 - [ ] Prompt instal PWA di Android (ikon maskable sudah lengkap sejak M0 — kalau
       gagal, penyebabnya bukan itu)
@@ -223,13 +283,13 @@ IDMX/tahun**. Cap harian 250 tidak perlu diubah (masih ada ruang 2,4×). Kolam
   rekam usaha terverifikasi untuk koperasi/BPR/fintech (PRD P5, Fase 3), bukan
   pada klaim kelayakan kredit per pengguna.
 
-### 7. 🤖 M5 — premium di balik kredit
+### 8. 🤖 M5 — premium di balik kredit
 
 - [ ] Fitur riset & konten dipagari Kredit AI (§7.8)
 - [ ] Pembelian kredit Midtrans (QRIS/VA) — env sudah di-scaffold
 - [ ] Hardening PDP: purge `raw_input` 90 hari (§16 #10, sudah diputuskan)
 
-### 8. 🧑 M6 — mainnet & beta tertutup 100 user
+### 9. 🧑 M6 — mainnet & beta tertutup 100 user
 
 Prasyarat sebelum mulai: keputusan §16 #5, #8, #11 (lihat di bawah).
 

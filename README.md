@@ -127,7 +127,8 @@ app/
                      (+ /riwayat, /premium, /kebijakan-privasi)
   api/               auth/session · me · akun · catat · catat/konfirmasi · transaksi ·
                      laporan · laporan/pdf · laporan/segel · missions · missions/klaim ·
-                     swap/config · swap/vouchers · relayer/tick · verify (publik) · research
+                     wallet/saldo · swap/config · swap/vouchers · relayer/tick ·
+                     verify (publik) · research
   not-found.tsx      404 berbahasa Indonesia
   error.tsx          layar galat tak terduga
   manifest.ts        manifest PWA
@@ -141,7 +142,8 @@ components/
   research/          RisetView · AnswerArticle — kini di balik /premium
   wallet/            WalletCard · SwapSheet (burn opBNB) · VoucherPanel (klaim BSC)
   account/           SettingsList · LogoutButton · DeleteAccount
-  pwa/  ui/  providers/
+  ui/                Button · Card · Skeleton · GagalMuat (keadaan gagal) · dll
+  pwa/  providers/
 lib/
   parse/             index (orkestrasi) · llm (Haiku §17.1) · fallback (regex) · validate
   catat/             server (helper API) · client (pembungkus fetch)
@@ -253,6 +255,32 @@ Pola layout: <1024px memakai pola mobile (bottom-nav 5 tab + baris status tanpa 
   dipanggil pada SETIAP navigasi — dilindungi batas 2,5 detik plus cache 60 detik per
   alamat. Saldo yang tidak bisa dipastikan dikembalikan `null`, bukan 0; "belum tahu"
   dan "dompetmu kosong" adalah dua pernyataan berbeda kepada pengguna.
+- **Nilai uang tidak pernah dirender sebelum data aslinya tiba.** Layar data
+  punya TIGA keadaan (`lib/api/keadaan.ts`): memuat → shimmer, terbaca → angka,
+  gagal → pesan + "Coba lagi". Dua keadaan tidak cukup, dan alasannya spesifik
+  untuk aplikasi pembukuan: layar yang hanya mengenal "kosong" dan "ada data"
+  akan memetakan kegagalan ke keadaan kosong — dan "Rp0 · Belum ada transaksi"
+  tidak terbaca sebagai kegagalan jaringan, melainkan sebagai kabar bahwa
+  catatannya hilang. Pesan gagal membedakan offline dari gagal lain, dan
+  `offline` disimpan DI DALAM keadaan gagal, bukan dibaca ulang dari
+  `navigator.onLine` saat render.
+- **Satu endpoint tidak boleh mencampur data yang selalu tersedia dengan data
+  yang bisa gagal.** `/api/me` (Postgres) dipisah dari `/api/wallet/saldo`
+  (RPC opBNB) karena saat keduanya menyatu, nama usaha pengguna tersandera
+  pembacaan rantai sampai 2,5 detik. Yang lemah menarik yang kuat ke bawah,
+  tidak pernah sebaliknya.
+- **Service worker tidak pernah menyimpan `/api/*`.** `defaultCache` bawaan
+  `@serwist/next` menampung setiap `GET /api/*` selama 24 jam; di aplikasi ini
+  yang mengalir lewat sana adalah uang milik pengguna. Cache SW hidup
+  per-origin, bukan per-sesi — satu perangkat dua akun bisa saling melihat.
+  Seluruh `/api/*` `NetworkOnly`, dan header `private, no-store`
+  (`lib/api/respons.ts`) menutup lapisan di luar SW.
+- **Urutan transaksi memakai `occurred_at DESC, created_at DESC`.**
+  `occurred_at` sengaja dipatok 12.00 WIB agar tanggal laporan stabil lintas
+  timezone, konsekuensinya seluruh transaksi sehari punya timestamp identik dan
+  pengurutan seri sepenuhnya. Tanpa pemecah seri, Postgres mengembalikan urutan
+  fisik — yang TERLAMA di atas — sehingga "Transaksi terakhir" justru tidak
+  pernah menampilkan yang baru dicatat.
 - **Tukar = dua transaksi, dua jaringan, dikirim dompet pengguna sendiri.** `swap()`
   membakar IDMX di opBNB; relayer menerbitkan voucher EIP-712; `claim()` menebusnya di
   BSC dengan gas ditanggung pengguna (garis monetisasi yang disengaja — jangan tambahkan
