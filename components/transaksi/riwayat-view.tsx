@@ -6,6 +6,7 @@ import { Search, Download, X } from "lucide-react";
 import { TransactionRow } from "@/components/transaksi/transaction-row";
 import { TransactionSheet } from "@/components/transaksi/transaction-sheet";
 import { getTransactions, PERIOD_OPTIONS } from "@/lib/mock/finance";
+import { GagalMuat } from "@/components/ui/gagal-muat";
 import {
   daftarTransaksi,
   ubahTransaksi,
@@ -71,6 +72,10 @@ export function RiwayatView() {
   const [page, setPage] = useState(0);
   const [memuat, setMemuat] = useState(true);
   const [demo, setDemo] = useState(false);
+  // Kegagalan nyata (bukan mode demo) punya keadaannya sendiri. Tanpa ini,
+  // gagal memuat menyisakan daftar kosong dan layar menulis "Belum ada
+  // transaksi" — menuduh pengguna belum pernah mencatat apa pun.
+  const [gagal, setGagal] = useState<{ offline: boolean } | null>(null);
 
   // Perubahan lokal di mode demo (server tidak menyimpan apa-apa).
   const [dihapus, setDihapus] = useState<string[]>([]);
@@ -98,14 +103,19 @@ export function RiwayatView() {
       if (seq !== reqSeq.current) return; // respons kedaluwarsa
       if (res.ok) {
         setDemo(false);
+        setGagal(null);
         setItems((prev) => (tambah ? [...prev, ...res.data.items] : res.data.items));
         setTotal(res.data.total);
         setPage(halaman);
       } else if (res.demo) {
         // HANYA saat server belum dikonfigurasi (401/501) → dataset mock.
-        // Gagal jaringan TIDAK boleh menampilkan data palsu seolah milik
-        // user — biarkan daftar apa adanya (kosong/stale).
         setDemo(true);
+        setGagal(null);
+      } else {
+        // Gagal nyata. Daftar TIDAK boleh dibiarkan kosong begitu saja:
+        // kosong berarti "kamu belum pernah mencatat", dan itu pernyataan
+        // yang sedang tidak bisa kita pertanggungjawabkan.
+        setGagal({ offline: res.offline });
       }
       setMemuat(false);
     },
@@ -323,8 +333,13 @@ export function RiwayatView() {
         </div>
       </div>
 
-      {/* Ringkasan hasil filter */}
-      {hasil.length > 0 ? (
+      {/* Ringkasan hasil filter. `!gagal` WAJIB ada: bila pemuatan berikutnya
+          gagal (mis. ganti filter saat offline), `items` masih memegang hasil
+          muatan sebelumnya, dan bilah ini akan menuliskan jumlah transaksi
+          serta selisih rupiah dari filter LAIN tepat di atas kartu "belum bisa
+          memuat". Angka rupiah tidak boleh muncul di mana pun saat keadaan
+          gagal — termasuk angka yang dulunya benar. */}
+      {hasil.length > 0 && !gagal ? (
         <p className="text-[12px] text-ink-muted">
           {demo ? hasil.length : total} transaksi · selisih{" "}
           <span className="tnum font-semibold text-ink">
@@ -340,6 +355,14 @@ export function RiwayatView() {
           <div className="skeleton h-16 w-full" />
           <div className="skeleton h-16 w-full" />
         </div>
+      ) : gagal ? (
+        /* Didahulukan atas cabang "kosong": selama kita belum berhasil
+           membaca, daftar yang kosong bukan bukti tidak ada transaksi. */
+        <GagalMuat
+          offline={gagal.offline}
+          onCobaLagi={() => void muat(0, false)}
+          sedangMencoba={memuat}
+        />
       ) : hasil.length === 0 ? (
         <div className="card flex flex-col items-center gap-2 p-10 text-center">
           <h2>{adaFilter ? "Tidak ada yang cocok" : "Belum ada transaksi"}</h2>

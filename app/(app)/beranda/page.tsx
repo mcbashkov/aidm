@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   MessageSquarePlus,
@@ -13,6 +13,8 @@ import {
 import { TransactionRow } from "@/components/transaksi/transaction-row";
 import { useMe } from "@/components/providers/me-provider";
 import { Skeleton } from "@/components/ui/skeleton";
+import { GagalMuat } from "@/components/ui/gagal-muat";
+import type { Keadaan } from "@/lib/api/keadaan";
 import { DEFAULT_MISSIONS } from "@/lib/missions";
 import { ringkasHariIni, transaksiTerakhir } from "@/lib/mock/finance";
 import { daftarTransaksi } from "@/lib/catat/client";
@@ -53,45 +55,54 @@ function tanggalHariIniWib(): string {
 export default function BerandaPage() {
   const me = useMe();
 
-  // `null` = belum tahu → skeleton. Bukan nol, dan bukan tebakan.
-  const [data, setData] = useState<DataBeranda | null>(null);
+  const [keadaan, setKeadaan] = useState<Keadaan<DataBeranda>>({
+    keadaan: "memuat",
+  });
+  const [percobaan, setPercobaan] = useState(0);
 
   // Tanggal dihitung langsung, tidak menunggu apa pun. Dulu ia ikut menunggu
   // hasil fetch, dan itulah kenapa header sempat menulis tanggal yang salah.
   const [tanggal] = useState(tanggalHariIniWib);
 
-  useEffect(() => {
-    let aktif = true;
-    void daftarTransaksi({ pageSize: 3, ringkas: true }).then((res) => {
-      if (!aktif) return;
-      if (res.ok) {
-        const r = res.data.ringkas_hari_ini;
-        setData({
+  const muat = useCallback(async () => {
+    setKeadaan({ keadaan: "memuat" });
+    const res = await daftarTransaksi({ pageSize: 3, ringkas: true });
+    if (res.ok) {
+      const r = res.data.ringkas_hari_ini;
+      setKeadaan({
+        keadaan: "terbaca",
+        data: {
           masuk: r?.masuk ?? 0,
           keluar: r?.keluar ?? 0,
           sisa: r?.sisa ?? 0,
           terakhir: res.data.items,
-        });
-      } else if (res.demo) {
-        // Server memang belum dikonfigurasi (401/501) → dataset contoh, supaya
-        // demo UI tetap hidup. Ini SATU-SATUNYA jalur yang boleh memakai mock.
-        const mock = ringkasHariIni();
-        setData({
+        },
+      });
+    } else if (res.demo) {
+      // Server memang belum dikonfigurasi (401/501) → dataset contoh, supaya
+      // demo UI tetap hidup. Ini SATU-SATUNYA jalur yang boleh memakai mock.
+      const mock = ringkasHariIni();
+      setKeadaan({
+        keadaan: "terbaca",
+        data: {
           masuk: mock.masuk,
           keluar: mock.keluar,
           sisa: mock.sisa,
           terakhir: transaksiTerakhir(3),
-        });
-      } else {
-        // Pengguna nyata, jaringan/server gagal: nol yang jujur, bukan fiksi.
-        setData({ masuk: 0, keluar: 0, sisa: 0, terakhir: [] });
-      }
-    });
-    return () => {
-      aktif = false;
-    };
+        },
+      });
+    } else {
+      // TIDAK menyetel nol. Nol adalah pernyataan tentang uang pengguna, dan
+      // kita sedang tidak tahu apa-apa tentang uangnya.
+      setKeadaan({ keadaan: "gagal", offline: res.offline });
+    }
   }, []);
 
+  useEffect(() => {
+    void muat();
+  }, [muat, percobaan]);
+
+  const data = keadaan.keadaan === "terbaca" ? keadaan.data : null;
   const surplus = (data?.sisa ?? 0) >= 0;
 
   /**
@@ -118,6 +129,19 @@ export default function BerandaPage() {
         </h1>
       </header>
 
+      {keadaan.keadaan === "gagal" ? (
+        /* Keadaan gagal menggantikan SELURUH blok berdata: kartu hari ini,
+           misi, dan transaksi terakhir. Tidak ada satu digit rupiah pun di
+           sini, dan tidak ada kalimat "belum ada" — keduanya akan terbaca
+           sebagai pernyataan tentang uang pengguna, padahal kita sedang tidak
+           tahu apa-apa tentangnya. Tombol Catat tetap ditampilkan di bawah:
+           mencatat tidak butuh jaringan. */
+        <GagalMuat
+          offline={keadaan.offline}
+          onCobaLagi={() => setPercobaan((n) => n + 1)}
+        />
+      ) : (
+      <>
       {/* Blok 1 — kartu hari ini */}
       <section className="card p-5">
         <div className="flex items-baseline justify-between gap-3">
@@ -181,13 +205,9 @@ export default function BerandaPage() {
         </div>
       </section>
 
-      {/* Blok 2 — aksi utama */}
-      <Link href="/catat" className="btn-primary">
-        <MessageSquarePlus className="h-5 w-5" aria-hidden />
-        Catat transaksi
-      </Link>
-
-      {/* Blok 3 — misi hari ini */}
+      {/* Blok 3 — misi hari ini. Ikut disembunyikan saat gagal: judulnya
+          menjanjikan keadaan HARI INI, dan kita tidak sedang bisa memastikan
+          apa pun tentang hari ini. */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2>Misi hari ini</h2>
@@ -265,6 +285,16 @@ export default function BerandaPage() {
           </div>
         )}
       </section>
+      </>
+      )}
+
+      {/* Aksi utama — di luar cabang keadaan. Mencatat tidak butuh jaringan
+          (antrean IndexedDB), jadi tombol ini justru paling berguna persis
+          saat data gagal dimuat. */}
+      <Link href="/catat" className="btn-primary">
+        <MessageSquarePlus className="h-5 w-5" aria-hidden />
+        Catat transaksi
+      </Link>
     </div>
   );
 }

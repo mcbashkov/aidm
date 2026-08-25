@@ -37,20 +37,36 @@ function Divider() {
   );
 }
 
-function CreditSegment({ credits }: { credits: number }) {
+/**
+ * Kredit adalah mata uang di aplikasi ini, jadi ia diperlakukan seperti uang:
+ * tidak pernah dirender sebelum nilai aslinya tiba.
+ *
+ * Sebelumnya baris ini menampilkan `10` sebagai nilai cadangan lalu berganti
+ * ke angka sungguhan (terekam: 10→100 di HP, 10→50 di desktop). Itu kelas bug
+ * yang persis sama dengan dataset mock yang baru dicabut dari Beranda —
+ * menggambar nilai yang belum pasti seolah ia benar.
+ */
+function CreditSegment({ credits }: { credits: number | null }) {
+  const memuat = credits === null;
   return (
     <Link
       href="/premium"
-      aria-label={`Saldo Kredit AI: ${credits}`}
+      aria-label={
+        memuat ? "Saldo Kredit AI sedang dimuat" : `Saldo Kredit AI: ${credits}`
+      }
       className={SEGMENT_CLASS}
     >
       <Zap
         className="h-4 w-4 shrink-0 fill-gold text-gold"
         aria-hidden
       />
-      <span className="tnum text-[13px] font-semibold text-ink">
-        {formatNumberID(credits)}
-      </span>
+      {memuat ? (
+        <Skeleton className="h-3.5 w-6" />
+      ) : (
+        <span className="tnum text-[13px] font-semibold text-ink">
+          {formatNumberID(credits)}
+        </span>
+      )}
       <span className="hidden text-[13px] text-ink-muted lg:inline">
         kredit
       </span>
@@ -163,7 +179,10 @@ function WalletSegment() {
 export function HeaderStats() {
   const me = useMe();
   const saldo = useSaldoIdmx();
-  const credits = typeof me?.credits === "number" ? me.credits : 10;
+  // `null` selama /api/me belum menjawab — bukan angka tebakan. Kalau
+  // permintaannya gagal, `me` tetap null dan kredit tetap shimmer; itu jawaban
+  // yang jujur, dan sisa layar tidak ikut terpengaruh.
+  const credits = typeof me?.credits === "number" ? me.credits : null;
 
   return (
     <div
