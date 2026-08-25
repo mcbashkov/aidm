@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { jsonPribadi } from "@/lib/api/respons";
 import { cookies } from "next/headers";
 import { readSessionValue } from "@/lib/auth/session-cookie";
 import { SESSION_COOKIE } from "@/lib/auth/constants";
@@ -7,6 +7,14 @@ import { ensureDailyFree } from "@/lib/credits";
 import { saldoIdmx } from "@/lib/token/saldo";
 
 export const runtime = "nodejs";
+// Data milik satu pengguna: tidak boleh pernah dirender statis maupun
+// disimpan lapisan mana pun. `force-dynamic` mencegah Next membekukannya saat
+// build, `revalidate = 0` mencegah cache data Next menyajikan salinan, dan
+// header `private, no-store` (lewat jsonPribadi) menutup sisanya di browser
+// serta perantara.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 
 function currentUserId(): string | null {
   const raw = cookies().get(SESSION_COOKIE)?.value;
@@ -17,7 +25,7 @@ function currentUserId(): string | null {
 export async function GET() {
   const uid = currentUserId();
   if (!uid) {
-    return NextResponse.json({ authenticated: false });
+    return jsonPribadi({ authenticated: false });
   }
   try {
     const supa = createSupabaseAdminClient();
@@ -62,7 +70,7 @@ export async function GET() {
     // berbicara tentang IDMX. Saldo IDM dilihat pengguna di wallet BSC-nya.
     const idmx = wallet?.address ? await saldoIdmx(wallet.address) : null;
 
-    return NextResponse.json({
+    return jsonPribadi({
       authenticated: true,
       user: user ? { ...userRest, kategori_slug } : user,
       wallet,
@@ -70,7 +78,7 @@ export async function GET() {
       idmx,
     });
   } catch {
-    return NextResponse.json({ authenticated: true, unconfigured: true });
+    return jsonPribadi({ authenticated: true, unconfigured: true });
   }
 }
 
@@ -78,7 +86,7 @@ export async function GET() {
 export async function PATCH(req: Request) {
   const uid = currentUserId();
   if (!uid) {
-    return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+    return jsonPribadi({ error: "unauthenticated" }, { status: 401 });
   }
 
   let patch: Record<string, unknown> = {};
@@ -131,9 +139,9 @@ export async function PATCH(req: Request) {
     if (Object.keys(update).length > 0) {
       await supa.from("users").update(update).eq("id", uid);
     }
-    return NextResponse.json({ ok: true });
+    return jsonPribadi({ ok: true });
   } catch {
-    return NextResponse.json(
+    return jsonPribadi(
       { error: "Supabase belum dikonfigurasi." },
       { status: 501 },
     );

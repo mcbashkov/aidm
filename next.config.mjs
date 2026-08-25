@@ -6,7 +6,12 @@ const withSerwist = withSerwistInit({
   swSrc: "app/sw.ts",
   swDest: "public/sw.js",
   disable: process.env.NODE_ENV === "development",
-  additionalPrecacheEntries: [{ url: "/~offline", revision: "offline-v1" }],
+  // `revision` ditulis tangan, jadi ia WAJIB dinaikkan setiap kali halaman
+  // offline atau perilaku fallback berubah. Selama nilainya sama, Serwist
+  // menganggap salinan yang sudah ada masih mutakhir dan tidak pernah
+  // mengambil ulang — halaman offline lama akan bertahan di perangkat yang
+  // aplikasinya sudah terpasang.
+  additionalPrecacheEntries: [{ url: "/~offline", revision: "offline-v2" }],
 });
 
 /** @type {import('next').NextConfig} */

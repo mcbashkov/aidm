@@ -12,12 +12,9 @@ import {
 } from "lucide-react";
 import { TransactionRow } from "@/components/transaksi/transaction-row";
 import { useMe } from "@/components/providers/me-provider";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DEFAULT_MISSIONS } from "@/lib/missions";
-import {
-  MOCK_ANCHOR,
-  ringkasHariIni,
-  transaksiTerakhir,
-} from "@/lib/mock/finance";
+import { ringkasHariIni, transaksiTerakhir } from "@/lib/mock/finance";
 import { daftarTransaksi } from "@/lib/catat/client";
 import {
   formatRupiah,
@@ -32,38 +29,41 @@ interface DataBeranda {
   keluar: number;
   sisa: number;
   terakhir: Transaction[];
-  tanggal: string; // ISO date untuk baris tanggal di header
+}
+
+/** Tanggal hari ini menurut WIB. Tidak bergantung jaringan sama sekali —
+ *  jam perangkat sudah cukup, jadi tidak ada alasan menundanya. */
+function tanggalHariIniWib(): string {
+  return new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10);
 }
 
 /**
  * Beranda v3.0 (§13 layar 2). Maksimal 4 blok (aturan hierarki v2.0):
  * kartu hari ini · tombol Catat · misi hari ini · transaksi terakhir.
  *
- * Data nyata: ringkasan hari ini dari daily_rollups + 3 transaksi terakhir
- * (GET /api/transaksi?ringkas=1). Server belum dikonfigurasi → dataset mock
- * (nilai awal di bawah) supaya demo tetap hidup.
+ * ATURAN YANG MENGIKAT LAYAR INI: **nilai uang tidak pernah dirender sebelum
+ * data aslinya tiba.** Sebelumnya `useState` diisi dataset mock, sehingga
+ * render pertama menampilkan angka dan tanggal karangan (12 Agustus,
+ * Rp614.000) yang sedetik kemudian berganti jadi angka asli. Untuk aplikasi
+ * pembukuan itu bukan kekurangan kosmetik — pengguna sempat membaca saldo yang
+ * bukan miliknya, dan angka yang salah selama satu detik tetap angka yang
+ * salah. Mock sekarang HANYA dipakai bila server memang belum dikonfigurasi
+ * (401/501), meniru pola yang sudah benar di `laporan-view.tsx`.
  */
 export default function BerandaPage() {
   const me = useMe();
 
-  const [data, setData] = useState<DataBeranda>(() => {
-    const mock = ringkasHariIni();
-    return {
-      masuk: mock.masuk,
-      keluar: mock.keluar,
-      sisa: mock.sisa,
-      terakhir: transaksiTerakhir(3),
-      tanggal: MOCK_ANCHOR,
-    };
-  });
+  // `null` = belum tahu → skeleton. Bukan nol, dan bukan tebakan.
+  const [data, setData] = useState<DataBeranda | null>(null);
+
+  // Tanggal dihitung langsung, tidak menunggu apa pun. Dulu ia ikut menunggu
+  // hasil fetch, dan itulah kenapa header sempat menulis tanggal yang salah.
+  const [tanggal] = useState(tanggalHariIniWib);
 
   useEffect(() => {
     let aktif = true;
     void daftarTransaksi({ pageSize: 3, ringkas: true }).then((res) => {
       if (!aktif) return;
-      const hariIniNyata = new Date(Date.now() + 7 * 3600_000)
-        .toISOString()
-        .slice(0, 10);
       if (res.ok) {
         const r = res.data.ringkas_hari_ini;
         setData({
@@ -71,41 +71,51 @@ export default function BerandaPage() {
           keluar: r?.keluar ?? 0,
           sisa: r?.sisa ?? 0,
           terakhir: res.data.items,
-          tanggal: hariIniNyata,
         });
-      } else if (!res.demo) {
-        // User NYATA tapi jaringan/server gagal: angka mock akan terbaca
-        // sebagai data miliknya — tampilkan nol yang jujur, bukan fiksi.
+      } else if (res.demo) {
+        // Server memang belum dikonfigurasi (401/501) → dataset contoh, supaya
+        // demo UI tetap hidup. Ini SATU-SATUNYA jalur yang boleh memakai mock.
+        const mock = ringkasHariIni();
         setData({
-          masuk: 0,
-          keluar: 0,
-          sisa: 0,
-          terakhir: [],
-          tanggal: hariIniNyata,
+          masuk: mock.masuk,
+          keluar: mock.keluar,
+          sisa: mock.sisa,
+          terakhir: transaksiTerakhir(3),
         });
+      } else {
+        // Pengguna nyata, jaringan/server gagal: nol yang jujur, bukan fiksi.
+        setData({ masuk: 0, keluar: 0, sisa: 0, terakhir: [] });
       }
-      // res.demo (401/501) → biarkan dataset mock: pengalaman demo.
     });
     return () => {
       aktif = false;
     };
   }, []);
 
-  const hariIni = data;
-  const terakhir = data.terakhir;
-  const surplus = hariIni.sisa >= 0;
+  const surplus = (data?.sisa ?? 0) >= 0;
 
-  // Sapaan pakai nama usaha bila sudah diisi saat onboarding; kalau belum,
-  // tetap "Halo 👋" tanpa koma menggantung.
+  /**
+   * Sapaan sengaja TIDAK menunggu `useMe()` resolve, tapi juga tidak boleh
+   * bergeser saat nama datang. Caranya: "Halo" dan emoji tetap di tempatnya,
+   * dan nama disisipkan sebagai potongan tersendiri yang lebarnya tumbuh dari
+   * nol. Yang berubah hanya sisipan itu — bukan seluruh baris ditulis ulang
+   * dari "Halo 👋" menjadi "Halo, Bester 👋", yang membuat emoji melompat.
+   */
   const nama = me?.user?.nama_usaha?.trim();
 
   return (
     <div className="space-y-section">
       <header>
         <p className="text-[13px] font-medium text-ink-subtle">
-          {formatTanggalPanjangID(hariIni.tanggal)}
+          {formatTanggalPanjangID(tanggal)}
         </p>
-        <h1 className="mt-1">{nama ? `Halo, ${nama} 👋` : "Halo 👋"}</h1>
+        <h1 className="mt-1">
+          Halo
+          {/* Nama muncul di sela "Halo" dan emoji. Emoji tidak pernah pindah
+              baris atau melompat karena posisinya relatif terhadap potongan
+              ini, bukan terhadap seluruh kalimat yang ditulis ulang. */}
+          {nama ? <span>, {nama}</span> : null} 👋
+        </h1>
       </header>
 
       {/* Blok 1 — kartu hari ini */}
@@ -121,14 +131,21 @@ export default function BerandaPage() {
             Lihat laporan
           </Link>
         </div>
-        <p
-          className={cn(
-            "num-display mt-1 text-[38px] leading-none",
-            surplus ? "text-ink" : "text-danger",
-          )}
-        >
-          {formatRupiah(hariIni.sisa)}
-        </p>
+        {data ? (
+          <p
+            className={cn(
+              "num-display mt-1 text-[38px] leading-none",
+              surplus ? "text-ink" : "text-danger",
+            )}
+          >
+            {formatRupiah(data.sisa)}
+          </p>
+        ) : (
+          // Tingginya dikunci setara baris angka 38px supaya kartu tidak
+          // berubah tinggi saat angka tiba — skeleton yang menggeser tata
+          // letak hanya memindahkan kejutan, bukan menghapusnya.
+          <Skeleton className="mt-1 h-[38px] w-48" />
+        )}
 
         <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-3">
           <div className="flex items-center gap-2 rounded-2xl bg-surface-warm p-2.5 sm:gap-2.5 sm:p-3">
@@ -137,9 +154,13 @@ export default function BerandaPage() {
             </span>
             <div className="min-w-0">
               <p className="text-[11px] text-ink-subtle">Masuk</p>
-              <p className="tnum truncate whitespace-nowrap text-[clamp(0.625rem,3.4vw,0.9375rem)] font-bold text-ink">
-                {formatRupiahCompact(hariIni.masuk)}
-              </p>
+              {data ? (
+                <p className="tnum truncate whitespace-nowrap text-[clamp(0.625rem,3.4vw,0.9375rem)] font-bold text-ink">
+                  {formatRupiahCompact(data.masuk)}
+                </p>
+              ) : (
+                <Skeleton className="mt-0.5 h-4 w-16" />
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2 rounded-2xl bg-surface-warm p-2.5 sm:gap-2.5 sm:p-3">
@@ -148,9 +169,13 @@ export default function BerandaPage() {
             </span>
             <div className="min-w-0">
               <p className="text-[11px] text-ink-subtle">Keluar</p>
-              <p className="tnum truncate whitespace-nowrap text-[clamp(0.625rem,3.4vw,0.9375rem)] font-bold text-ink">
-                {formatRupiahCompact(hariIni.keluar)}
-              </p>
+              {data ? (
+                <p className="tnum truncate whitespace-nowrap text-[clamp(0.625rem,3.4vw,0.9375rem)] font-bold text-ink">
+                  {formatRupiahCompact(data.keluar)}
+                </p>
+              ) : (
+                <Skeleton className="mt-0.5 h-4 w-16" />
+              )}
             </div>
           </div>
         </div>
@@ -205,7 +230,22 @@ export default function BerandaPage() {
           </Link>
         </div>
 
-        {terakhir.length === 0 ? (
+        {data === null ? (
+          // Tiga baris skeleton, sebanyak transaksi yang memang diminta —
+          // supaya blok ini tidak menyusut lalu memanjang saat data tiba.
+          <div className="card divide-y divide-line overflow-hidden">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex items-center gap-3 px-4 py-3.5">
+                <Skeleton className="h-9 w-9 shrink-0 rounded-xl" />
+                <div className="flex-1 space-y-1.5">
+                  <Skeleton className="h-3.5 w-32" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <Skeleton className="h-4 w-20 shrink-0" />
+              </div>
+            ))}
+          </div>
+        ) : data.terakhir.length === 0 ? (
           <div className="card flex flex-col items-center gap-2 p-8 text-center">
             <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gold-tint">
               <Sparkles className="h-5 w-5 text-gold-deep" aria-hidden />
@@ -219,7 +259,7 @@ export default function BerandaPage() {
           </div>
         ) : (
           <div className="card divide-y divide-line overflow-hidden">
-            {terakhir.map((tx) => (
+            {data.terakhir.map((tx) => (
               <TransactionRow key={tx.id} tx={tx} />
             ))}
           </div>

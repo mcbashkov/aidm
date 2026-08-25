@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { jsonPribadi } from "@/lib/api/respons";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { currentUserId } from "@/lib/catat/server";
 import { bolehSegel, rentangTanggal } from "@/lib/laporan/periode";
@@ -16,6 +16,14 @@ import { explorerTxUrl } from "@/lib/chains/attestation";
 import type { LaporanResponse } from "@/lib/laporan/types";
 
 export const runtime = "nodejs";
+// Data milik satu pengguna: tidak boleh pernah dirender statis maupun
+// disimpan lapisan mana pun. `force-dynamic` mencegah Next membekukannya saat
+// build, `revalidate = 0` mencegah cache data Next menyajikan salinan, dan
+// header `private, no-store` (lewat jsonPribadi) menutup sisanya di browser
+// serta perantara.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 
 /**
  * GET /api/laporan?period=2026-08 (§11).
@@ -28,21 +36,21 @@ export const runtime = "nodejs";
 export async function GET(req: Request) {
   const uid = currentUserId();
   if (!uid) {
-    return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+    return jsonPribadi({ error: "unauthenticated" }, { status: 401 });
   }
 
   const period = new URL(req.url).searchParams.get("period") ?? "30d";
   // Format tak dikenal ditolak, bukan diam-diam jadi "semua" — laporan tanpa
   // batas periode akan tampil seolah itu angka bulan ini.
   if (!/^\d{4}-\d{2}$/.test(period) && period !== "30d" && period !== "today") {
-    return NextResponse.json({ error: "Periode tidak dikenal." }, { status: 400 });
+    return jsonPribadi({ error: "Periode tidak dikenal." }, { status: 400 });
   }
 
   let supa;
   try {
     supa = createSupabaseAdminClient();
   } catch {
-    return NextResponse.json(
+    return jsonPribadi(
       { error: "Supabase belum dikonfigurasi." },
       { status: 501 },
     );
@@ -73,9 +81,9 @@ export async function GET(req: Request) {
       segelSiap: isSealConfigured(),
       bulanTercatat: bulan,
     };
-    return NextResponse.json(body);
+    return jsonPribadi(body);
   } catch {
-    return NextResponse.json(
+    return jsonPribadi(
       { error: "Gagal menyusun laporan. Coba lagi ya." },
       { status: 500 },
     );

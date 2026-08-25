@@ -89,6 +89,32 @@ const runtimeCaching: RuntimeCaching[] = [
     handler: new NetworkOnly(),
   },
   {
+    /**
+     * SELURUH `/api/*` tidak pernah disimpan. Ini menggantikan aturan bawaan
+     * `defaultCache` yang menampung setiap `GET /api/*` ke cache `apis`
+     * (NetworkFirst, `maxAgeSeconds: 86400`).
+     *
+     * Aturan bawaan itu berbahaya di aplikasi ini karena yang mengalir lewat
+     * `/api/*` adalah UANG MILIK PENGGUNA: `/api/me`, `/api/transaksi`,
+     * `/api/laporan`, `/api/missions`. Dua akibat yang tidak bisa diterima:
+     *
+     *   1. Jaringan lambat (>10 dtk) membuat strategi menjawab dari salinan
+     *      berumur sampai 24 jam — saldo kemarin tampil sebagai saldo hari ini.
+     *   2. Satu perangkat, dua akun. Cache service worker hidup per-origin,
+     *      bukan per-sesi. Respons `/api/me` milik akun sebelumnya bisa
+     *      tersaji ke akun berikutnya setelah login, dan tidak ada apa pun di
+     *      lapisan HTTP yang mencegahnya.
+     *
+     * Konsekuensi yang disengaja: saat offline, layar data gagal memuat dan
+     * menampilkan keadaan kosongnya. Itu memang jawaban yang benar — buku usaha
+     * lebih baik diam daripada menunjukkan angka yang tidak bisa dipertanggung
+     * jawabkan. Mencatat offline tetap jalan lewat antrean IndexedDB.
+     */
+    matcher: ({ url, sameOrigin }) =>
+      sameOrigin && url.pathname.startsWith("/api/"),
+    handler: new NetworkOnly(),
+  },
+  {
     // Navigasi dokumen & muatan RSC (termasuk prefetch) — menggantikan aturan
     // `pages-*` bawaan defaultCache supaya penjaga pengalihan di atas ikut
     // terpasang pada jalur yang paling sering mengalami pengalihan.
@@ -97,7 +123,16 @@ const runtimeCaching: RuntimeCaching[] = [
       !url.pathname.startsWith("/api/") &&
       (request.mode === "navigate" || request.headers.get("RSC") === "1"),
     handler: new NetworkFirst({
-      cacheName: "pages",
+      // Nama BARU (bukan "pages"): perangkat yang sudah memasang PWA memegang
+      // cache lama berisi cangkang halaman dari service worker sebelumnya.
+      // Mengganti nama membuat salinan itu ditinggalkan, bukan diwarisi —
+      // tanpa ini perbaikan di berkas ini tidak terasa oleh penguji yang
+      // aplikasinya sudah terpasang.
+      cacheName: "pages-v2",
+      // Cangkang halaman boleh lama, tapi jangan membuat pengguna menunggu.
+      // Tiga detik: cukup untuk jaringan seluler yang sehat, cukup singkat
+      // untuk tidak terasa seperti aplikasi menggantung.
+      networkTimeoutSeconds: 3,
       plugins: [
         janganSimpanPengalihan,
         new ExpirationPlugin({ maxEntries: 32, maxAgeSeconds: 1440 * 60 }),

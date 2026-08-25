@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { jsonPribadi } from "@/lib/api/respons";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { todayWib } from "@/lib/parse/validate";
 import {
@@ -14,6 +14,14 @@ import {
 import { rentangIso } from "@/lib/laporan/periode";
 
 export const runtime = "nodejs";
+// Data milik satu pengguna: tidak boleh pernah dirender statis maupun
+// disimpan lapisan mana pun. `force-dynamic` mencegah Next membekukannya saat
+// build, `revalidate = 0` mencegah cache data Next menyajikan salinan, dan
+// header `private, no-store` (lewat jsonPribadi) menutup sisanya di browser
+// serta perantara.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 
 const PAGE_SIZE_DEFAULT = 20;
 const PAGE_SIZE_MAX = 100;
@@ -29,7 +37,7 @@ const PAGE_SIZE_MAX = 100;
 export async function GET(req: Request) {
   const uid = currentUserId();
   if (!uid) {
-    return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+    return jsonPribadi({ error: "unauthenticated" }, { status: 401 });
   }
 
   const url = new URL(req.url);
@@ -48,7 +56,7 @@ export async function GET(req: Request) {
   try {
     supa = createSupabaseAdminClient();
   } catch {
-    return NextResponse.json(
+    return jsonPribadi(
       { error: "Supabase belum dikonfigurasi." },
       { status: 501 },
     );
@@ -89,7 +97,7 @@ export async function GET(req: Request) {
       .order("occurred_at", { ascending: false })
       .range(page * pageSize, page * pageSize + pageSize - 1);
     if (error) {
-      return NextResponse.json(
+      return jsonPribadi(
         { error: "Gagal membaca transaksi." },
         { status: 500 },
       );
@@ -118,9 +126,9 @@ export async function GET(req: Request) {
       };
     }
 
-    return NextResponse.json(body);
+    return jsonPribadi(body);
   } catch {
-    return NextResponse.json(
+    return jsonPribadi(
       { error: "Terjadi gangguan. Coba lagi ya." },
       { status: 500 },
     );
