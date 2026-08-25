@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Sparkles } from "lucide-react";
 import { WalletCard } from "@/components/wallet/wallet-card";
+import { useSaldoIdmx } from "@/components/providers/me-provider";
 import { SwapSheet } from "@/components/wallet/swap-sheet";
 import { VoucherPanel } from "@/components/wallet/voucher-panel";
 import { SettingsList } from "@/components/account/settings-list";
@@ -24,11 +25,13 @@ interface Me {
     kota?: string;
   } | null;
   wallet?: { address?: string } | null;
-  idmx?: number | null;
 }
 
 export default function AkunPage() {
   const [me, setMe] = useState<Me | null>(null);
+  // Saldo datang dari jalurnya sendiri (/api/wallet/saldo) — kegagalan RPC
+  // tidak boleh ikut mengosongkan nama usaha atau kredit di layar ini.
+  const saldo = useSaldoIdmx();
   const [swapConfig, setSwapConfig] = useState<SwapConfig | null>(null);
   const [sheetTerbuka, setSheetTerbuka] = useState(false);
   // Dinaikkan setiap kali burn berhasil — memberi tahu panel voucher bahwa ada
@@ -61,7 +64,6 @@ export default function AkunPage() {
       : "Mode demo";
 
   const alamat = me?.wallet?.address ?? null;
-  const idmx = me?.idmx ?? null;
 
   // Urutan alasan mengikuti urutan yang bisa diperbaiki pengguna: yang paling
   // bisa ia tindaklanjuti disebut lebih dulu.
@@ -69,11 +71,13 @@ export default function AkunPage() {
     ? "Dompet belum siap."
     : !swapConfig
       ? "Fitur Tukar belum aktif di server ini."
-      : idmx === null
-        ? "Saldo belum bisa dibaca dari jaringan."
-        : idmx === 0
-          ? "Belum ada IDMX untuk ditukar. Selesaikan misi dulu ya."
-          : null;
+      : saldo.keadaan === "memuat"
+        ? "Membaca saldo…"
+        : saldo.keadaan === "gagal"
+          ? "Saldo tidak terbaca. Coba lagi."
+          : saldo.nilai === 0
+            ? "Belum ada IDMX untuk ditukar. Selesaikan misi dulu ya."
+            : null;
 
   const burnChain = chainDariId(swapConfig?.burnChainId);
   const explorerUrl =
@@ -93,7 +97,7 @@ export default function AkunPage() {
 
       <WalletCard
         address={alamat}
-        idmx={idmx}
+        saldo={saldo}
         swapAlasan={swapAlasan}
         onSwap={() => setSheetTerbuka(true)}
         explorerUrl={explorerUrl}

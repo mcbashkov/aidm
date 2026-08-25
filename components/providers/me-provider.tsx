@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { usePathname } from "next/navigation";
+import type { SaldoIdmx, SaldoResponse } from "@/lib/token/tipe";
 
 export interface Me {
   authenticated: boolean;
@@ -20,20 +21,30 @@ export interface Me {
   } | null;
   wallet?: { address?: string } | null;
   credits?: number;
-  /** Saldo IDMX on-chain. `null`/undefined = belum bisa dipastikan (RPC gagal
-   *  atau kontrak belum dikonfigurasi) — sengaja dibedakan dari nol. */
-  idmx?: number | null;
 }
 
 const MeContext = createContext<Me | null>(null);
+const SaldoContext = createContext<SaldoIdmx>({ keadaan: "memuat" });
 
 /**
- * Satu sumber data profil + saldo untuk shell aplikasi (header desktop &
- * mobile, sapaan Beranda). Di-fetch sekali per navigasi supaya sisa kredit
- * tetap segar setelah dipakai di layar lain.
+ * Sumber data shell aplikasi — DUA jalur yang sengaja tidak saling menunggu.
+ *
+ *   /api/me            Postgres. Nama usaha, peran, kredit. Selalu tersedia,
+ *                      selesai dalam milidetik.
+ *   /api/wallet/saldo  RPC opBNB. Bisa lambat sampai 2,5 detik, bisa gagal.
+ *
+ * Dulu keduanya satu permintaan, dan akibatnya terlihat di layar: sapaan
+ * pengguna tertahan menunggu pembacaan rantai, padahal namanya sudah ada di
+ * database sejak awal. Memisahkannya berarti kegagalan RPC hanya menyentuh
+ * satu angka — nama, kredit, dan sisa layar tidak ikut terseret.
+ *
+ * Keduanya dibaca sekali di sini, bukan di tiap komponen. Header selalu
+ * ter-mount lewat app layout, jadi hook per-komponen akan menembak endpoint
+ * yang sama dua kali begitu halaman Akun terbuka.
  */
 export function MeProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<Me | null>(null);
+  const [saldo, setSaldo] = useState<SaldoIdmx>({ keadaan: "memuat" });
   const pathname = usePathname();
 
   useEffect(() => {
@@ -51,10 +62,47 @@ export function MeProvider({ children }: { children: ReactNode }) {
     };
   }, [pathname]);
 
-  return <MeContext.Provider value={me}>{children}</MeContext.Provider>;
+  useEffect(() => {
+    let active = true;
+    // Kembali ke "memuat" tiap navigasi supaya angka lama tidak sempat
+    // terbaca sebagai angka halaman baru sebelum permintaannya selesai.
+    setSaldo({ keadaan: "memuat" });
+    fetch("/api/wallet/saldo")
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("http"))))
+      .then((d: SaldoResponse) => {
+        if (!active) return;
+        // `null` dari server berarti rantai tidak bisa dipastikan — itu
+        // kegagalan, bukan saldo nol.
+        setSaldo(
+          typeof d.idmx === "number"
+            ? { keadaan: "terbaca", nilai: d.idmx }
+            : { keadaan: "gagal" },
+        );
+      })
+      .catch(() => {
+        // Sengaja ditelan di sini, tidak dilempar ulang: melemparnya akan
+        // menaikkan error ke error boundary terdekat dan menjatuhkan seluruh
+        // shell aplikasi hanya karena satu angka tidak terbaca.
+        if (active) setSaldo({ keadaan: "gagal" });
+      });
+    return () => {
+      active = false;
+    };
+  }, [pathname]);
+
+  return (
+    <MeContext.Provider value={me}>
+      <SaldoContext.Provider value={saldo}>{children}</SaldoContext.Provider>
+    </MeContext.Provider>
+  );
 }
 
 /** Profil pengguna saat ini; `null` selama fetch pertama. */
 export function useMe(): Me | null {
   return useContext(MeContext);
+}
+
+/** Saldo IDMX on-chain dalam tiga keadaan: memuat · terbaca · gagal. */
+export function useSaldoIdmx(): SaldoIdmx {
+  return useContext(SaldoContext);
 }

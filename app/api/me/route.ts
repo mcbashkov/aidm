@@ -4,7 +4,6 @@ import { readSessionValue } from "@/lib/auth/session-cookie";
 import { SESSION_COOKIE } from "@/lib/auth/constants";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { ensureDailyFree } from "@/lib/credits";
-import { saldoIdmx } from "@/lib/token/saldo";
 
 export const runtime = "nodejs";
 // Data milik satu pengguna: tidak boleh pernah dirender statis maupun
@@ -21,7 +20,8 @@ function currentUserId(): string | null {
   return readSessionValue(raw)?.uid ?? null;
 }
 
-/** Profil + saldo kredit + (placeholder) saldo IDMX/IDM (§11 GET /api/me). */
+/** Profil + saldo kredit (§11 GET /api/me). Postgres saja — saldo token
+ *  on-chain hidup di GET /api/wallet/saldo. */
 export async function GET() {
   const uid = currentUserId();
   if (!uid) {
@@ -62,20 +62,19 @@ export async function GET() {
       unknown
     >;
 
-    // Saldo IDMX dibaca on-chain (§9). `null` = belum bisa dipastikan, dan itu
-    // BUKAN hal yang sama dengan nol — lihat lib/token/saldo.ts.
+    // TIDAK ADA saldo on-chain di sini. Endpoint ini menjawab dari Postgres
+    // saja supaya selalu cepat dan selalu berhasil — ia yang menentukan kapan
+    // nama usaha muncul di layar.
     //
-    // Tidak ada `idm` di sini dengan sengaja: IDM Reborn hidup di BSC dan tidak
-    // pernah menyentuh opBNB (Opsi B §9), jadi kartu wallet aplikasi hanya
-    // berbicara tentang IDMX. Saldo IDM dilihat pengguna di wallet BSC-nya.
-    const idmx = wallet?.address ? await saldoIdmx(wallet.address) : null;
-
+    // Saldo IDMX pindah ke `GET /api/wallet/saldo` karena ia bergantung pada
+    // RPC opBNB yang bisa lambat atau gagal. Saat keduanya masih menyatu,
+    // pembacaan rantai menahan respons ini hingga 2,5 detik dan sapaan
+    // pengguna ikut tertunda tanpa alasan — datanya sudah ada di database.
     return jsonPribadi({
       authenticated: true,
       user: user ? { ...userRest, kategori_slug } : user,
       wallet,
       credits,
-      idmx,
     });
   } catch {
     return jsonPribadi({ authenticated: true, unconfigured: true });

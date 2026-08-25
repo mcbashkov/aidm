@@ -9,12 +9,16 @@ import {
   CircleAlert,
 } from "lucide-react";
 import { shortenAddress, formatCompactID } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { SaldoIdmx } from "@/lib/token/tipe";
 
 interface WalletCardProps {
   address?: string | null;
-  /** `null` = saldo belum bisa dipastikan (RPC gagal / kontrak belum ada).
-   *  Sengaja berbeda dari 0, yang berarti "dompatmu memang kosong". */
-  idmx?: number | null;
+  /** Tiga keadaan (lib/token/tipe.ts): memuat → shimmer, terbaca → angka,
+   *  gagal → "—" + penjelasan. Menyamakan "belum dimuat" dengan "tidak bisa
+   *  dibaca" pernah membuat pesan kegagalan terbaca padahal fetch-nya masih
+   *  berjalan. */
+  saldo: SaldoIdmx;
   /** Alasan tombol Tukar nonaktif; `null` = boleh ditekan. */
   swapAlasan?: string | null;
   onSwap?: () => void;
@@ -36,7 +40,7 @@ interface WalletCardProps {
  */
 export function WalletCard({
   address,
-  idmx = null,
+  saldo,
   swapAlasan = null,
   onSwap,
   explorerUrl,
@@ -53,8 +57,6 @@ export function WalletCard({
       /* abaikan */
     }
   }
-
-  const tidakTahuSaldo = idmx === null || idmx === undefined;
 
   return (
     <div className="relative overflow-hidden rounded-card bg-wallet-gradient p-5 text-wallet-ink shadow-wallet">
@@ -105,16 +107,23 @@ export function WalletCard({
             Saldo IDMX
           </p>
           <div className="mt-1 flex items-baseline gap-2">
-            <span className="num-display text-[34px] leading-none text-gold-light">
-              {tidakTahuSaldo ? "—" : formatCompactID(idmx)}
-            </span>
+            {saldo.keadaan === "memuat" ? (
+              <Skeleton className="h-[34px] w-32" />
+            ) : (
+              <span className="num-display text-[34px] leading-none text-gold-light">
+                {saldo.keadaan === "terbaca" ? formatCompactID(saldo.nilai) : "—"}
+              </span>
+            )}
             <span className="text-[13px] font-semibold text-wallet-muted">
               IDMX
             </span>
           </div>
+          {/* Penjelasan kegagalan HANYA setelah permintaan benar-benar selesai
+              dan gagal. Selama memuat, baris ini tetap kalimat biasa — layar
+              tidak boleh menuduh jaringan saat dirinya sendiri belum selesai. */}
           <p className="mt-2 max-w-[34ch] text-[12.5px] leading-relaxed text-wallet-muted">
-            {tidakTahuSaldo
-              ? "Saldo belum bisa dibaca dari jaringan. Coba muat ulang sebentar lagi."
+            {saldo.keadaan === "gagal"
+              ? "Saldo tidak terbaca. Coba lagi."
               : "Terkumpul dari misi harian. Tukar ke IDM Reborn kapan pun kamu siap."}
           </p>
         </div>

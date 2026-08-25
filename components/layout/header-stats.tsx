@@ -5,7 +5,9 @@ import { Zap, Sparkles } from "lucide-react";
 import { usePrivy } from "@privy-io/react-auth";
 import { isPrivyConfigured } from "@/lib/privy/config";
 import { useSafeLogin } from "@/lib/privy/use-safe-login";
-import { useMe } from "@/components/providers/me-provider";
+import { useMe, useSaldoIdmx } from "@/components/providers/me-provider";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { SaldoIdmx } from "@/lib/token/tipe";
 import { cn, formatCompactID, formatNumberID } from "@/lib/utils";
 
 /** 4 karakter terakhir alamat wallet — bentuk ringkas dipakai di semua layar. */
@@ -56,17 +58,36 @@ function CreditSegment({ credits }: { credits: number }) {
   );
 }
 
-function IdmxSegment({ idmx }: { idmx: number }) {
+/**
+ * Tiga keadaan saldo (lib/token/tipe.ts). Di header yang sempit, "gagal"
+ * cukup diwakili "—" dengan penjelasan di `title` dan label aksesibilitas —
+ * kalimat penuh "Saldo tidak terbaca" hidup di kartu wallet, tempat ruangnya
+ * memang ada. Yang penting sama di kedua tempat: selama memuat tidak ada
+ * tuduhan apa pun, hanya shimmer.
+ */
+function IdmxSegment({ saldo }: { saldo: SaldoIdmx }) {
+  const label =
+    saldo.keadaan === "terbaca"
+      ? `Saldo IDMX: ${saldo.nilai}`
+      : saldo.keadaan === "gagal"
+        ? "Saldo IDMX tidak terbaca"
+        : "Saldo IDMX sedang dimuat";
+
   return (
     <Link
       href="/misi"
-      aria-label={`Saldo IDMX: ${idmx}`}
+      aria-label={label}
+      title={saldo.keadaan === "gagal" ? "Saldo tidak terbaca." : undefined}
       className={SEGMENT_CLASS}
     >
       <Sparkles className="h-4 w-4 shrink-0 text-gold-light" aria-hidden />
-      <span className="tnum text-[13px] font-semibold text-ink">
-        {formatCompactID(idmx)}
-      </span>
+      {saldo.keadaan === "memuat" ? (
+        <Skeleton className="h-3.5 w-8" />
+      ) : (
+        <span className="tnum text-[13px] font-semibold text-ink">
+          {saldo.keadaan === "terbaca" ? formatCompactID(saldo.nilai) : "—"}
+        </span>
+      )}
       <span className="hidden text-[13px] text-ink-muted lg:inline">
         IDMX
       </span>
@@ -141,8 +162,8 @@ function WalletSegment() {
  */
 export function HeaderStats() {
   const me = useMe();
+  const saldo = useSaldoIdmx();
   const credits = typeof me?.credits === "number" ? me.credits : 10;
-  const idmx = typeof me?.idmx === "number" ? me.idmx : 0;
 
   return (
     <div
@@ -153,7 +174,7 @@ export function HeaderStats() {
     >
       <CreditSegment credits={credits} />
       <Divider />
-      <IdmxSegment idmx={idmx} />
+      <IdmxSegment saldo={saldo} />
       <Divider />
       <WalletSegment />
     </div>
