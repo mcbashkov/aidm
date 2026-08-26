@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { wibDayStartIso } from "@/lib/wib";
 import { getCreditParams } from "@/lib/config";
 
 /**
@@ -19,16 +20,6 @@ export async function getBalance(
     (sum: number, row: { amount: number | null }) => sum + (row.amount ?? 0),
     0,
   );
-}
-
-/** Batas awal hari WIB (UTC+7) sebagai ISO string. */
-function wibDayStartIso(): string {
-  const now = Date.now();
-  const wib = new Date(now + 7 * 3600 * 1000);
-  const startUtcMs =
-    Date.UTC(wib.getUTCFullYear(), wib.getUTCMonth(), wib.getUTCDate()) -
-    7 * 3600 * 1000;
-  return new Date(startUtcMs).toISOString();
 }
 
 /** Beri kredit gratis harian sekali per hari WIB (idempoten). Return saldo. */

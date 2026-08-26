@@ -5,6 +5,7 @@
 
 import type { Transaction } from "@/lib/transactions";
 import { panggil, type ApiHasil } from "@/lib/api/panggil";
+import { bulanWib } from "@/lib/wib";
 
 export type { ApiHasil };
 
@@ -93,13 +94,28 @@ export function hapusTransaksi(id: string): Promise<ApiHasil<{ ok: boolean }>> {
   return panggil(`/api/transaksi/${id}`, { method: "DELETE" });
 }
 
+/**
+ * Satu baris thread Catat: transaksi + kalimat asli yang melahirkannya.
+ * `rawInput` HANYA terisi lewat hidrasi ini — tidak ada layar lain yang
+ * membacanya, jadi ia tidak ikut ke tipe `Transaction`.
+ */
+export type BarisCatat = Transaction & { rawInput?: string | null };
+
+/**
+ * Thread Catat hari ini dari server (§7.2). Batas harinya `created_at` WIB —
+ * ini percakapan, isinya apa yang pengguna KATAKAN hari ini. Draft ikut,
+ * karena pertanyaan nominal yang belum dijawab adalah bagian percakapan yang
+ * belum selesai.
+ */
+export function hidrasiCatat(): Promise<ApiHasil<{ items: BarisCatat[] }>> {
+  return panggil("/api/transaksi?untuk=catat");
+}
+
 /* ── Opsi periode untuk data NYATA (mock punya anchor tetap sendiri) ─────── */
 
 export function periodeSekarang(): { value: string; label: string }[] {
-  const now = new Date(Date.now() + 7 * 3600_000); // WIB
-  const y = now.getUTCFullYear();
-  const m = now.getUTCMonth() + 1;
-  const bulanIni = `${y}-${String(m).padStart(2, "0")}`;
+  const bulanIni = bulanWib();
+  const [y, m] = bulanIni.split("-").map(Number);
   const prevY = m === 1 ? y - 1 : y;
   const prevM = m === 1 ? 12 : m - 1;
   const bulanLalu = `${prevY}-${String(prevM).padStart(2, "0")}`;

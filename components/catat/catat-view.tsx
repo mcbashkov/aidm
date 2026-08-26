@@ -13,7 +13,15 @@ import {
   konfirmasiDraft,
   ubahTransaksi,
   hapusTransaksi,
+  hidrasiCatat,
+  type BarisCatat,
 } from "@/lib/catat/client";
+import {
+  useKueri,
+  useBatalkanKueri,
+} from "@/components/providers/kueri-provider";
+import { BelumTersinkron } from "@/components/ui/belum-tersinkron";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   tambahAntrean,
   bacaAntrean,
@@ -21,6 +29,7 @@ import {
 } from "@/lib/offline/antrean";
 import type { Transaction } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
+import { todayWib } from "@/lib/wib";
 
 /** Satu gelembung percakapan di tab Catat. `qid` mengikat kartu pratinjau
  *  offline ke item antrean IndexedDB-nya. */
@@ -32,9 +41,33 @@ type Bubble =
 let counter = 0;
 const nextId = () => `b${++counter}`;
 
-/** Tanggal hari ini WIB — dipakai parser pratinjau lokal (demo/offline). */
-function todayWibClient(): string {
-  return new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10);
+/**
+ * Bangun ulang thread dari transaksi hari ini.
+ *
+ * Yang bisa dipulihkan: kalimat asli pengguna (`raw_input`) dan kartu entri.
+ * Yang TIDAK: balasan agen — dan itu memang tidak dikarang di sini. Balasan di
+ * jalur gratis hanyalah copy tetap yang tidak membawa informasi, jadi
+ * menuliskannya kembali seolah agen pernah mengatakannya adalah memalsukan
+ * percakapan. Draft tetap terbaca sebagai pertanyaan yang menunggu, karena
+ * `EntryCard` sendiri yang menampilkan "Menunggu nominal…" — keterangannya
+ * datang dari keadaan barisnya, bukan dari kalimat yang kita reka.
+ *
+ * Satu kalimat yang melahirkan beberapa entri tampil sebagai satu gelembung
+ * diikuti beberapa kartu berurutan. Itu pengelompokan yang NYATA: baris-baris
+ * itu memang berbagi `raw_input` yang sama karena lahir dari satu permintaan.
+ */
+function threadDariServer(items: BarisCatat[]): Bubble[] {
+  const keluar: Bubble[] = [];
+  let kalimatSebelumnya: string | null = null;
+  for (const it of items) {
+    const teks = it.rawInput?.trim();
+    if (teks && teks !== kalimatSebelumnya) {
+      keluar.push({ kind: "user", id: nextId(), text: teks });
+    }
+    kalimatSebelumnya = teks ?? null;
+    keluar.push({ kind: "entry", id: nextId(), tx: it, antre: false });
+  }
+  return keluar;
 }
 
 /** Entri lokal (demo/offline) memakai id ber-prefiks — TIDAK boleh dikirim
@@ -90,6 +123,32 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
   /** true setelah server menjawab 401/501 — jalur demo lokal, hemat bolak-balik. */
   const demoRef = useRef(false);
   const sedangSinkronRef = useRef(false);
+
+  /**
+   * Thread hari ini dari server. Inilah yang membuat tab Catat bertahan: dulu
+   * `bubbles` hanya `useState([])`, jadi berpindah tab meng-unmount komponen
+   * dan seluruh percakapan lenyap — lalu layar menampilkan "Belum ada catatan
+   * hari ini" untuk hari yang jelas-jelas sudah ada catatannya. Kalimat itu
+   * bukan kesimpulan yang salah; ia keadaan awal yang dipajang sebagai fakta,
+   * kelas bug P0-1 yang sama.
+   */
+  const hidrasi = useKueri<{ items: BarisCatat[] }>(
+    "catat:hari-ini",
+    hidrasiCatat,
+  );
+  const batalkanKueri = useBatalkanKueri();
+  const sudahHidrasi = useRef(false);
+
+  /**
+   * Buang cache yang menjadi basi karena tulisan barusan. Tanpa ini, mencatat
+   * lalu pindah ke Beranda akan menampilkan total LAMA dari cache — dan angka
+   * uang yang tertinggal satu langkah lebih buruk daripada angka yang datang
+   * sedetik lebih lambat.
+   */
+  const segarkanSetelahTulis = useCallback(() => {
+    batalkanKueri("catat:hari-ini");
+    batalkanKueri("beranda:ringkas");
+  }, [batalkanKueri]);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
@@ -260,7 +319,7 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
   const parseLokal = useCallback(
     (text: string, antre: boolean, qid?: string): Bubble[] => {
       const hasil = parseFallback(text, {
-        today: todayWibClient(),
+        today: todayWib(),
         earner: earnerType,
       });
       const baru: Bubble[] = [];
@@ -333,6 +392,7 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
           if (res.ok && res.data.ok && res.data.entry) {
             const entry = res.data.entry;
             pendingDraftRef.current = null;
+            segarkanSetelahTulis();
             setBubbles((prev) =>
               prev.map((b) =>
                 b.kind === "entry" && b.tx.id === entry.id
@@ -386,6 +446,7 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
             baru.push({ kind: "agent", id: nextId(), text: tidak_dikenali });
           }
           setBubbles((prev) => [...prev, ...baru]);
+          segarkanSetelahTulis();
           return;
         }
         if (res.offline) {
@@ -405,8 +466,33 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
         ]);
       })();
     },
-    [offline, antrekan, parseLokal],
+    [offline, antrekan, parseLokal, segarkanSetelahTulis],
   );
+
+  /**
+   * Seed thread SEKALI per mount. Revalidasi berikutnya (fokus/online) tidak
+   * boleh menyemai ulang — gelembung yang ditambahkan sesi ini akan
+   * terduplikasi. Yang sudah tampil di layar adalah kebenaran yang lebih baru
+   * daripada salinan server mana pun.
+   */
+  useEffect(() => {
+    if (sudahHidrasi.current) return;
+    if (hidrasi.keadaan !== "terbaca") return;
+    sudahHidrasi.current = true;
+
+    const awal = threadDariServer(hidrasi.data.items);
+    if (awal.length === 0) return;
+    // Disisipkan DI DEPAN: gelembung lokal yang sempat lahir sebelum hidrasi
+    // selesai memang terjadi belakangan.
+    setBubbles((prev) => [...awal, ...prev]);
+
+    // Draft terakhir yang belum berjawab kembali menunggu, supaya mengetik
+    // angka telanjang tetap terbaca sebagai jawaban — bukan transaksi baru.
+    const draftMenunggu = [...hidrasi.data.items]
+      .reverse()
+      .find((t) => t.status === "draft");
+    if (draftMenunggu) pendingDraftRef.current = draftMenunggu.id;
+  }, [hidrasi]);
 
   /**
    * Sinkron antrean offline: saat mount, saat kembali online, dan tiap 20
@@ -426,6 +512,7 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
           const res = await kirimCatat(it.text, it.source);
           if (res.ok) {
             await hapusAntrean(it.id);
+            segarkanSetelahTulis();
             const serverEntries = res.data.entries;
             setBubbles((prev) => {
               // Kartu pratinjau qid ini ditukar dengan entri server.
@@ -474,7 +561,7 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
       window.removeEventListener("online", onOnline);
       clearInterval(timer);
     };
-  }, []);
+  }, [segarkanSetelahTulis]);
 
   function simpanEdit(tx: Transaction) {
     // Optimistic: kartu diperbarui dulu, server menyusul.
@@ -493,6 +580,7 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
       catatan: tx.catatan ?? null,
     }).then((res) => {
       if (res.ok) {
+        segarkanSetelahTulis();
         if (pendingDraftRef.current === tx.id) pendingDraftRef.current = null;
         setBubbles((prev) =>
           prev.map((b) =>
@@ -521,6 +609,7 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
     if (pendingDraftRef.current === id) pendingDraftRef.current = null;
     if (isLokalId(id) || demoRef.current) return;
     void hapusTransaksi(id).then((res) => {
+      if (res.ok) segarkanSetelahTulis();
       if (!res.ok && !res.demo && res.status !== 404) {
         setBubbles((prev) => [
           ...prev,
@@ -550,7 +639,17 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
     kirim(draft);
   }
 
-  const kosong = bubbles.length === 0;
+  /**
+   * Tiga keadaan, bukan dua (lib/api/keadaan.ts). "Belum ada catatan hari ini"
+   * adalah pernyataan tentang catatan pengguna, dan ia hanya boleh diucapkan
+   * SETELAH server menjawab dan jawabannya memang kosong. Sebelum itu:
+   * skeleton. Kalau pembacaannya gagal: katakan gagal — jangan pernah
+   * memetakannya jadi "kamu belum mencatat apa pun".
+   */
+  const adaIsi = bubbles.length > 0;
+  const memuatThread = !adaIsi && hidrasi.keadaan === "memuat";
+  const gagalThread = !adaIsi && hidrasi.keadaan === "gagal";
+  const kosong = !adaIsi && hidrasi.keadaan === "terbaca";
   const adaTeks = draft.trim().length > 0;
 
   return (
@@ -599,8 +698,37 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
         {/* `mt-auto` (bukan justify-end) supaya pesan paling atas tetap
             terjangkau saat isinya lebih tinggi dari area gulir. */}
         <div className="flex min-h-full flex-col">
-          <div className={cn("space-y-3", kosong ? "m-auto" : "mt-auto")}>
-            {kosong ? (
+          <div
+            className={cn(
+              "space-y-3",
+              kosong || memuatThread || gagalThread ? "m-auto" : "mt-auto",
+            )}
+          >
+            {memuatThread ? (
+              <div className="space-y-3" aria-label="Memuat catatan hari ini">
+                <Skeleton className="ml-auto h-9 w-2/3 rounded-card" />
+                <Skeleton className="h-[86px] w-full rounded-card" />
+                <Skeleton className="ml-auto h-9 w-1/2 rounded-card" />
+              </div>
+            ) : gagalThread ? (
+              <div className="card flex flex-col items-center gap-2 p-8 text-center">
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-surface-warm">
+                  <CloudOff className="h-6 w-6 text-ink-muted" aria-hidden />
+                </span>
+                <h2 className="mt-1">Catatan hari ini belum bisa dimuat</h2>
+                <p className="max-w-xs text-[14px] leading-relaxed text-ink-muted">
+                  Catatanmu aman tersimpan. Kamu tetap bisa mencatat sekarang —
+                  yang kamu tulis akan tersimpan begitu sambungan pulih.
+                </p>
+                <button
+                  type="button"
+                  onClick={hidrasi.muatUlang}
+                  className="btn-primary mt-2 max-w-[220px]"
+                >
+                  Coba lagi
+                </button>
+              </div>
+            ) : kosong ? (
               <div className="card flex flex-col items-center gap-2 p-8 text-center">
                 <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gold-tint">
                   <MessageSquarePlus
@@ -618,7 +746,13 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
                 </p>
               </div>
             ) : (
-              bubbles.map((b) => {
+              <>
+              {hidrasi.keadaan === "terbaca" && !hidrasi.tersinkron ? (
+                <div className="flex justify-center">
+                  <BelumTersinkron />
+                </div>
+              ) : null}
+              {bubbles.map((b) => {
                 if (b.kind === "user") {
                   return (
                     <div key={b.id} className="flex justify-end">
@@ -646,7 +780,8 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
                     onEdit={setEditing}
                   />
                 );
-              })
+              })}
+              </>
             )}
           </div>
         </div>

@@ -22,7 +22,7 @@ import {
   type MisiResponse,
 } from "@/lib/missions";
 import type { KodeGalatKlaim } from "@/lib/missions/galat";
-import { todayWib } from "@/lib/parse/validate";
+import { todayWib } from "@/lib/wib";
 import { geserHari } from "@/lib/laporan/periode";
 
 interface BarisHarian {

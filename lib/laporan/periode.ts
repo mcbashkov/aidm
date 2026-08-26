@@ -13,7 +13,7 @@
  * jadi ISO dengan offset +07:00. Kedua sumber membaca garis potong yang sama.
  */
 
-import { todayWib } from "@/lib/parse/validate";
+import { todayWib } from "@/lib/wib";
 
 /** Rentang tanggal WIB; `end` EKSKLUSIF. `null` = tanpa batas di sisi itu. */
 export interface RentangTanggal {

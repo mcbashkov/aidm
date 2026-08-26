@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { currentUserId } from "@/lib/catat/server";
-import { todayWib } from "@/lib/parse/validate";
+import { todayWib } from "@/lib/wib";
 import { earnerLabel } from "@/lib/earner";
 // Blok verifikasi PDF menunjuk chain tempat KONTRAK SEGEL hidup (bisa testnet
 // selama M4), bukan chain default aplikasi — alamat & tautan explorer yang

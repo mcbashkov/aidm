@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   MessageSquarePlus,
@@ -14,7 +14,9 @@ import { TransactionRow } from "@/components/transaksi/transaction-row";
 import { useMe } from "@/components/providers/me-provider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GagalMuat } from "@/components/ui/gagal-muat";
-import type { Keadaan } from "@/lib/api/keadaan";
+import { useKueri } from "@/components/providers/kueri-provider";
+import { BelumTersinkron } from "@/components/ui/belum-tersinkron";
+import type { ApiHasil } from "@/lib/api/panggil";
 import { DEFAULT_MISSIONS } from "@/lib/missions";
 import { ringkasHariIni, transaksiTerakhir } from "@/lib/mock/finance";
 import { daftarTransaksi } from "@/lib/catat/client";
@@ -25,18 +27,13 @@ import {
   type Transaction,
 } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
+import { todayWib } from "@/lib/wib";
 
 interface DataBeranda {
   masuk: number;
   keluar: number;
   sisa: number;
   terakhir: Transaction[];
-}
-
-/** Tanggal hari ini menurut WIB. Tidak bergantung jaringan sama sekali —
- *  jam perangkat sudah cukup, jadi tidak ada alasan menundanya. */
-function tanggalHariIniWib(): string {
-  return new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10);
 }
 
 /**
@@ -52,55 +49,56 @@ function tanggalHariIniWib(): string {
  * salah. Mock sekarang HANYA dipakai bila server memang belum dikonfigurasi
  * (401/501), meniru pola yang sudah benar di `laporan-view.tsx`.
  */
+/**
+ * Pengambil Beranda. Di luar komponen supaya identitasnya tetap, dan supaya
+ * satu-satunya jalur mock berdiri jelas: HANYA saat server memang belum
+ * dikonfigurasi (401/501). Kegagalan lain diteruskan apa adanya — nol adalah
+ * pernyataan tentang uang pengguna, dan saat gagal kita tidak tahu apa-apa
+ * tentang uangnya.
+ */
+async function ambilBeranda(): Promise<ApiHasil<DataBeranda>> {
+  const res = await daftarTransaksi({ pageSize: 3, ringkas: true });
+  if (res.ok) {
+    const r = res.data.ringkas_hari_ini;
+    return {
+      ok: true,
+      data: {
+        masuk: r?.masuk ?? 0,
+        keluar: r?.keluar ?? 0,
+        sisa: r?.sisa ?? 0,
+        terakhir: res.data.items,
+      },
+    };
+  }
+  if (res.demo) {
+    const mock = ringkasHariIni();
+    return {
+      ok: true,
+      data: {
+        masuk: mock.masuk,
+        keluar: mock.keluar,
+        sisa: mock.sisa,
+        terakhir: transaksiTerakhir(3),
+      },
+    };
+  }
+  return res;
+}
+
 export default function BerandaPage() {
   const me = useMe();
 
-  const [keadaan, setKeadaan] = useState<Keadaan<DataBeranda>>({
-    keadaan: "memuat",
-  });
-  const [percobaan, setPercobaan] = useState(0);
+  // Satu sumber data untuk seluruh tab (components/providers/kueri-provider).
+  // Kembali dari tab lain menyajikan salinan terakhir SEKETIKA lalu memeriksa
+  // ulang di belakang layar — bukan skeleton dari nol, yang selama ini membuat
+  // Beranda terasa memuat ulang seluruh isinya tiap kali disentuh.
+  const keadaan = useKueri<DataBeranda>("beranda:ringkas", ambilBeranda);
 
   // Tanggal dihitung langsung, tidak menunggu apa pun. Dulu ia ikut menunggu
   // hasil fetch, dan itulah kenapa header sempat menulis tanggal yang salah.
-  const [tanggal] = useState(tanggalHariIniWib);
-
-  const muat = useCallback(async () => {
-    setKeadaan({ keadaan: "memuat" });
-    const res = await daftarTransaksi({ pageSize: 3, ringkas: true });
-    if (res.ok) {
-      const r = res.data.ringkas_hari_ini;
-      setKeadaan({
-        keadaan: "terbaca",
-        data: {
-          masuk: r?.masuk ?? 0,
-          keluar: r?.keluar ?? 0,
-          sisa: r?.sisa ?? 0,
-          terakhir: res.data.items,
-        },
-      });
-    } else if (res.demo) {
-      // Server memang belum dikonfigurasi (401/501) → dataset contoh, supaya
-      // demo UI tetap hidup. Ini SATU-SATUNYA jalur yang boleh memakai mock.
-      const mock = ringkasHariIni();
-      setKeadaan({
-        keadaan: "terbaca",
-        data: {
-          masuk: mock.masuk,
-          keluar: mock.keluar,
-          sisa: mock.sisa,
-          terakhir: transaksiTerakhir(3),
-        },
-      });
-    } else {
-      // TIDAK menyetel nol. Nol adalah pernyataan tentang uang pengguna, dan
-      // kita sedang tidak tahu apa-apa tentang uangnya.
-      setKeadaan({ keadaan: "gagal", offline: res.offline });
-    }
-  }, []);
-
-  useEffect(() => {
-    void muat();
-  }, [muat, percobaan]);
+  // Tidak bergantung jaringan sama sekali — jam perangkat sudah cukup, jadi
+  // tidak ada alasan menundanya.
+  const [tanggal] = useState(() => todayWib());
 
   const data = keadaan.keadaan === "terbaca" ? keadaan.data : null;
   const surplus = (data?.sisa ?? 0) >= 0;
@@ -127,6 +125,10 @@ export default function BerandaPage() {
               ini, bukan terhadap seluruh kalimat yang ditulis ulang. */}
           {nama ? <span>, {nama}</span> : null} 👋
         </h1>
+        {/* Salinan lama tidak pernah tampil tanpa keterangan. */}
+        {keadaan.keadaan === "terbaca" && !keadaan.tersinkron ? (
+          <BelumTersinkron className="mt-2" />
+        ) : null}
       </header>
 
       {keadaan.keadaan === "gagal" ? (
@@ -136,10 +138,7 @@ export default function BerandaPage() {
            sebagai pernyataan tentang uang pengguna, padahal kita sedang tidak
            tahu apa-apa tentangnya. Tombol Catat tetap ditampilkan di bawah:
            mencatat tidak butuh jaringan. */
-        <GagalMuat
-          offline={keadaan.offline}
-          onCobaLagi={() => setPercobaan((n) => n + 1)}
-        />
+        <GagalMuat offline={keadaan.offline} onCobaLagi={keadaan.muatUlang} />
       ) : (
       <>
       {/* Blok 1 — kartu hari ini */}

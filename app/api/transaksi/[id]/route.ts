@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { todayWib } from "@/lib/parse/validate";
+import { todayWib } from "@/lib/wib";
 import {
   currentUserId,
   getKategoriMaps,
@@ -143,7 +143,7 @@ export async function PATCH(
         );
       }
       // Tanggal WIB tidak boleh di masa depan (§17.1).
-      const tglWib = new Date(t + 7 * 3600_000).toISOString().slice(0, 10);
+      const tglWib = todayWib(new Date(t));
       if (tglWib > todayWib()) {
         return NextResponse.json(
           { error: "Tanggal tidak boleh di masa depan." },

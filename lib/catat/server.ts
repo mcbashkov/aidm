@@ -8,6 +8,7 @@
 import { cookies } from "next/headers";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { readSessionValue } from "@/lib/auth/session-cookie";
+import { wibDayStartIso } from "@/lib/wib";
 import { SESSION_COOKIE } from "@/lib/auth/constants";
 import type { Transaction } from "@/lib/transactions";
 
@@ -126,15 +127,6 @@ export async function naikkanKuotaRequest(
   });
   if (error || typeof data !== "number") return null;
   return data;
-}
-
-/** Awal hari WIB berjalan sebagai ISO — batas hitung kuota harian. */
-export function wibDayStartIso(now = new Date()): string {
-  const wib = new Date(now.getTime() + 7 * 3600_000);
-  const startUtcMs =
-    Date.UTC(wib.getUTCFullYear(), wib.getUTCMonth(), wib.getUTCDate()) -
-    7 * 3600_000;
-  return new Date(startUtcMs).toISOString();
 }
 
 /** Jumlah entri yang DIBUAT user hari ini (WIB) — termasuk draft & terhapus:

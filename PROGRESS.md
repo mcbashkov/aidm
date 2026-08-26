@@ -339,9 +339,68 @@ sudah berubah benar tanpa mekanisme apa pun (Beranda client component,
 refetch tiap mount) — gejalanya murni urutan, bukan kesegaran. Tidak ada
 mekanisme yang dipasang untuk sesuatu yang tidak mengerjakan apa-apa.
 
-**Sisa terkait, dijadwalkan ke P1-3:** skeleton Beranda diulang dari nol tiap
-kembali dari tab lain. Korektness benar, terasa lambat, sebabnya tidak ada
-cache klien — dikerjakan bersama P1-3 sebagai satu mekanisme, bukan tambalan.
+~~**Sisa terkait, dijadwalkan ke P1-3:** skeleton Beranda diulang dari nol tiap
+kembali dari tab lain.~~ ✅ **LUNAS di P1-3** — satu `KueriProvider`, bukan
+tambalan kedua.
+
+### ~~P1-3 — Catat kosong saat kembali dari tab lain~~ ✅ **SELESAI 2026-08-26**
+
+**Sebabnya bukan jalur simpan.** Thread Catat hidup di `useState<Bubble[]>([])`
+dan tidak pernah dibaca dari server sama sekali — tujuh `useEffect` di berkas
+itu semuanya soal tata letak, keyboard, dan antrean offline. Pindah tab
+meng-unmount komponen, `bubbles` musnah, dan "Belum ada catatan hari ini"
+tampil tanpa syarat. Kalimat itu bukan kesimpulan yang salah; ia **keadaan awal
+yang dipajang sebagai fakta** — kelas bug P0-1 yang sama, di layar yang batch
+itu belum sentuh.
+
+- [x] **`KueriProvider`** (`components/providers/kueri-provider.tsx`) di
+      `AppLayout`, di ATAS `children`, jadi ia bertahan melintasi tab.
+      Ditulis sendiri, bukan SWR — SWR mempertahankan `data` lama sambil
+      menyalakan `error` dan membiarkan konsumennya menampilkan keduanya tanpa
+      berkata apa-apa. Di sini data lama hanya bisa keluar lewat satu pintu:
+      `tersinkron: false`, yang WAJIB digambar sebagai "Belum tersinkron".
+- [x] **revalidate-on-focus & on-reconnect**, keduanya diam-diam. Fokus
+      menghormati ambang stale (30 dtk); online-lagi memaksa, karena yang
+      paling mungkin berubah justru selama offline.
+- [x] **Hidrasi thread** lewat `GET /api/transaksi?untuk=catat` — satu mode
+      sempit yang **menjawab lebih awal**, sebelum satu baris pun jalur umum
+      dieksekusi, supaya kelonggarannya tidak bisa merembes ke pembacaan uang.
+- [x] **Empty state hanya setelah fetch selesai DAN kosong.** Render pertama
+      kini skeleton; gagal memuat punya kalimatnya sendiri ("Catatanmu aman
+      tersimpan"), tidak pernah dipetakan jadi "kamu belum mencatat apa pun".
+- [x] **Batas hari WIB disatukan** ke `lib/wib.ts` dari 7 salinan di 8 berkas.
+      Dedup MURNI — dibuktikan no-op atas 206.600 kasus (setiap batas hari
+      selama 3 tahun ±2 ms, plus 200.000 timestamp acak) × 7 implementasi lama:
+      **nol penyimpangan**. Tidak ada yang "sekalian dibetulkan".
+
+**Keputusan PO di tengah jalan: batas hari thread dari `created_at`, bukan
+`occurred_at`.** Thread Catat adalah percakapan — isinya apa yang pengguna
+KATAKAN hari ini. Mengetik "kemarin jual 50rb" siang ini menaruh `occurred_at`
+di kemarin, dan filter `occurred_at` akan membuat kalimat yang baru saja
+diucapkan itu lenyap begitu pindah tab. Konsisten dengan progres misi harian,
+yang sudah memakai `created_at` sejak 0017 dengan alasan yang sama persis.
+Karena kolom filternya ikut berubah, parameternya `?untuk=catat` — satu mode
+bernama — bukan `?include=draft`.
+
+**Draft ikut ke thread, dan TIDAK ikut ke angka mana pun.** Jaminannya bukan
+kehati-hatian endpoint: trigger `daily_rollups` (0012) menghitung hanya
+`status='confirmed' and amount is not null`, dan RPC `misi_hitung_harian`
+(0017) menyaring `status='confirmed'`. Diverifikasi dengan data nyata — satu
+draft menggantung + satu transaksi lampau yang dicatat hari ini:
+
+| | thread | Sisa hari ini | progres misi |
+|---|---|---|---|
+| 2 entri dari satu kalimat | ✓ satu gelembung, dua kartu | ✓ ikut | ✓ ikut |
+| draft "tadi ada yang bayar" | ✓ "Menunggu nominal…" | ✗ tidak ikut | ✗ tidak ikut |
+| dicatat hari ini untuk KEMARIN | ✓ muncul | ✗ (uang ikut `occurred_at`) | ✓ ikut |
+| dicatat KEMARIN | ✗ tidak muncul | ✓ ikut | ✗ tidak ikut |
+
+**Balasan agen tidak direka ulang.** Yang dipulihkan hanya kalimat pengguna
+(`raw_input`) dan kartu entri. Draft tetap terbaca sebagai pertanyaan yang
+menunggu karena `EntryCard` sendiri menampilkan "Menunggu nominal…" —
+keterangannya datang dari keadaan barisnya, bukan dari kalimat yang kita
+karang. `pendingDraftRef` ikut dipulihkan, jadi mengetik angka telanjang tetap
+terbaca sebagai jawaban, bukan transaksi baru.
 
 - [x] **Jam transaksi dihapus dari UI — keputusan PO 2026-08-25.** Usulan
       mengganti 12.00 dengan `created_at` DITOLAK, dan alasannya adalah aturan

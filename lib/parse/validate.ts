@@ -15,6 +15,7 @@ import {
   type Jenis,
   type PaymentMethod,
 } from "@/lib/transactions";
+import { todayWib } from "@/lib/wib";
 
 export interface ValidatedEntry {
   jenis: Jenis;
@@ -41,11 +42,6 @@ const MAX_ENTRIES = 10;
 
 const SLUG_MASUK = new Set(KATEGORI_MASUK.map((k) => k.slug));
 const SLUG_KELUAR = new Set(KATEGORI_KELUAR.map((k) => k.slug));
-
-/** Tanggal hari ini menurut WIB (UTC+7), format YYYY-MM-DD. */
-export function todayWib(now = new Date()): string {
-  return new Date(now.getTime() + 7 * 3600_000).toISOString().slice(0, 10);
-}
 
 function validAmount(v: unknown): number | null {
   if (typeof v !== "number" || !Number.isFinite(v)) return null;

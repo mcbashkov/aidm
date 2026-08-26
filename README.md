@@ -281,6 +281,25 @@ Pola layout: <1024px memakai pola mobile (bottom-nav 5 tab + baris status tanpa 
   pengurutan seri sepenuhnya. Tanpa pemecah seri, Postgres mengembalikan urutan
   fisik — yang TERLAMA di atas — sehingga "Transaksi terakhir" justru tidak
   pernah menampilkan yang baru dicatat.
+- **Batas hari selalu WIB, dari satu berkas.** `lib/wib.ts` — laporan bulanan,
+  progres misi harian, cap IDMX, kuota mencatat, dan pengelompokan Riwayat
+  saling dibandingkan pengguna, jadi batas yang bergeser di salah satunya tidak
+  tampil sebagai galat melainkan sebagai "misi saya tidak bertambah padahal
+  sudah mencatat". Sebelumnya rumus `+7 jam` disalin di tujuh tempat.
+- **Cache klien punya satu pintu untuk data lama.** `KueriProvider` menyajikan
+  salinan terakhir seketika lalu memeriksa ulang di belakang layar (fokus &
+  reconnect), dan fase "memuat" tidak pernah muncul selagi ada salinan.
+  Saat pembacaan gagal sementara salinan ada, salinan itu DITAHAN dan ditandai
+  "Belum tersinkron" — satu-satunya tempat aplikasi ini sengaja menampilkan
+  data lama, sah karena yang ditahan milik pengguna sendiri dan layar
+  mengatakannya. Mengosongkannya justru akan mengulang P0-1: kegagalan jaringan
+  terbaca sebagai "catatanmu tidak ada".
+- **Endpoint yang longgar menjawab lebih awal.** `?untuk=catat` di
+  `/api/transaksi` menyertakan draft dan `raw_input`, dan ia `return` sebelum
+  satu baris pun jalur umum dieksekusi — kelonggaran yang dibutuhkan satu layar
+  tidak boleh punya jalan untuk merembes ke pembacaan yang berhubungan dengan
+  uang. Draft sendiri tidak pernah masuk angka mana pun karena trigger rollup
+  dan RPC misi sama-sama menyaring `confirmed`; jaminannya di database.
 - **Permintaan HTTP tidak pernah menunggu rantai; ia menulis NIAT.** Klaim misi
   mencatat baris `queued` berikut `nonce`-nya lalu langsung menjawab
   "diproses"; cron relayer yang menandatangani, mengirim, dan merekonsiliasi.

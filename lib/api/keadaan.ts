@@ -34,3 +34,31 @@ export function pesanGagal(offline: boolean): string {
     ? "Kamu sedang offline. Catatanmu aman tersimpan — sambungkan internet untuk melihatnya."
     : "Belum bisa memuat datamu. Coba lagi ya.";
 }
+
+/**
+ * Hasil pembacaan yang DIDUKUNG CACHE (lihat components/providers/kueri-
+ * provider.tsx). Ia tetap tiga keadaan yang sama — `tersinkron` bukan keadaan
+ * keempat, melainkan keterangan tentang keadaan "terbaca": datanya ada, dan
+ * ini kabar tentang seberapa barunya.
+ *
+ * Di sinilah satu-satunya tempat aplikasi ini SENGAJA menahan data lama saat
+ * pembacaan gagal, dan pengecualian itu punya batasnya sendiri: yang ditahan
+ * adalah data milik pengguna itu sendiri, yang sudah pernah ia lihat di layar
+ * ini, dan layar WAJIB mengatakan bahwa ia belum tersinkron. Bandingkan dengan
+ * larangan di kepala berkas ini — yang dilarang adalah menampilkan angka
+ * KARANGAN (mock) atau memetakan kegagalan menjadi "belum ada apa-apa".
+ * Menahan catatan pengguna sendiri sambil mengaku belum tersinkron tidak
+ * melanggar keduanya; mengosongkan layarnya justru melanggar yang kedua.
+ */
+export type HasilKueri<T> =
+  | { keadaan: "memuat" }
+  | {
+      keadaan: "terbaca";
+      data: T;
+      /** false = pembacaan terakhir gagal, yang tampil adalah salinan lama. */
+      tersinkron: boolean;
+      /** Epoch ms saat data ini benar-benar datang dari server. */
+      pada: number;
+      muatUlang: () => void;
+    }
+  | { keadaan: "gagal"; offline: boolean; muatUlang: () => void };

@@ -4,11 +4,16 @@ import { TopNav } from "@/components/layout/top-nav";
 import { MobileTopBar } from "@/components/layout/mobile-top-bar";
 import { HeaderStats } from "@/components/layout/header-stats";
 import { MeProvider } from "@/components/providers/me-provider";
+import { KueriProvider } from "@/components/providers/kueri-provider";
 
 /** Shell aplikasi: top nav (tablet/desktop) + header & bottom nav (mobile). */
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <MeProvider>
+      {/* Cache pembacaan hidup DI SINI, di atas `children`, supaya ia bertahan
+          saat berpindah tab — navigasi klien hanya mengganti isi `main`.
+          Satu cache untuk seluruh tab; bukan satu mekanisme per layar. */}
+      <KueriProvider>
       <div className="min-h-dvh bg-bg">
         <TopNav right={<HeaderStats />} />
         <MobileTopBar />
@@ -21,6 +26,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </main>
         <BottomNav />
       </div>
+      </KueriProvider>
     </MeProvider>
   );
 }

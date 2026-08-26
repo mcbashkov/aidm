@@ -12,7 +12,7 @@ import {
   sealChain,
   REPORT_ATTESTATION_ABI,
 } from "@/lib/chains/attestation";
-import { todayWib } from "@/lib/parse/validate";
+import { todayWib } from "@/lib/wib";
 import { rentangTanggal } from "@/lib/laporan/periode";
 import {
   ambilRollups,

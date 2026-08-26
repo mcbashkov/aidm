@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { parseCatat } from "@/lib/parse";
-import { todayWib } from "@/lib/parse/validate";
+import { todayWib } from "@/lib/wib";
 import {
   CATAT_DAILY_LIMIT,
   CATAT_REQUEST_LIMIT,

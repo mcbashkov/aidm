@@ -1,6 +1,6 @@
 import { jsonPribadi } from "@/lib/api/respons";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { todayWib } from "@/lib/parse/validate";
+import { todayWib, wibDayStartIso } from "@/lib/wib";
 import {
   currentUserId,
   getKategoriMaps,
@@ -31,6 +31,11 @@ const PAGE_SIZE_MAX = 100;
  * (§11). Hanya baris `confirmed` milik user; draft hidup di chat sampai
  * dikonfirmasi, deleted tidak pernah keluar.
  *
+ * `untuk=catat` adalah SATU mode sempit untuk hidrasi thread tab Catat, dan
+ * ia menjawab lebih awal — sebelum satu pun baris jalur umum dieksekusi —
+ * supaya kelonggarannya tidak bisa merembes ke pembacaan mana pun yang
+ * berhubungan dengan uang. Lihat `daftarCatatHariIni()` di bawah.
+ *
  * `ringkas=1` menyertakan agregat hari ini dari daily_rollups — kartu "Sisa
  * hari ini" di Beranda tanpa memindai baris transaksi (§9.3 semangatnya).
  */
@@ -51,6 +56,7 @@ export async function GET(req: Request) {
     Math.max(1, Number(url.searchParams.get("page_size") ?? "") || PAGE_SIZE_DEFAULT),
   );
   const ringkas = url.searchParams.get("ringkas") === "1";
+  const untukCatat = url.searchParams.get("untuk") === "catat";
 
   let supa;
   try {
@@ -61,6 +67,8 @@ export async function GET(req: Request) {
       { status: 501 },
     );
   }
+
+  if (untukCatat) return daftarCatatHariIni(supa, uid);
 
   try {
     const maps = await getKategoriMaps(supa);
@@ -142,6 +150,67 @@ export async function GET(req: Request) {
     }
 
     return jsonPribadi(body);
+  } catch {
+    return jsonPribadi(
+      { error: "Terjadi gangguan. Coba lagi ya." },
+      { status: 500 },
+    );
+  }
+}
+
+/** Batas keras satu thread. `CATAT_DAILY_LIMIT` = 200 entri/user/hari (§7.2),
+ *  jadi angka ini tidak pernah benar-benar memotong sebuah hari yang sah. */
+const CATAT_MAKS = 200;
+
+/**
+ * Hidrasi thread tab Catat: percakapan HARI INI, milik pemanggil.
+ *
+ * Tiga hal membuatnya berbeda dari daftar transaksi biasa, dan ketiganya
+ * hanya berlaku di sini:
+ *
+ *  1. **Batas hari dari `created_at`, bukan `occurred_at`.** Thread ini adalah
+ *     percakapan — isinya apa yang pengguna KATAKAN hari ini. Seseorang yang
+ *     mengetik "kemarin jual 50rb" siang ini baru saja mengucapkannya, dan
+ *     kalimatnya harus tetap ada di layar setelah ia pindah tab. Memfilter
+ *     `occurred_at` akan membuatnya lenyap. Ini juga konsisten dengan progres
+ *     misi harian, yang sudah memakai `created_at` sejak 0017 dengan alasan
+ *     yang sama persis: "misinya berbunyi catat HARI INI".
+ *
+ *  2. **Draft ikut.** Draft adalah pertanyaan yang sedang menunggu jawaban
+ *     nominal; kehilangan ia saat pindah tab berarti kehilangan percakapan yang
+ *     belum selesai. Draft TIDAK PERNAH ikut dalam angka mana pun — trigger
+ *     `daily_rollups` (0012) dan RPC `misi_hitung_harian` (0017) sama-sama
+ *     menyaring `status = 'confirmed'`, jadi jaminan itu ditegakkan DATABASE,
+ *     bukan oleh kehati-hatian endpoint ini.
+ *
+ *  3. **`raw_input` ikut** — kalimat asli pengguna, untuk membangun kembali
+ *     gelembung percakapannya. Ia sengaja tidak ada di `TX_COLUMNS` umum:
+ *     tidak ada layar lain yang membutuhkannya.
+ *
+ * Urut NAIK (created_at) karena thread dibaca dari atas ke bawah.
+ */
+async function daftarCatatHariIni(
+  supa: Awaited<ReturnType<typeof createSupabaseAdminClient>>,
+  uid: string,
+) {
+  try {
+    const maps = await getKategoriMaps(supa);
+    const { data, error } = await supa
+      .from("transactions")
+      .select(`${TX_COLUMNS}, raw_input`)
+      .eq("user_id", uid)
+      .in("status", ["confirmed", "draft"])
+      .gte("created_at", wibDayStartIso())
+      .order("created_at", { ascending: true })
+      .limit(CATAT_MAKS);
+    if (error) {
+      return jsonPribadi({ error: "Gagal membaca catatan." }, { status: 500 });
+    }
+    return jsonPribadi({
+      items: ((data ?? []) as (TxRow & { raw_input: string | null })[]).map(
+        (r) => ({ ...rowToTx(r, maps.byId), rawInput: r.raw_input }),
+      ),
+    });
   } catch {
     return jsonPribadi(
       { error: "Terjadi gangguan. Coba lagi ya." },
