@@ -103,7 +103,7 @@ interface KlaimRow {
   mission_id: string;
   period_key: string | null;
   amount_idmx: number;
-  status: "signed" | "submitted" | "confirmed" | "failed";
+  status: "queued" | "sending" | "submitted" | "confirmed" | "failed" | "signed";
   tx_hash: string | null;
   created_at: string;
 }

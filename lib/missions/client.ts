@@ -10,12 +10,17 @@ export function ambilMisi(): Promise<ApiHasil<MisiResponse>> {
   return panggil("/api/missions");
 }
 
+/**
+ * Jawaban klaim sejak batch B: server hanya MENCATAT niat, tidak menunggu
+ * rantai. Tidak ada `txHash` di sini karena pada detik ini ia memang belum
+ * ada — relayer cron yang mengirimnya, dan hash-nya muncul lewat GET
+ * /api/missions saat sudah nyata.
+ */
 export interface HasilKlaimMisi {
   ok: boolean;
   code: string;
   reward: number;
-  txHash: string;
-  status: "confirmed" | "submitted";
+  status: "diproses";
 }
 
 export function klaimMisi(code: string): Promise<ApiHasil<HasilKlaimMisi>> {

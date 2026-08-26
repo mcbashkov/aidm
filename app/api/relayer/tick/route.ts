@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { isRelayerConfigured, jalankanTick } from "@/lib/swap/relayer-server";
+import { jalankanTickMisi } from "@/lib/missions/relayer";
+import { isKlaimConfigured } from "@/lib/missions/klaim-server";
 import { cocokCronSecret, TIDAK_DITEMUKAN } from "@/lib/api/cron";
 
 export const runtime = "nodejs";
@@ -26,9 +28,9 @@ async function tick(req: Request) {
     return NextResponse.json(TIDAK_DITEMUKAN, { status: 404 });
   }
 
-  if (!isRelayerConfigured()) {
+  if (!isRelayerConfigured() && !isKlaimConfigured()) {
     return NextResponse.json(
-      { error: "Relayer swap belum dikonfigurasi di server ini." },
+      { error: "Relayer belum dikonfigurasi di server ini." },
       { status: 501 },
     );
   }
@@ -43,24 +45,51 @@ async function tick(req: Request) {
     );
   }
 
-  try {
-    const hasil = await jalankanTick(supa);
-    // Dicatat supaya "relayer diam" bisa dibedakan dari "relayer tidak jalan"
-    // saat menelusuri keluhan burn yang belum jadi voucher.
-    if (hasil.voucherBaru || hasil.voucherDiperpanjang || hasil.ditandaiTertebus) {
-      console.log("[relayer] tick:", JSON.stringify(hasil));
+  // Dua pekerjaan, satu tick, BERURUTAN — bukan `Promise.all`. Keduanya
+  // memakai anggaran waktu yang sama, dan menjalankannya paralel hanya
+  // menambah beban RPC bersamaan tanpa menyelesaikan apa pun lebih cepat.
+  //
+  // Keduanya juga sengaja tidak saling menjatuhkan: swap yang gagal tidak
+  // boleh menghentikan klaim misi, dan sebaliknya. Kegagalan masing-masing
+  // dicatat pada tempatnya, dan tick berikutnya mengulang bagiannya sendiri.
+  const keluar: Record<string, unknown> = { ok: true };
+  // Satu invokasi, satu `maxDuration` (60 detik), dua pekerjaan. Tenggat kirim
+  // misi dihitung dari awal permintaan — bukan dari saat gilirannya tiba —
+  // supaya tick swap yang lambat memakan jatahnya sendiri, bukan jatah misi.
+  const mulaiTick = Date.now();
+
+  if (isRelayerConfigured()) {
+    try {
+      const hasil = await jalankanTick(supa);
+      // Dicatat supaya "relayer diam" bisa dibedakan dari "relayer tidak
+      // jalan" saat menelusuri keluhan burn yang belum jadi voucher.
+      if (hasil.voucherBaru || hasil.voucherDiperpanjang || hasil.ditandaiTertebus) {
+        console.log("[relayer] tick swap:", JSON.stringify(hasil));
+      }
+      Object.assign(keluar, hasil);
+    } catch (err) {
+      // Kursor hanya maju setelah voucher tersimpan, jadi kegagalan di sini
+      // berarti tick berikutnya memindai ulang rentang yang sama — tidak ada
+      // burn yang terlewat karena satu tick gagal.
+      console.error("[relayer] tick swap gagal:", err);
+      keluar.swapGagal = true;
     }
-    return NextResponse.json({ ok: true, ...hasil });
-  } catch (err) {
-    // Kursor hanya maju setelah voucher tersimpan, jadi kegagalan di sini
-    // berarti tick berikutnya memindai ulang rentang yang sama — tidak ada
-    // burn yang terlewat karena satu tick gagal.
-    console.error("[relayer] tick gagal:", err);
-    return NextResponse.json(
-      { error: "Tick relayer gagal." },
-      { status: 500 },
-    );
   }
+
+  if (isKlaimConfigured()) {
+    try {
+      const misi = await jalankanTickMisi(supa, mulaiTick + 45_000);
+      if (misi.dikirim || misi.gagalKirim || misi.dikonfirmasi || misi.dipulihkan) {
+        console.log("[relayer] tick misi:", JSON.stringify(misi));
+      }
+      keluar.misi = misi;
+    } catch (err) {
+      console.error("[relayer] tick misi gagal:", err);
+      keluar.misiGagal = true;
+    }
+  }
+
+  return NextResponse.json(keluar);
 }
 
 export const POST = tick;

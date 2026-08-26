@@ -57,6 +57,11 @@ function KartuMisi({
   galatLokal?: string;
   onKlaim: () => void;
 }) {
+  // HANYA `confirmed` yang berarti IDMX sudah berpindah. Selama belum, tidak
+  // ada centang dan tidak ada kata "Diklaim" — layar tidak boleh mendahului
+  // rantai, sebab yang dijanjikannya adalah uang.
+  const tuntas = m.statusKlaim === "confirmed";
+  const diproses = m.diklaim && !tuntas;
   const rasio = m.target > 0 ? Math.min(1, m.progress / m.target) : 0;
   const bisaKlaim =
     m.selesai && !m.diklaim && !m.alasanTerkunci && !galatLokal && !memproses;
@@ -67,11 +72,16 @@ function KartuMisi({
         <span
           className={cn(
             "grid h-11 w-11 shrink-0 place-items-center rounded-2xl",
-            m.diklaim ? "bg-success/15" : "bg-gold-tint",
+            tuntas ? "bg-success/15" : "bg-gold-tint",
           )}
         >
-          {m.diklaim ? (
+          {tuntas ? (
             <Check className="h-6 w-6 text-success" aria-hidden />
+          ) : diproses ? (
+            <LoaderCircle
+              className="h-5 w-5 animate-spin text-gold-deep"
+              aria-hidden
+            />
           ) : (
             <Target className="h-6 w-6 text-gold-deep" aria-hidden />
           )}
@@ -92,8 +102,15 @@ function KartuMisi({
             +{m.reward}
           </span>
           {m.diklaim ? (
-            <span className="rounded-pill bg-success/15 px-3 py-1.5 text-[11px] font-semibold text-success">
-              {m.statusKlaim === "confirmed" ? "Diklaim" : "Diproses…"}
+            <span
+              className={cn(
+                "rounded-pill px-3 py-1.5 text-[11px] font-semibold",
+                tuntas
+                  ? "bg-success/15 text-success"
+                  : "bg-surface-warm text-ink-muted",
+              )}
+            >
+              {tuntas ? "Diklaim" : "Diproses…"}
             </span>
           ) : (
             <button
@@ -128,6 +145,13 @@ function KartuMisi({
             {m.progress}/{m.target}
           </span>
         </div>
+      ) : null}
+
+      {diproses ? (
+        <p className="text-[11px] leading-relaxed text-ink-subtle">
+          Reward sedang dikirim ke dompetmu. Aman ditinggal — statusnya tetap
+          benar saat kamu buka lagi.
+        </p>
       ) : null}
 
       {m.explorerTx ? (
@@ -179,6 +203,9 @@ export function MisiView() {
     const seq = ++reqSeq.current;
     setMemuat(true);
     setGalat(null);
+    // Catatan: `data` sengaja TIDAK dikosongkan di sini. Muat ulang berkala
+    // (polling status klaim) akan mengedipkan seluruh daftar jadi skeleton
+    // kalau dikosongkan, dan kedipan tiap 15 detik terbaca sebagai kerusakan.
     void ambilMisi().then((res) => {
       if (seq !== reqSeq.current) return;
       if (res.ok) {
@@ -239,6 +266,19 @@ export function MisiView() {
       klaimBerjalan.current = null;
     }
   }, []);
+
+  // Selama ada klaim yang belum tuntas, muat ulang berkala: relayer berjalan
+  // tiap menit, dan tanpa ini "Diproses…" hanya berubah kalau pengguna kebetulan
+  // membuka tab ini lagi. Berhenti sendiri begitu tidak ada lagi yang berjalan
+  // — bukan interval abadi yang menembak server tanpa alasan.
+  const adaBerjalan = Boolean(
+    data?.misi.some((m) => m.diklaim && m.statusKlaim !== "confirmed"),
+  );
+  useEffect(() => {
+    if (!adaBerjalan || demo) return;
+    const t = setInterval(() => setPercobaan((n) => n + 1), 15_000);
+    return () => clearInterval(t);
+  }, [adaBerjalan, demo]);
 
   const totalHarian = DEFAULT_MISSIONS.filter((m) => m.tipe === "daily").reduce(
     (s, m) => s + m.reward,

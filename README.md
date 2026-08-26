@@ -281,6 +281,21 @@ Pola layout: <1024px memakai pola mobile (bottom-nav 5 tab + baris status tanpa 
   pengurutan seri sepenuhnya. Tanpa pemecah seri, Postgres mengembalikan urutan
   fisik — yang TERLAMA di atas — sehingga "Transaksi terakhir" justru tidak
   pernah menampilkan yang baru dicatat.
+- **Permintaan HTTP tidak pernah menunggu rantai; ia menulis NIAT.** Klaim misi
+  mencatat baris `queued` berikut `nonce`-nya lalu langsung menjawab
+  "diproses"; cron relayer yang menandatangani, mengirim, dan merekonsiliasi.
+  Yang dihapus bukan sekadar latensi melainkan satu kelas bug: dulu transaksi
+  dikirim LALU `tx_hash` ditulis, dan kegagalan di antara keduanya berarti uang
+  berpindah tanpa catatan — pengguna melihat 500, mencoba lagi, dan dijawab
+  "sudah diklaim" untuk reward yang tidak pernah bisa ia lihat. Karena `nonce`
+  kini tersimpan SEBELUM apa pun dikirim, kebenaran on-chain selalu bisa
+  ditanyakan ulang (`nonceUsed`, lalu event `Claimed` untuk hash-nya): baris
+  database tidak pernah lagi menjadi satu-satunya bukti bahwa uang berpindah.
+- **Satu EOA hanya boleh punya satu pengirim aktif.** Sewa di `relayer_locks`
+  berkunci ALAMAT PENGIRIM, bukan nama pekerjaan — pekerjaan baru yang mengirim
+  dari EOA yang sama ikut terserialkan tanpa perlu ingat mendaftarkan kunci.
+  Dua pengirim bersamaan akan membaca nonce EVM yang sama dan salah satunya
+  ditolak node.
 - **Nilai on-chain disimpan sebagai `text`, tidak pernah tipe numerik.**
   `uint256` tidak muat di `bigint` (yang signed, jadi separuh ruang nonce ditolak
   22003) dan `numeric` dikembalikan PostgREST sebagai number JavaScript yang

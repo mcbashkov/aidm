@@ -213,6 +213,58 @@ siap, 0 galat. `users` tanpa `wallets` sekarang **0 dari 9**, tanpa alamat
 ganda. Privy ternyata memang sudah memegang kedua dompet itu sejak awal — yang
 hilang hanya jalannya ke database.
 
+- [ ] **🧑 Tinjau `POST /api/wallet/backfill` sebelum rilis publik.** Endpoint
+      pemeliharaan permanen di produksi perlu keputusan sadar, bukan warisan.
+      Pilihannya: dipertahankan (dijaga `CRON_SECRET`, berguna bila kelas
+      celah ini terulang), atau dicabut setelah tidak ada lagi user yang
+      membutuhkannya. Keputusan PO, dicatat 2026-08-26.
+
+#### P0-2 batch B1+B2 — klaim asinkron, penutup P0-2 (2026-08-26)
+
+**Kelas bug yang dicabut:** handler mengirim transaksi on-chain LALU menulis
+`tx_hash`. Di antara keduanya ada jendela tempat uang sudah berpindah tapi
+catatannya belum ada; kegagalan tulis di situ membuat pengguna melihat 500,
+mencoba lagi, dan dijawab 409 untuk reward yang memang sudah dibayarkan tapi
+tidak pernah bisa ia lihat. Belum pernah terjadi (0 baris menggantung), tapi
+yang menjaganya hanya keberuntungan.
+
+- [x] **0022** — status `queued`/`sending`/`submitted`/`confirmed`/`failed`,
+      indeks antrean parsial, dan tabel `relayer_locks`.
+- [x] **HTTP hanya menulis NIAT.** `waitForTransactionReceipt` hilang dari
+      jalur permintaan; `maxDuration` turun 60 → 15 detik karena tidak ada lagi
+      rantai yang ditunggu. Jawabannya `{ status: "diproses" }` — bukan
+      "berhasil", karena rewardnya memang belum berpindah.
+- [x] **`nonce` lahir sebelum apa pun dikirim.** Inilah kunci strukturalnya:
+      kebenaran on-chain selalu bisa ditanyakan ulang lewat `nonceUsed`, jadi
+      baris database tidak pernah lagi jadi satu-satunya bukti reward dibayar.
+      Nonce tetap juga membuat kirim ulang tidak mungkin membayar dua kali —
+      kontrak yang menolaknya.
+- [x] **Idempotensi tetap di DB**, lewat `uq_mission_claims_period` (0017).
+      Diuji: dua permintaan yang tiba BERSAMAAN → satu baris, satu 200
+      "diproses", satu 409 ALREADY_CLAIMED.
+- [x] **Rekonsiliasi (B1-1)** di tick yang sama, dua cabang, keduanya diuji:
+      baris menggantung yang nonce-nya SUDAH terpakai → status dinaikkan dan
+      **hash dipulihkan dari event `Claimed`**; yang BELUM terpakai →
+      dikembalikan ke antrean dengan nonce yang sama.
+- [x] **Sewa pengirim** (`relayer_locks`, kunci = alamat EOA) — dua tick
+      bersamaan diuji: satu bekerja, satu menjawab `dilewati: true`.
+- [x] **UI jujur:** centang & kata "Diklaim" hanya untuk `confirmed`; selama
+      diproses tampil spinner + "Reward sedang dikirim ke dompetmu". Polling
+      15 detik hanya selama ada klaim berjalan, berhenti sendiri.
+- [x] **Taksonomi dirapikan (B1-2):** `RELAYER_UNAVAILABLE` dan `CHAIN_TIMEOUT`
+      DIHAPUS — keduanya lahir saat handler sendiri yang mengirim, dan kini
+      tidak mungkin lagi terjadi di jalur HTTP.
+
+**Uji end-to-end di testnet:** niat → `queued` → tick mengirim → `submitted`
+dengan hash → tick berikutnya → `confirmed`, tautan opBNBScan muncul, cap
+harian 0 → 20. Gas satu klaim ≈ 0,00000026 tBNB.
+
+**Temuan ikutan:** viem menolak alamat yang checksum EIP-55-nya tidak cocok,
+dan penolakan itu terjadi saat menandatangani — satu alamat yang tersimpan
+dengan kapitalisasi salah akan gagal, kembali mengantre, dan gagal lagi setiap
+menit selamanya. Alamat kini dinormalkan (huruf kecil → checksum dihitung
+ulang) sebelum dipakai.
+
 **Tiga kunci deploy JANGAN pernah masuk Vercel** — `DEPLOYER_PRIVATE_KEY`,
 `IDM_LEGACY_DEPLOYER_PRIVATE_KEY`, `IDM_TREASURY_PRIVATE_KEY`. Tidak ada kode di
 `app/` atau `lib/` yang membacanya (hanya `scripts/`, yang jalan di laptop), dan

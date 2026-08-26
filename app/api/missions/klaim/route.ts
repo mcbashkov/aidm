@@ -3,28 +3,18 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { currentSession } from "@/lib/catat/server";
 import { alamatWalletUser } from "@/lib/wallet/server";
 import { evaluasiMisi } from "@/lib/missions/server";
-import { ikutCapHarian } from "@/lib/missions";
 import {
   GALAT_KLAIM,
   kodeDariSqlstate,
   type KodeGalatKlaim,
 } from "@/lib/missions/galat";
-import {
-  idmxKeWei,
-  isKlaimConfigured,
-  missionIdOnChain,
-  nonceBaru,
-  tandatanganiVoucher,
-  tebusVoucher,
-} from "@/lib/missions/klaim-server";
+import { isKlaimConfigured, nonceBaru } from "@/lib/missions/klaim-server";
 
 export const runtime = "nodejs";
-// AC §7.6: klaim menghasilkan tx sukses ≤ 30 detik.
-export const maxDuration = 60;
-
-/** Voucher berlaku 10 menit — cukup panjang untuk jaringan lambat, cukup
- *  pendek supaya voucher yang bocor tidak berumur panjang. */
-const VOUCHER_TTL_DETIK = 600;
+// Tidak ada lagi panggilan rantai di jalur ini — yang tersisa hanyalah
+// beberapa query Postgres. Anggaran panjang yang dulu diperlukan untuk
+// menunggu receipt justru menyamarkan kelambatan bila suatu saat muncul.
+export const maxDuration = 15;
 
 /**
  * Satu bentuk penolakan untuk seluruh handler: `{ code, message }`.
@@ -49,18 +39,6 @@ function sqlstate(err: unknown): string | undefined {
     if (typeof c === "string") return c;
   }
   return undefined;
-}
-
-/**
- * Kegagalan mengirim transaksi: bedakan "jaringan lambat" dari "relayer tidak
- * bisa dipakai". Keduanya 503 dan keduanya boleh dicoba lagi — yang berbeda
- * hanya kalimatnya, dan pengguna berhak tahu mana yang sedang terjadi.
- */
-function kodeGalatRantai(err: unknown): KodeGalatKlaim {
-  const pesan = err instanceof Error ? `${err.name} ${err.message}` : `${err}`;
-  return /timeout|timed out|deadline/i.test(pesan)
-    ? "CHAIN_TIMEOUT"
-    : "RELAYER_UNAVAILABLE";
 }
 
 /**
@@ -122,7 +100,10 @@ export async function POST(req: Request) {
           : "WALLET_NOT_READY",
       );
     }
-    const wallet = hasilWallet.alamat;
+    // Alamatnya sendiri tidak dipakai di sini — relayer yang membacanya saat
+    // mengirim. Yang dibutuhkan jalur ini hanyalah KEPASTIAN bahwa dompetnya
+    // ada, supaya kita tidak mengantrekan pekerjaan yang pasti tidak bisa
+    // diselesaikan dan baru memberi tahu penggunanya semenit kemudian.
     if (hasilWallet.diisiSusulan) {
       console.log(`[wallet] alamat diisi susulan saat klaim (uid=${uid})`);
     }
@@ -135,9 +116,17 @@ export async function POST(req: Request) {
     if (!misiRow) return tolak("MISSION_UNKNOWN");
 
     const nonce = nonceBaru();
-    // Baris ditulis SEBELUM transaksi dikirim: indeks unik (user, misi,
-    // periode) di 0017 inilah yang menghentikan klik ganda / dua tab menjadi
-    // dua transaksi on-chain. Bentrok di sini = klaim sudah berjalan.
+    // NIAT ditulis, lalu selesai. Tidak ada satu pun panggilan rantai di jalur
+    // permintaan ini — itulah keseluruhan gagasannya. `nonce` sengaja lahir di
+    // sini, SEBELUM apa pun dikirim: ia yang membuat kebenaran on-chain selalu
+    // bisa ditanyakan ulang (`nonceUsed`) seandainya kita kehilangan jejak, dan
+    // ia yang membuat kirim ulang tidak mungkin membayar dua kali.
+    //
+    // Indeks unik (user, misi, periode) di 0017 adalah penjaga idempotensinya —
+    // sama seperti `swap_vouchers.nonce` di 0018, jaminannya ditegakkan
+    // DATABASE, bukan oleh kehati-hatian kode. Dua tab, dua ketukan, atau dua
+    // permintaan yang tiba bersamaan menghasilkan satu baris; yang kalah
+    // menerima 23505 dan dijawab ALREADY_CLAIMED.
     const { data: klaimRow, error: errKlaim } = await supa
       .from("mission_claims")
       .insert({
@@ -146,16 +135,14 @@ export async function POST(req: Request) {
         amount_idmx: misi.reward,
         nonce: nonce.toString(),
         period_key: misi.periodKey,
-        status: "signed",
+        status: "queued",
       })
       .select("id")
       .single();
     if (errKlaim || !klaimRow) {
       const kode = kodeDariSqlstate(sqlstate(errKlaim));
       // Bentrok indeks periode adalah jalan kerja normal (dua tab, dua ketukan)
-      // — bukan insiden. Sisanya dicatat LENGKAP dengan SQLSTATE-nya: kode
-      // itulah yang membuat 22003 bisa dikenali dalam hitungan menit, bukan
-      // hari, ketika kelas galat berikutnya muncul.
+      // — bukan insiden. Sisanya dicatat LENGKAP dengan SQLSTATE-nya.
       if (kode !== "ALREADY_CLAIMED") {
         console.error(
           `[misi] insert klaim gagal (sqlstate=${sqlstate(errKlaim) ?? "-"}, kode=${kode}):`,
@@ -165,49 +152,13 @@ export async function POST(req: Request) {
       return tolak(kode);
     }
 
-    const voucher = {
-      user: wallet,
-      missionId: missionIdOnChain(code),
-      amount: idmxKeWei(misi.reward),
-      nonce,
-      deadline: BigInt(Math.floor(Date.now() / 1000) + VOUCHER_TTL_DETIK),
-      bucket: ikutCapHarian(misi.tipe) ? 0 : 1,
-    };
-
-    let tx;
-    try {
-      const signature = await tandatanganiVoucher(voucher);
-      await supa
-        .from("mission_claims")
-        .update({ signature, status: "submitted" })
-        .eq("id", klaimRow.id);
-      tx = await tebusVoucher(voucher, signature);
-    } catch (err) {
-      // Ditandai failed supaya indeks unik (yang mengecualikan 'failed')
-      // membebaskan misi ini untuk dicoba lagi.
-      await supa
-        .from("mission_claims")
-        .update({ status: "failed" })
-        .eq("id", klaimRow.id);
-      const kode = kodeGalatRantai(err);
-      console.error(`[misi] klaim gagal dikirim (kode=${kode}):`, err);
-      return tolak(kode);
-    }
-
-    await supa
-      .from("mission_claims")
-      .update({
-        tx_hash: tx.txHash,
-        status: tx.confirmed ? "confirmed" : "submitted",
-      })
-      .eq("id", klaimRow.id);
-
+    // "diproses", bukan "berhasil". Rewardnya memang belum ada di dompet siapa
+    // pun sampai relayer mengirimnya, dan layar menampilkan apa adanya.
     return NextResponse.json({
       ok: true,
       code,
       reward: misi.reward,
-      txHash: tx.txHash,
-      status: tx.confirmed ? "confirmed" : "submitted",
+      status: "diproses",
     });
   } catch (err) {
     // Hanya sampai sini bila kita benar-benar tidak tahu apa yang terjadi.

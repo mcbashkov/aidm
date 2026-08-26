@@ -88,7 +88,16 @@ export interface MisiProgress extends DefaultMission {
    *  tanpa awalan NEXT_PUBLIC_, jadi klien tidak bisa menyimpulkannya sendiri:
    *  di browser nilainya undefined dan tautan akan menunjuk chain yang salah. */
   explorerTx?: string;
-  statusKlaim?: "signed" | "submitted" | "confirmed" | "failed";
+  /** Tahap klaim di sisi server. `queued`/`sending`/`submitted` = sedang
+   *  diproses relayer; hanya `confirmed` yang berarti IDMX benar-benar sudah
+   *  berpindah. `signed` adalah sisa era klaim sinkron. */
+  statusKlaim?:
+    | "queued"
+    | "sending"
+    | "submitted"
+    | "confirmed"
+    | "failed"
+    | "signed";
   /** Alasan misi belum bisa diklaim meski selesai (cap harian tercapai, dll). */
   alasanTerkunci?: string;
   /** Kode mesin untuk `alasanTerkunci`. Ada supaya endpoint klaim menolak

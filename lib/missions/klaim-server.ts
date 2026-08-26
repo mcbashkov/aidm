@@ -52,7 +52,10 @@ function signerKey(): `0x${string}` | null {
   return /^0x[0-9a-fA-F]{64}$/.test(hex) ? (hex as `0x${string}`) : null;
 }
 
-function relayerKey(): `0x${string}` | null {
+/** Kunci EOA pembayar gas klaim. Diekspor karena relayer misi
+ *  (`lib/missions/relayer.ts`) perlu tahu ALAMAT-nya untuk mengambil sewa
+ *  pengirim — satu EOA hanya boleh punya satu pengirim aktif. */
+export function relayerAccountKey(): `0x${string}` | null {
   // Relayer boleh sama dengan relayer segel — perannya identik: membayar gas.
   // `envPertama`, bukan `??`: variabel yang ADA tapi KOSONG adalah keadaan
   // normal di proyek ini, dan `??` akan menganggapnya nilai yang sah.
@@ -70,7 +73,7 @@ export function isKlaimConfigured(): boolean {
   return (
     missionRewardsAddress() !== null &&
     signerKey() !== null &&
-    relayerKey() !== null
+    relayerAccountKey() !== null
   );
 }
 
@@ -130,54 +133,11 @@ export async function tandatanganiVoucher(
   });
 }
 
-export interface HasilKlaim {
-  txHash: `0x${string}`;
-  confirmed: boolean;
-}
-
-/**
- * Tebus voucher lewat relayer treasury (gasless bagi user, §7.6). Melempar
- * error bila transaksi gagal DIKIRIM atau revert; timeout receipt bukan error
- * (klaim tetap tercatat pending dan dituntaskan saat dibaca ulang).
- */
-export async function tebusVoucher(
-  v: VoucherData,
-  signature: `0x${string}`,
-): Promise<HasilKlaim> {
-  const address = missionRewardsAddress();
-  const key = relayerKey();
-  if (!address || !key) throw new Error("Klaim belum dikonfigurasi.");
-
-  const chain = rewardChain();
-  const account = privateKeyToAccount(key);
-  const wallet = createWalletClient({ account, chain, transport: http() });
-  const publik = createPublicClient({ chain, transport: http() });
-
-  const txHash = await wallet.writeContract({
-    address,
-    abi: MISSION_REWARDS_ABI,
-    functionName: "claim",
-    args: [
-      [v.user, v.missionId, v.amount, v.nonce, v.deadline, v.bucket],
-      signature,
-    ],
-  });
-
-  try {
-    // AC §7.6: klaim menghasilkan tx sukses ≤ 30 detik.
-    const receipt = await publik.waitForTransactionReceipt({
-      hash: txHash,
-      timeout: 25_000,
-    });
-    if (receipt.status !== "success") {
-      throw new Error(`Klaim revert (${txHash}).`);
-    }
-    return { txHash, confirmed: true };
-  } catch (err) {
-    if (err instanceof Error && err.message.includes("revert")) throw err;
-    return { txHash, confirmed: false };
-  }
-}
+// `tebusVoucher()` yang dulu ada di sini SENGAJA DIHAPUS, bukan dipindah.
+// Ia menunggu receipt di dalam handler HTTP, dan penantian itulah yang
+// menciptakan jendela "uang sudah berpindah, catatannya belum ada". Pengiriman
+// kini milik `lib/missions/relayer.ts`, yang menulis hash sebelum menunggu
+// apa pun dan bisa membaca ulang kebenarannya dari rantai.
 
 /** URL explorer untuk tx klaim — memakai chain KONTRAK REWARD, yang bisa
  *  berbeda dari chain segel maupun chain default aplikasi. */

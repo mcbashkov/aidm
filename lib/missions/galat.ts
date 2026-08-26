@@ -27,8 +27,6 @@ export type KodeGalatKlaim =
   | "MISSION_UNKNOWN"
   | "CLAIM_NOT_CONFIGURED"
   | "CLAIM_STORAGE_REJECTED"
-  | "RELAYER_UNAVAILABLE"
-  | "CHAIN_TIMEOUT"
   | "UNEXPECTED";
 
 export interface DefGalatKlaim {
@@ -94,16 +92,13 @@ export const GALAT_KLAIM: Record<KodeGalatKlaim, DefGalatKlaim> = {
     message: "Klaim belum bisa disimpan. Rewardmu aman, coba lagi sebentar lagi.",
     bisaDicobaLagi: true,
   },
-  RELAYER_UNAVAILABLE: {
-    status: 503,
-    message: "Jaringan lagi sibuk. Rewardmu aman, kami proses otomatis.",
-    bisaDicobaLagi: true,
-  },
-  CHAIN_TIMEOUT: {
-    status: 503,
-    message: "Jaringan lagi lambat. Rewardmu aman, coba lagi sebentar lagi.",
-    bisaDicobaLagi: true,
-  },
+  // RELAYER_UNAVAILABLE & CHAIN_TIMEOUT DIHAPUS di batch B (klaim asinkron).
+  // Keduanya lahir ketika handler HTTP sendiri yang mengirim transaksi;
+  // sekarang rantai hanya disentuh cron, dan kegagalan mengirim tidak lagi
+  // punya pengguna yang sedang menunggu untuk diberi tahu — klaimnya tetap
+  // mengantre dan dicoba lagi menit berikutnya. Kode yang tidak mungkin lagi
+  // dikirim server tidak boleh tinggal di tabel ini: ia akan dibaca orang
+  // sebagai keadaan yang masih ada.
   UNEXPECTED: {
     status: 500,
     message: "Gagal mengklaim misi. Coba lagi ya.",

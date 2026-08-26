@@ -132,6 +132,50 @@ update relayer_state set cursor_block = <blok> where id = 'swap';
 
 ---
 
+## Tick yang sama juga menuntaskan klaim misi (sejak 2026-08-26)
+
+`/api/relayer/tick` mengerjakan DUA pekerjaan berurutan dalam satu invokasi:
+tick swap di atas, lalu tick klaim misi. Sengaja satu endpoint dan satu jadwal
+— bukan cron kedua — supaya hanya ada satu hal yang perlu hidup, dan satu
+tempat untuk memeriksa kalau ia mati.
+
+Tick misi mengerjakan tiga hal:
+
+1. mengirim klaim yang berstatus `queued` (handler HTTP hanya menulis niat,
+   tidak pernah menyentuh rantai);
+2. membaca receipt untuk yang `submitted` → `confirmed`;
+3. **merekonsiliasi baris menggantung** — status `sending`/`submitted` tanpa
+   `tx_hash`. Rantai yang berwenang: `nonceUsed(user, nonce)` menjawab apakah
+   rewardnya benar-benar sudah dibayar, dan event `Claimed` memulihkan hash-nya
+   supaya pengguna tetap punya tautan yang bisa dibuka. Yang ternyata belum
+   pernah terkirim dikembalikan ke antrean dengan nonce yang SAMA — kontrak
+   menolak nonce terpakai, jadi kirim ulang tidak mungkin membayar dua kali.
+
+**Satu EOA, satu pengirim.** Klaim misi adalah satu-satunya jalur yang
+mengirim transaksi dari EOA relayer; tick swap hanya membaca log,
+menandatangani voucher di luar rantai, dan membaca kontrak — tidak satu pun
+menghabiskan nonce EVM, dan penandatangan swap adalah EOA yang berbeda
+(`SWAP_SIGNER_PRIVATE_KEY`, ditolak skrip deploy bila sama). Perebutan nonce
+yang nyata karena itu bukan antara misi dan swap, melainkan antara dua tick
+MISI yang bertumpang tindih — cron menembak tiap menit sementara satu tick
+boleh berjalan 60 detik. Yang menyerialkannya adalah sewa di `relayer_locks`,
+berkunci ALAMAT PENGIRIM:
+
+```sql
+select * from relayer_locks;   -- id = 'pengirim:0x…', locked_until
+```
+
+Tick yang tidak mendapat sewa menjawab `misi.dilewati: true` dan mundur — itu
+perilaku normal, bukan kegagalan.
+
+**Klaim tersangkut di "Diproses…".** Periksa `select status, tx_hash from
+mission_claims where status <> 'confirmed';`. Selama `relayer_locks.locked_until`
+bergerak dan tick berjalan, baris apa pun di sana akan tuntas sendiri paling
+lama beberapa tick — kalau tidak, sewa yang macet (`locked_until` jauh di masa
+depan tanpa tick berjalan) adalah tersangka pertama.
+
+---
+
 ## Kalau ada masalah
 
 **“User bilang IDMX-nya terbakar tapi tidak ada voucher.”**
