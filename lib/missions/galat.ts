@@ -19,6 +19,7 @@
 
 export type KodeGalatKlaim =
   | "WALLET_NOT_READY"
+  | "WALLET_LOOKUP_FAILED"
   | "ALREADY_CLAIMED"
   | "DAILY_QUOTA_EXCEEDED"
   | "MONTHLY_QUOTA_EXCEEDED"
@@ -42,6 +43,15 @@ export const GALAT_KLAIM: Record<KodeGalatKlaim, DefGalatKlaim> = {
   WALLET_NOT_READY: {
     status: 409,
     message: "Dompetmu masih disiapkan. Tunggu sebentar ya.",
+    bisaDicobaLagi: true,
+  },
+  // Privy tidak bisa DITANYA — berbeda dari "Privy menjawab, dompetnya memang
+  // belum ada". Menyamakan keduanya membuat gangguan penyedia auth tampak
+  // seperti akun yang belum siap selamanya, dan pengguna menunggu sesuatu yang
+  // tidak sedang terjadi.
+  WALLET_LOOKUP_FAILED: {
+    status: 503,
+    message: "Belum bisa memastikan dompetmu. Coba lagi sebentar lagi.",
     bisaDicobaLagi: true,
   },
   ALREADY_CLAIMED: {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { currentUserId } from "@/lib/catat/server";
+import { currentSession } from "@/lib/catat/server";
+import { alamatWalletUser } from "@/lib/wallet/server";
 import { evaluasiMisi } from "@/lib/missions/server";
 import { ikutCapHarian } from "@/lib/missions";
 import {
@@ -71,10 +72,11 @@ function kodeGalatRantai(err: unknown): KodeGalatKlaim {
  * adalah lapis pertama yang ramah pengguna, bukan satu-satunya penjaga.
  */
 export async function POST(req: Request) {
-  const uid = currentUserId();
-  if (!uid) {
+  const sesi = currentSession();
+  if (!sesi) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   }
+  const uid = sesi.uid;
 
   let code = "";
   try {
@@ -108,16 +110,21 @@ export async function POST(req: Request) {
       return tolak(misi.kodeTerkunci ?? "UNEXPECTED", misi.alasanTerkunci);
     }
 
-    const { data: w } = await supa
-      .from("wallets")
-      .select("address")
-      .eq("user_id", uid)
-      .maybeSingle();
-    const wallet = w?.address as `0x${string}` | undefined;
-    if (!wallet || !/^0x[0-9a-fA-F]{40}$/.test(wallet)) {
-      // 409, bukan 400: permintaannya benar, keadaannya yang belum siap. Baris
-      // `wallets` bisa memang belum ada saat embedded wallet Privy belum jadi.
-      return tolak("WALLET_NOT_READY");
+    // Baris `wallets` bisa memang belum ada — dan bila begitu, alamatnya
+    // ditanyakan ke Privy lalu disimpan di sini juga. Reward tidak boleh
+    // hangus hanya karena embedded wallet lahir beberapa detik setelah sesi.
+    const hasilWallet = await alamatWalletUser(supa, uid, sesi.did);
+    if (hasilWallet.status !== "ada") {
+      // 409, bukan 400: permintaannya benar, keadaannya yang belum siap.
+      return tolak(
+        hasilWallet.status === "galat-privy"
+          ? "WALLET_LOOKUP_FAILED"
+          : "WALLET_NOT_READY",
+      );
+    }
+    const wallet = hasilWallet.alamat;
+    if (hasilWallet.diisiSusulan) {
+      console.log(`[wallet] alamat diisi susulan saat klaim (uid=${uid})`);
     }
 
     const { data: misiRow } = await supa

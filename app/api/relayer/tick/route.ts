@@ -1,7 +1,7 @@
-import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { isRelayerConfigured, jalankanTick } from "@/lib/swap/relayer-server";
+import { cocokCronSecret, TIDAK_DITEMUKAN } from "@/lib/api/cron";
 
 export const runtime = "nodejs";
 // Satu tick memindai log lintas ribuan blok lalu menandatangani; anggaran
@@ -22,10 +22,8 @@ export const dynamic = "force-dynamic";
  * "Diproses → Siap diklaim".
  */
 async function tick(req: Request) {
-  if (!cocokSecret(req)) {
-    // 404, bukan 401: endpoint ini bukan milik publik, dan menjawab "salah
-    // secret" akan mengonfirmasi keberadaannya kepada pemindai.
-    return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (!cocokCronSecret(req)) {
+    return NextResponse.json(TIDAK_DITEMUKAN, { status: 404 });
   }
 
   if (!isRelayerConfigured()) {
@@ -63,24 +61,6 @@ async function tick(req: Request) {
       { status: 500 },
     );
   }
-}
-
-/**
- * Perbandingan waktu-tetap. `timingSafeEqual` melempar bila panjang berbeda,
- * jadi panjangnya disamakan lewat hash-length guard sederhana di bawah.
- */
-function cocokSecret(req: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  // Tanpa secret, endpoint DITUTUP — bukan dibuka. Server yang lupa mengisinya
-  // tidak boleh berubah menjadi tombol relayer yang bisa ditekan siapa saja.
-  if (!secret) return false;
-
-  const header = req.headers.get("authorization") ?? "";
-  const dibawa = header.startsWith("Bearer ")
-    ? header.slice(7)
-    : (req.headers.get("x-cron-secret") ?? "");
-  if (dibawa.length !== secret.length) return false;
-  return timingSafeEqual(Buffer.from(dibawa), Buffer.from(secret));
 }
 
 export const POST = tick;

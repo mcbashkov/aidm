@@ -172,9 +172,46 @@ berubah. Keempat nonce di log semuanya di paruh atas.
       tinggal di tabel taksonomi, dipakai server dan layar dari satu sumber.
 
 **Yang TIDAK dikerjakan di batch A, sesuai keputusan PO:** klaim asinkron
-(batch B), lubang wallet di hulu (B3), dan poin "upsert kuota" yang dicabut —
-tidak ada baris kuota misi yang dibaca, angkanya diturunkan dari
-`mission_claims`.
+(batch B), dan poin "upsert kuota" yang dicabut — tidak ada baris kuota misi
+yang dibaca, angkanya diturunkan dari `mission_claims`.
+
+#### P0-2 batch B3 — lubang wallet di hulu, DITUTUP (2026-08-26)
+
+Didahulukan atas B1/B2 atas keputusan PO: **B1 adalah kelas bug yang nyata tapi
+belum pernah terjadi (0 baris berstatus tidak jelas), B3 adalah kerusakan yang
+SUDAH terjadi pada 22% user.** Yang sudah rusak didahulukan.
+
+Sebabnya: baris `wallets` HANYA ditulis sekali, oleh `POST /api/auth/session`,
+dari alamat yang dibaca browser pada detik login — dan Privy membuat embedded
+wallet secara asinkron. Yang dompetnya terlambat beberapa detik menjadi permanen
+tanpa dompet sampai kebetulan login ulang. Gejalanya 400/409, tidak pernah 500,
+jadi **tidak pernah muncul di pemantauan error**.
+
+- [x] `alamatWalletUser()` (`lib/wallet/server.ts`) — baca `wallets`; bila
+      kosong, tanya Privy `getUserById(did)` dari DID di cookie sesi, `upsert`
+      `ON CONFLICT (user_id)`, kembalikan. Tidak pernah melempar: setiap
+      kegagalan jadi status. Ada ingatan negatif 10 detik supaya `/api/wallet/
+      saldo` (dipanggil tiap navigasi) tidak menembak Privy per permintaan,
+      tapi cukup pendek untuk melayani detik-detik pertama sebuah akun.
+- [x] Dipakai klaim, `/api/wallet/saldo`, dan segel — ketiganya berhenti
+      menyuruh "masuk ulang" untuk sesuatu yang bukan kesalahan pengguna.
+- [x] **"Belum ada" ≠ "tidak bisa ditanya".** Privy menjawab 404 → belum-siap →
+      `WALLET_NOT_READY` 409. Privy gagal dijawab → `WALLET_LOOKUP_FAILED` 503 +
+      log error. Menyamakan keduanya membuat gangguan Privy tampak seperti akun
+      yang belum siap selamanya.
+- [x] `POST /api/wallet/backfill` — pemulihan sekali jalan, memanggil helper
+      yang SAMA (bukan jalur kedua), dijaga `CRON_SECRET` lewat `lib/api/cron.ts`
+      yang diangkat dari `/api/relayer/tick`. Yang tidak pulih dilaporkan satu
+      per satu berikut sebabnya; ringkasan yang hanya menyebut jumlah akan
+      mengulangi kegagalan senyap yang justru sedang diperbaiki.
+- [x] `startedRef` di `login-panel.tsx` **tidak** dilepas — penjaga itu ada
+      karena POST sesi bertubi-tubi pernah membekukan tab. Masalahnya bukan
+      penjaga itu, melainkan tidak adanya jalur susulan.
+
+**Hasil pemulihan produksi (2026-08-26):** 2 diperiksa, **2 pulih**, 0 belum
+siap, 0 galat. `users` tanpa `wallets` sekarang **0 dari 9**, tanpa alamat
+ganda. Privy ternyata memang sudah memegang kedua dompet itu sejak awal — yang
+hilang hanya jalannya ke database.
 
 **Tiga kunci deploy JANGAN pernah masuk Vercel** — `DEPLOYER_PRIVATE_KEY`,
 `IDM_LEGACY_DEPLOYER_PRIVATE_KEY`, `IDM_TREASURY_PRIVATE_KEY`. Tidak ada kode di

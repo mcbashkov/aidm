@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { currentUserId } from "@/lib/catat/server";
+import { currentSession } from "@/lib/catat/server";
+import { alamatWalletUser } from "@/lib/wallet/server";
 import { bolehSegel } from "@/lib/laporan/periode";
 import { explorerTxUrl } from "@/lib/chains/attestation";
 import {
@@ -24,7 +25,9 @@ export const maxDuration = 60;
  * bisa ditampilkan ke user.
  */
 export async function POST(req: Request) {
-  const uid = currentUserId();
+  const sesi = currentSession();
+  const uid = sesi?.uid ?? null;
+  const did = sesi?.did ?? null;
   if (!uid) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   }
@@ -68,18 +71,26 @@ export async function POST(req: Request) {
   try {
     // Subjek segel on-chain = wallet embedded user (§9.4 "alamat user tetap
     // tercatat sebagai subjek segel").
-    const { data: w } = await supa
-      .from("wallets")
-      .select("address")
-      .eq("user_id", uid)
-      .maybeSingle();
-    const walletUser = w?.address as `0x${string}` | undefined;
-    if (!walletUser || !/^0x[0-9a-fA-F]{40}$/.test(walletUser)) {
+    // Alamat diisi susulan dari Privy bila barisnya belum ada — segel yang
+    // gagal karena dompet lahir terlambat akan menyuruh user "masuk ulang"
+    // untuk sesuatu yang bukan kesalahannya (lib/wallet/server.ts).
+    const hasilWallet = await alamatWalletUser(supa, uid, did);
+    if (hasilWallet.status !== "ada") {
       return NextResponse.json(
-        { error: "Akun belum punya wallet — masuk ulang untuk membuatnya." },
-        { status: 400 },
+        {
+          code:
+            hasilWallet.status === "galat-privy"
+              ? "WALLET_LOOKUP_FAILED"
+              : "WALLET_NOT_READY",
+          message:
+            hasilWallet.status === "galat-privy"
+              ? "Belum bisa memastikan dompetmu. Coba lagi sebentar lagi."
+              : "Dompetmu masih disiapkan. Tunggu sebentar ya.",
+        },
+        { status: hasilWallet.status === "galat-privy" ? 503 : 409 },
       );
     }
+    const walletUser = hasilWallet.alamat;
 
     // Tidak ada catatan = tidak ada yang disegel. Menyegel laporan kosong
     // menghasilkan bukti keberadaan atas ketiadaan — menyesatkan penilai.

@@ -4,6 +4,7 @@ import { readSessionValue } from "@/lib/auth/session-cookie";
 import { SESSION_COOKIE } from "@/lib/auth/constants";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { saldoIdmx } from "@/lib/token/saldo";
+import { alamatWalletUser } from "@/lib/wallet/server";
 
 export const runtime = "nodejs";
 // Data milik satu pengguna: tidak boleh pernah dirender statis maupun
@@ -31,25 +32,27 @@ export const revalidate = 0;
  */
 export async function GET() {
   const raw = cookies().get(SESSION_COOKIE)?.value;
-  const uid = readSessionValue(raw)?.uid ?? null;
-  if (!uid) {
+  const sesi = readSessionValue(raw);
+  if (!sesi?.uid) {
     return jsonPribadi({ error: "unauthenticated" }, { status: 401 });
   }
 
   try {
     const supa = createSupabaseAdminClient();
-    const { data: wallet } = await supa
-      .from("wallets")
-      .select("address")
-      .eq("user_id", uid)
-      .maybeSingle();
+    // Mengisi baris `wallets` susulan bila belum ada (lib/wallet/server.ts).
+    // Endpoint ini dipanggil pada tiap navigasi, jadi ia yang paling sering
+    // berkesempatan menutup celah itu — dan helper-nya hanya menyentuh Privy
+    // ketika barisnya memang kosong.
+    const hasil = await alamatWalletUser(supa, sesi.uid, sesi.did);
 
-    // Tanpa dompet, saldo memang tidak ada — dan itu jawaban yang pasti,
-    // bukan kegagalan. Klien menampilkannya sebagai nol, bukan "—".
-    if (!wallet?.address) return jsonPribadi({ idmx: 0 });
+    // Belum punya dompet = saldo memang nol, dan itu jawaban yang pasti.
+    // Privy yang tidak bisa ditanya BUKAN jawaban pasti — itu `null`,
+    // "kami belum tahu", yang digambar klien berbeda dari nol.
+    if (hasil.status === "belum-siap") return jsonPribadi({ idmx: 0 });
+    if (hasil.status !== "ada") return jsonPribadi({ idmx: null });
 
     // `null` bila rantai tidak bisa dipastikan; klien membedakannya dari nol.
-    return jsonPribadi({ idmx: await saldoIdmx(wallet.address) });
+    return jsonPribadi({ idmx: await saldoIdmx(hasil.alamat) });
   } catch {
     return jsonPribadi({ idmx: null });
   }

@@ -12,8 +12,18 @@ import { SESSION_COOKIE } from "@/lib/auth/constants";
 import type { Transaction } from "@/lib/transactions";
 
 export function currentUserId(): string | null {
+  return currentSession()?.uid ?? null;
+}
+
+/**
+ * Sesi lengkap — `uid` untuk otorisasi baris, `did` untuk bertanya ke Privy.
+ * Dipakai jalur yang perlu mengisi alamat dompet susulan (lib/wallet/server.ts);
+ * `currentUserId()` tetap ada karena mayoritas route hanya butuh uid.
+ */
+export function currentSession(): { uid: string; did: string } | null {
   const raw = cookies().get(SESSION_COOKIE)?.value;
-  return readSessionValue(raw)?.uid ?? null;
+  const sesi = readSessionValue(raw);
+  return sesi?.uid ? { uid: sesi.uid, did: sesi.did } : null;
 }
 
 /* ── Peta kategori slug ↔ id ─────────────────────────────────────────────── */

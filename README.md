@@ -295,11 +295,25 @@ Pola layout: <1024px memakai pola mobile (bottom-nav 5 tab + baris status tanpa 
   retryabilitas di satu tabel, dipakai server untuk menolak dan dipakai layar
   untuk mematikan tombol — dua daftar terpisah pasti berbeda pendapat cepat atau
   lambat.
-- **Cadangan env dibaca dengan `envPertama()`, bukan `??`.** Proyek ini
-  mendeteksi konfigurasi dari "string tidak kosong" dan menganjurkan field yang
-  belum siap dibiarkan KOSONG — sementara `""` bukan nullish, sehingga `??`
-  mengembalikan string kosong dan cadangannya tidak pernah terpakai. Kegagalannya
-  diam: fitur mengaku belum dikonfigurasi padahal kuncinya ada.
+- **Konfigurasi dideteksi dari "string tidak kosong", bukan dari "variabel
+  ada" — jadi cadangan env dibaca `envPertama()`, tidak pernah `??`.**
+  `.env.local.example` menganjurkan field yang belum siap dibiarkan KOSONG
+  (placeholder seperti `your-privy-app-id` akan dianggap terisi dan membuat
+  aplikasi boot dengan kunci palsu). Konsekuensinya `""` adalah keadaan normal
+  — dan `""` bukan nullish, sehingga `process.env.A ?? process.env.B`
+  mengembalikan string kosong dan cadangan B tidak pernah terpakai.
+  Kegagalannya diam. Sudah dua kali terjadi: `MISSION_RELAYER_PRIVATE_KEY`
+  kosong membuat klaim menjawab 501 padahal `SEAL_RELAYER_PRIVATE_KEY` terisi,
+  dan `AIDM_REWARD_CHAIN` kosong menjatuhkan chain ke default **mainnet**
+  alih-alih ke `AIDM_SEAL_CHAIN`. Helper: `lib/env.ts`.
+- **Alamat dompet tidak pernah datang dari klien, dan bisa diisi susulan.**
+  Baris `wallets` dulu hanya ditulis sekali saat login dari alamat yang dibaca
+  browser; embedded wallet Privy lahir asinkron, jadi akun yang dompetnya
+  terlambat beberapa detik menjadi PERMANEN tanpa dompet (22% user produksi saat
+  ditemukan). `alamatWalletUser()` di `lib/wallet/server.ts` menanyakannya
+  sendiri ke Privy dari DID di cookie sesi lalu menyimpannya — satu-satunya
+  sumber yang berwenang atas alamat tempat reward dibayarkan adalah Privy, bukan
+  input klien.
 - **Jam transaksi tidak pernah ditampilkan — tanggal saja.** AIDM tidak
   mengetahui jam kejadian: parser hanya menghasilkan tanggal, `occurred_at`
   dipatok 12.00 WIB, dan `created_at` adalah jam MENCATAT (pelaku mikro sering
