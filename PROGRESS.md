@@ -425,6 +425,53 @@ tanggal-saja; `created_at` tetap dipakai sebagai pemecah seri di query dan tidak
 masuk `TX_COLUMNS` maupun tipe `Transaction` — Supabase bisa mengurutkannya
 tanpa menyeleksinya, dan kolom yang tidak dirender tidak perlu ikut ke klien.
 
+### ~~P1-4 bagian redirect — Google 401 "Redirect URL is not allowed"~~ ✅ **SELESAI 2026-08-27**
+
+**Dashboard Privy tidak pernah salah.** Yang salah adalah URL yang dikirim kode
+kita. Privy memakai `window.location.href` APA ADANYA sebagai `redirect_to`
+(default SDK bila `customOAuthRedirectUrl` kosong) lalu mencocokkan URL UTUH itu
+dengan allowlist. Middleware kita menulis `?next=%2Fberanda` ke URL itu, dan
+**tidak ada entri allowlist yang bisa cocok dengan string berquery — termasuk
+wildcard.** Itu sebabnya semua kombinasi allowlist yang dicoba PO gagal identik.
+
+Dibuktikan lewat probe terisolasi ke `/oauth/init`, PKCE segar tiap permintaan,
+urutan diacak, hanya `redirect_to` yang berbeda:
+
+```
+✅ 200  https://ai.idmtoken.com/masuk
+✅ 200  https://ai.idmtoken.com/beranda
+✅ 200  https://ai.idmtoken.com/
+❌ 401  https://ai.idmtoken.com/masuk?next=%2Fberanda
+❌ 401  https://ai.idmtoken.com/masuk?apa=saja
+❌ 401  https://ai.idmtoken.com/masuk#fragmen
+```
+
+- [x] **`customOAuthRedirectUrl = `${origin}/masuk`** — dipatok, tidak lagi
+      diturunkan dari halaman yang sedang dibuka. `origin` dari browser supaya
+      tiap lingkungan mengirim origin-nya sendiri tanpa env yang harus diganti.
+- [x] **`next` pindah ke sessionStorage**, URL dibersihkan `history.replaceState`.
+      Membuang `?next=` dari middleware ditolak: itu menghapus kemampuan kembali
+      ke halaman tujuan.
+- [x] **Validasi open redirect** — wajib diawali `/`, tolak `//` dan `/\`, lalu
+      dibandingkan ulang lewat `new URL()` terhadap origin sekarang. Diuji 19
+      kasus termasuk `//evil.com`, `/\evil.com`, `javascript:`, dan
+      `https://…`; semua ditolak. Sekali pakai, dihapus setelah dibaca, jatuh
+      ke `/beranda` bila kosong/invalid.
+- [x] **`sms` dibuang** dari `loginMethods` (`sms_auth: false` di dashboard).
+      Bukan penyebab galat ini — dibuktikan tersingkir — tapi jangan meminta
+      metode yang tidak ada.
+- [x] **Fragmen ditutup** — URL yang dikirim dirakit sendiri, tidak mungkin
+      berfragmen apa pun keadaan halaman.
+
+**Jebakan yang nyaris terpasang, dan bagaimana ia ketahuan.** Versi pertama
+pembersihan URL memakai `url.search = ""` — mengosongkan SELURUH query. Privy
+mengembalikan pengguna dari Google ke URL itu membawa `privy_oauth_code`,
+`privy_oauth_provider`, dan `privy_oauth_state` di query string, dan efek
+komponen anak berjalan SEBELUM efek provider di atasnya. Pembersihan itu akan
+menghapus ketiganya sebelum SDK sempat membacanya — memutus persis alur yang
+sedang diperbaiki, dengan gejala baru yang jauh lebih sulit dilacak. Sekarang
+HANYA `next` yang dibuang; diuji bahwa ketiga parameter callback selamat.
+
 ### 5. 🤖 Hidupkan tab Misi tiap hari — **disepakati 2026-08-15, siap dikerjakan**
 
 Masalahnya nyata: di hari biasa hanya **2 misi** yang bisa diklaim. Setelah

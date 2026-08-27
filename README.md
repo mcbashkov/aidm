@@ -281,6 +281,22 @@ Pola layout: <1024px memakai pola mobile (bottom-nav 5 tab + baris status tanpa 
   pengurutan seri sepenuhnya. Tanpa pemecah seri, Postgres mengembalikan urutan
   fisik — yang TERLAMA di atas — sehingga "Transaksi terakhir" justru tidak
   pernah menampilkan yang baru dicatat.
+- **URL yang dikirim ke pihak ketiga dirakit sendiri, tidak pernah diambil dari
+  `window.location.href`.** Privy mencocokkan `redirect_to` sebagai string UTUH
+  dengan allowlist-nya, jadi satu query string yang menempel di halaman —
+  `?next=` dari middleware kita sendiri — membuatnya ditolak `401 Redirect URL
+  is not allowed` betapa pun banyak entri ditambahkan, wildcard sekalipun.
+  `customOAuthRedirectUrl` di `lib/privy/provider.tsx` memakai
+  `` `${origin}/masuk` `` yang tidak bisa membawa query maupun fragmen.
+  Sebaliknya, saat membersihkan URL halaman, buang HANYA parameter milik kita:
+  Privy mengembalikan pengguna membawa `privy_oauth_code`/`_state`/`_provider`
+  di query yang sama, dan efek komponen anak berjalan sebelum efek provider.
+- **Tujuan setelah masuk divalidasi sebagai path internal.** Nilai `next`
+  datang dari query string — masukan tak terpercaya. Tanpa saringan, tautan
+  `/masuk?next=//situs-palsu.com` membuat korban melihat domain kita di bilah
+  alamat lalu dilempar ke tiruan yang meminta kredensialnya lagi. Tiga saringan
+  di `lib/auth/tujuan.ts`, dan yang ketiga (`new URL()` dibanding origin)
+  menangkap bentuk yang lolos dua yang pertama.
 - **Batas hari selalu WIB, dari satu berkas.** `lib/wib.ts` — laporan bulanan,
   progres misi harian, cap IDMX, kuota mencatat, dan pengelompokan Riwayat
   saling dibandingkan pengguna, jadi batas yang bergeser di salah satunya tidak

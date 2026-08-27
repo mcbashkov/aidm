@@ -6,6 +6,7 @@ import { StepDots } from "@/components/ui/step-dots";
 import { CATEGORIES } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import type { Me } from "@/components/providers/me-provider";
+import { ambilTujuan } from "@/lib/auth/tujuan";
 
 /** Profil v2.0/v3.0 lengkap bila keempat field ini sudah terisi (§3). */
 function profilLengkap(user: Me["user"]): boolean {
@@ -36,7 +37,7 @@ export default function UsahaPage() {
         if (!active) return;
         const user = d.user;
         if (profilLengkap(user)) {
-          router.replace("/beranda");
+          router.replace(ambilTujuan());
           return;
         }
         if (user?.nama_usaha) setNamaUsaha(user.nama_usaha);
@@ -74,7 +75,7 @@ export default function UsahaPage() {
     }
     // replace: onboarding selesai — tombol Kembali harus keluar dari alur ini,
     // bukan memutar pengguna balik ke form yang sudah ia isi.
-    router.replace("/beranda");
+    router.replace(ambilTujuan());
   }
 
   if (checking) return null;

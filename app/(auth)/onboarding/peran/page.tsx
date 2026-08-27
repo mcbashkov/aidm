@@ -7,6 +7,7 @@ import { StepDots } from "@/components/ui/step-dots";
 import { EARNER_OPTIONS, type EarnerType } from "@/lib/earner";
 import { cn } from "@/lib/utils";
 import type { Me } from "@/components/providers/me-provider";
+import { ambilTujuan } from "@/lib/auth/tujuan";
 
 /** Profil v2.0/v3.0 lengkap bila keempat field ini sudah terisi (§3). */
 function profilLengkap(user: Me["user"]): boolean {
@@ -37,7 +38,10 @@ export default function PeranPage() {
       .then((d: Me) => {
         if (!active) return;
         if (profilLengkap(d.user)) {
-          router.replace("/beranda");
+          // Kembali ke halaman yang tadi dituju sebelum dipantulkan middleware
+          // (mis. tautan langsung ke /laporan). `ambilTujuan()` sekali pakai dan
+          // jatuh ke /beranda bila tidak ada — jadi login biasa tidak berubah.
+          router.replace(ambilTujuan());
           return;
         }
         setChecking(false);

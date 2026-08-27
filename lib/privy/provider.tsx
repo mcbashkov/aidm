@@ -58,6 +58,30 @@ function AuthUnavailable({ reset }: { reset: () => void }) {
  * belum diaktifkan di dashboard) berhenti sebagai layar yang rapi, bukan
  * unhandled runtime error yang menjatuhkan seluruh aplikasi.
  */
+/**
+ * URL kembali untuk alur OAuth — DIPATOK, tidak pernah diturunkan dari halaman
+ * yang sedang dibuka.
+ *
+ * Tanpa ini SDK Privy memakai `window.location.href` apa adanya, dan Privy
+ * mencocokkan URL UTUH itu dengan allowlist dashboard. Query string apa pun
+ * membuatnya tidak pernah cocok — termasuk `?next=%2Fberanda` yang ditulis
+ * middleware kita sendiri, yang membuat setiap klik "Lanjut dengan Google"
+ * dijawab `401 Redirect URL is not allowed` betapa pun banyak entri
+ * ditambahkan ke allowlist. Fragmen ditolak dengan cara yang sama.
+ *
+ * `origin` dibaca dari browser supaya tiap lingkungan mengirim origin-nya
+ * sendiri (produksi, pratinjau, localhost) tanpa satu pun env yang harus
+ * ingat diganti. `NEXT_PUBLIC_APP_URL` hanya cadangan saat dirender di server,
+ * di mana alur OAuth tidak pernah berjalan.
+ */
+function oauthRedirectUrl(): string | undefined {
+  const origin =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : (process.env.NEXT_PUBLIC_APP_URL ?? "").trim().replace(/\/+$/, "");
+  return origin ? `${origin}/masuk` : undefined;
+}
+
 export function Providers({ children }: { children: ReactNode }) {
   if (!isPrivyConfigured) {
     // Mode placeholder (NEXT_PUBLIC_PRIVY_APP_ID belum diisi).
@@ -70,6 +94,7 @@ export function Providers({ children }: { children: ReactNode }) {
     },
     loginMethods:
       PRIVY_LOGIN_METHODS as unknown as PrivyClientConfig["loginMethods"],
+    customOAuthRedirectUrl: oauthRedirectUrl(),
     defaultChain: DEFAULT_CHAIN,
     // BSC ikut didaftarkan meski aplikasi berumah di opBNB: langkah kedua alur
     // Tukar menebus IDM Reborn di BSC, dan `switchChain` ke jaringan yang tidak

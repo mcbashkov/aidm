@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
 import { isPrivyConfigured } from "@/lib/privy/config";
 import { useSafeLogin } from "@/lib/privy/use-safe-login";
+import { simpanTujuanDariUrl } from "@/lib/auth/tujuan";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -67,6 +68,17 @@ function ConfiguredLogin() {
   // bisa berjalan berulang: POST /api/auth/session bertubi-tubi + router
   // .replace berulang — persis pola yang bisa membekukan tab.
   const startedRef = useRef(false);
+
+  /**
+   * Pindahkan `?next=` ke sessionStorage lalu bersihkan URL — SEBELUM pengguna
+   * sempat menekan apa pun. Privy mengirim `window.location.href` sebagai
+   * `redirect_to`, dan query string apa pun di sana membuatnya ditolak
+   * `401 Redirect URL is not allowed`. Efek ini yang menjamin URL sudah bersih
+   * pada setiap klik, bukan kebetulan halaman sedang tidak berparameter.
+   */
+  useEffect(() => {
+    simpanTujuanDariUrl();
+  }, []);
 
   useEffect(() => {
     if (!ready || !authenticated) return;
