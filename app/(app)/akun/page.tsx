@@ -15,6 +15,7 @@ import { panggil } from "@/lib/api/panggil";
 import { isPrivyConfigured } from "@/lib/privy/config";
 import { chainDariId } from "@/lib/swap/chains-klien";
 import type { SwapConfig } from "@/lib/swap/tipe";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Me {
   authenticated: boolean;
@@ -53,31 +54,41 @@ export default function AkunPage() {
     });
   }, []);
 
+  // `me === null` berarti BELUM TERBACA, bukan "tidak ada". Membedakan
+  // keduanya adalah seluruh isi P0-1: layar ini dulu menuliskan "Mode demo"
+  // dan "Dompet belum siap" pada render pertama SETIAP kali halaman dibuka —
+  // dua pernyataan tentang akun pengguna yang diucapkan sebelum satu byte pun
+  // datang dari server, lalu diralat sendiri sedetik kemudian.
+  const memuat = me === null;
   const kota = me?.user?.kota;
   const namaUsaha = me?.user?.nama_usaha;
   // v3.0: identitas pengguna dibaca dari earner_type (§7.1); `role` lama hanya
   // dipakai sebagai cadangan untuk akun yang dibuat sebelum pivot.
-  const peranLabel = me?.user?.earner_type
-    ? earnerLabel(me.user.earner_type)
-    : me?.user?.role
-      ? "Pemilik usaha"
-      : "Mode demo";
+  const peranLabel = memuat
+    ? null
+    : me?.user?.earner_type
+      ? earnerLabel(me.user.earner_type)
+      : me?.user?.role
+        ? "Pemilik usaha"
+        : "Mode demo";
 
   const alamat = me?.wallet?.address ?? null;
 
   // Urutan alasan mengikuti urutan yang bisa diperbaiki pengguna: yang paling
   // bisa ia tindaklanjuti disebut lebih dulu.
-  const swapAlasan = !alamat
-    ? "Dompet belum siap."
-    : !swapConfig
-      ? "Fitur Tukar belum aktif di server ini."
-      : saldo.keadaan === "memuat"
-        ? "Membaca saldo…"
-        : saldo.keadaan === "gagal"
-          ? "Saldo tidak terbaca. Coba lagi."
-          : saldo.nilai === 0
-            ? "Belum ada IDMX untuk ditukar. Selesaikan misi dulu ya."
-            : null;
+  const swapAlasan = memuat
+    ? "Menyiapkan…"
+    : !alamat
+      ? "Dompet belum siap."
+      : !swapConfig
+        ? "Fitur Tukar belum aktif di server ini."
+        : saldo.keadaan === "memuat"
+          ? "Membaca saldo…"
+          : saldo.keadaan === "gagal"
+            ? "Saldo tidak terbaca. Coba lagi."
+            : saldo.nilai === 0
+              ? "Belum ada IDMX untuk ditukar. Selesaikan misi dulu ya."
+              : null;
 
   const burnChain = chainDariId(swapConfig?.burnChainId);
   const explorerUrl =
@@ -89,13 +100,18 @@ export default function AkunPage() {
     <div className="space-y-section">
       <header>
         <h1>{namaUsaha || "Akun"}</h1>
-        <p className="mt-1 text-[13px] text-ink-subtle">
-          {peranLabel}
-          {kota ? ` · ${kota}` : ""}
-        </p>
+        {peranLabel ? (
+          <p className="mt-1 text-[13px] text-ink-subtle">
+            {peranLabel}
+            {kota ? ` · ${kota}` : ""}
+          </p>
+        ) : (
+          <Skeleton className="mt-1.5 h-4 w-40" />
+        )}
       </header>
 
       <WalletCard
+        memuat={memuat}
         address={alamat}
         saldo={saldo}
         swapAlasan={swapAlasan}

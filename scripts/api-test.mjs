@@ -45,6 +45,30 @@ const env = Object.fromEntries(
 const DB_URL = env.SUPABASE_DB_URL;
 const SECRET = env.SESSION_SECRET || env.PRIVY_APP_SECRET;
 const BASE = process.env.BASE_URL || "http://localhost:3000";
+
+/**
+ * Koneksi TIDAK di-keep-alive.
+ *
+ * `next start` menutup koneksi menganggur setelah 5 detik, sedangkan harness
+ * ini memanggil `psql` di antara request. Di mesin yang sedang penuh, spawn
+ * `psql` melewati batas itu dan fetch berikutnya mati `SocketError: other side
+ * closed` — di titik yang berpindah-pindah tiap jalan, sementara servernya
+ * sendiri tidak pernah mati dan log-nya bersih. Request yang "gagal" berhasil
+ * 200 saat dijalankan sendiri.
+ *
+ * Menutup koneksi tiap request menghapus seluruh kelas kegagalan itu: tidak
+ * ada koneksi menganggur untuk diputus. Ongkosnya satu handshake TCP per
+ * request ke localhost — tidak berarti bagi uji yang jalan sekali.
+ *
+ * Perbaikannya memang di harness, bukan di aplikasi: pengguna sungguhan tidak
+ * pernah menjeda 5 detik di tengah sesi lalu berharap soket yang sama hidup.
+ */
+const fetchAsli = globalThis.fetch;
+globalThis.fetch = (input, init = {}) =>
+  fetchAsli(input, {
+    ...init,
+    headers: { connection: "close", ...(init.headers ?? {}) },
+  });
 const PREFIX = "did:privy:__test__";
 
 // Alamat & nonce uji swap. Dibuat mencolok supaya mustahil tertukar dengan

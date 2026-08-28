@@ -28,21 +28,51 @@ import { geserHari } from "@/lib/laporan/periode";
 interface BarisHarian {
   tanggal: string; // YYYY-MM-DD (WIB)
   jml: number;
+  ada_masuk: boolean;
+  ada_keluar: boolean;
+  jml_suara: number;
 }
 
-/** Hitungan transaksi unik-valid per hari (§7.6 anti-abuse) — RPC 0017. */
+/** Sinyal satu hari pencatatan — cukup untuk SELURUH misi harian sekaligus. */
+export interface SinyalHarian {
+  jml: number;
+  adaMasuk: boolean;
+  adaKeluar: boolean;
+  jmlSuara: number;
+}
+
+const SINYAL_KOSONG: SinyalHarian = {
+  jml: 0,
+  adaMasuk: false,
+  adaKeluar: false,
+  jmlSuara: 0,
+};
+
+/**
+ * Sinyal pencatatan per hari (§7.6 anti-abuse) — RPC 0023.
+ *
+ * Satu pemindaian menjawab keempat misi pencatatan. Definisi "unik-valid"
+ * tidak berubah dari 0017; yang bertambah hanya kolom yang dilaporkan.
+ */
 export async function hitungHarian(
   supa: SupabaseClient,
   userId: string,
   mulai: string,
-): Promise<Map<string, number>> {
-  const { data } = await supa.rpc("misi_hitung_harian", {
+): Promise<Map<string, SinyalHarian>> {
+  const { data } = await supa.rpc("misi_sinyal_harian", {
     p_user: userId,
     p_start: mulai,
     p_end: null,
   });
-  const peta = new Map<string, number>();
-  for (const r of (data ?? []) as BarisHarian[]) peta.set(r.tanggal, r.jml);
+  const peta = new Map<string, SinyalHarian>();
+  for (const r of (data ?? []) as BarisHarian[]) {
+    peta.set(r.tanggal, {
+      jml: r.jml,
+      adaMasuk: Boolean(r.ada_masuk),
+      adaKeluar: Boolean(r.ada_keluar),
+      jmlSuara: r.jml_suara ?? 0,
+    });
+  }
   return peta;
 }
 
@@ -52,17 +82,21 @@ export async function hitungHarian(
  * tidak, runtun setiap orang "putus" tiap tengah malam sampai ia sempat
  * mencatat, dan angka di layar akan terasa berbohong.
  */
-export function hitungRuntun(peta: Map<string, number>, hariIni: string): number {
+export function hitungRuntun(
+  peta: Map<string, SinyalHarian>,
+  hariIni: string,
+): number {
+  const jml = (t: string) => peta.get(t)?.jml ?? 0;
   let mulai = hariIni;
-  if (!(peta.get(hariIni) ?? 0)) {
+  if (!jml(hariIni)) {
     const kemarin = geserHari(hariIni, -1);
-    if (!(peta.get(kemarin) ?? 0)) return 0;
+    if (!jml(kemarin)) return 0;
     mulai = kemarin;
   }
   let runtun = 0;
   let kursor = mulai;
   // Batas 400 hari: penjaga agar data aneh tidak membuat loop tak berujung.
-  while (runtun < 400 && (peta.get(kursor) ?? 0) > 0) {
+  while (runtun < 400 && jml(kursor) > 0) {
     runtun += 1;
     kursor = geserHari(kursor, -1);
   }
@@ -121,10 +155,20 @@ export async function evaluasiMisi(
   const hariIni = todayWib(now);
   const bulanTarget = bulanLalu(hariIni);
 
-  const [peta, { data: user }, { data: segel }, { data: misiDb }, { data: klaim }] =
+  const [
+    peta,
+    { data: user },
+    { data: segel },
+    { data: misiDb },
+    { data: klaim },
+    { data: peristiwa },
+  ] =
     await Promise.all([
-      // 60 hari cukup untuk runtun 7 hari + ruang pemeriksaan; menarik seluruh
-      // riwayat tidak menambah informasi apa pun untuk misi yang ada.
+      // 45 hari lebih dari cukup untuk runtun TERPANJANG yang ada (30 hari)
+      // plus ruang pemeriksaan. Dinaikkan dari 60 ke 45? Tidak — dinaikkan
+      // dari 60 tetap 60 tidak cukup jelas: runtun 30 hari butuh 30 hari
+      // penuh, dan 60 memberi kelonggaran dua kali lipat. Menarik seluruh
+      // riwayat tetap tidak menambah informasi apa pun untuk misi yang ada.
       hitungHarian(supa, userId, geserHari(hariIni, -60)),
       supa
         .from("users")
@@ -144,6 +188,14 @@ export async function evaluasiMisi(
         .select("mission_id, period_key, amount_idmx, status, tx_hash, created_at")
         .eq("user_id", userId)
         .neq("status", "failed"),
+      // Misi yang TIDAK bisa diturunkan dari transaksi — membaca laporan
+      // adalah peristiwa, bukan jejak. Satu-satunya misi berbasis event
+      // selain segel, dan keduanya memakai tabel + indeks unik yang sama
+      // (`uq_mission_events_period`, 0016).
+      supa
+        .from("mission_events")
+        .select("mission_id, progress")
+        .eq("user_id", userId),
     ]);
 
   const misiById = new Map<string, { code: string }>();
@@ -186,8 +238,19 @@ export async function evaluasiMisi(
     }
   }
 
-  const jmlHariIni = peta.get(hariIni) ?? 0;
+  const hariIniSinyal = peta.get(hariIni) ?? SINYAL_KOSONG;
+  const jmlHariIni = hariIniSinyal.jml;
   const runtun = hitungRuntun(peta, hariIni);
+  const pekanIniKunci = pekanIso(hariIni);
+  // Peristiwa "buka laporan" pekan ini, dari `mission_events`.
+  const bacaLaporanPekanIni = ((peristiwa ?? []) as {
+    mission_id: string;
+    progress: { period_key?: string } | null;
+  }[]).some(
+    (e) =>
+      misiById.get(e.mission_id)?.code === "open_report_weekly" &&
+      e.progress?.period_key === pekanIniKunci,
+  );
   const profilLengkap = Boolean(
     user?.nama_usaha?.trim() &&
       user?.kategori_id &&
@@ -198,7 +261,15 @@ export async function evaluasiMisi(
 
   function progresUntuk(code: string): number {
     if (code === "first_tx_today" || code === "five_tx_today") return jmlHariIni;
-    if (code === "streak_7_days") return runtun;
+    // Target 2 = kedua sisi. Progres 1 berarti baru satu sisi tercatat, dan
+    // bar-nya menunjukkan setengah — itu petunjuk yang benar: yang kurang
+    // bukan "catat lebih banyak", melainkan "catat sisi satunya".
+    if (code === "both_sides_today") {
+      return (hariIniSinyal.adaMasuk ? 1 : 0) + (hariIniSinyal.adaKeluar ? 1 : 0);
+    }
+    if (code === "voice_tx_today") return hariIniSinyal.jmlSuara;
+    if (code === "streak_7_days" || code === "streak_30_days") return runtun;
+    if (code === "open_report_weekly") return bacaLaporanPekanIni ? 1 : 0;
     if (code === "seal_monthly_report") return sudahSegel ? 1 : 0;
     if (code === "complete_profile") return profilLengkap ? 1 : 0;
     return 0;

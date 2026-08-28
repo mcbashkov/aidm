@@ -33,12 +33,44 @@ export const DEFAULT_MISSIONS: DefaultMission[] = [
     target: 5,
   },
   {
+    code: "both_sides_today",
+    judul: "Catat pemasukan dan pengeluaran",
+    deskripsi: "Catat kedua sisi hari ini",
+    reward: 20,
+    tipe: "daily",
+    target: 2, // 1 = satu sisi tercatat, 2 = keduanya
+  },
+  {
+    code: "voice_tx_today",
+    judul: "Catat pakai suara",
+    deskripsi: "Catat 1 transaksi lewat suara hari ini",
+    reward: 15,
+    tipe: "daily",
+    target: 1,
+  },
+  {
     code: "streak_7_days",
     judul: "Catat 7 hari beruntun",
     deskripsi: "Mencatat setiap hari selama seminggu",
     reward: 100,
     tipe: "weekly",
     target: 7,
+  },
+  {
+    code: "open_report_weekly",
+    judul: "Buka Laporan minggu ini",
+    deskripsi: "Baca laporanmu sekali dalam sepekan",
+    reward: 30,
+    tipe: "weekly",
+    target: 1,
+  },
+  {
+    code: "streak_30_days",
+    judul: "Catat 30 hari beruntun",
+    deskripsi: "Mencatat setiap hari selama sebulan",
+    reward: 300,
+    tipe: "monthly",
+    target: 30,
   },
   {
     code: "seal_monthly_report",
@@ -58,7 +90,15 @@ export const DEFAULT_MISSIONS: DefaultMission[] = [
   },
 ];
 
-/** Cap harian default (§7.6) — misi bulanan punya cap tersendiri. */
+/**
+ * Cap harian default (§7.6) — misi bulanan punya cap tersendiri.
+ *
+ * TIDAK diubah saat empat misi ditambahkan (2026-08-27): hari terpadat yang
+ * mungkin — seluruh misi harian (20+50+20+15=105) ditambah runtun 7 hari (100)
+ * dan baca laporan (30) — berjumlah 235, masih di bawah 250. Misi mingguan ikut
+ * ember harian (`ikutCapHarian`), jadi angka itulah yang harus dijaga, bukan
+ * 105 IDMX/hari yang tampak di layar.
+ */
 export const CAP_HARIAN_IDMX = 250;
 
 /** Cap misi bulanan (§7.6 "misi bulanan di luar cap harian, cap tersendiri").

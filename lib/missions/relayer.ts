@@ -24,7 +24,9 @@ import {
   createWalletClient,
   getAddress,
   http,
+  parseAbi,
   parseAbiItem,
+  formatEther,
   type Chain,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -82,6 +84,8 @@ export interface HasilTickMisi {
   dikonfirmasi: number;
   dipulihkan: number;
   dikembalikanKeAntrean: number;
+  /** Sisa IDMX di kontrak reward saat kolamnya menipis; `null` selama sehat. */
+  kolamMenipis: string | null;
 }
 
 const KOSONG: HasilTickMisi = {
@@ -91,7 +95,23 @@ const KOSONG: HasilTickMisi = {
   dikonfirmasi: 0,
   dipulihkan: 0,
   dikembalikanKeAntrean: 0,
+  kolamMenipis: null,
 };
+
+/**
+ * Ambang peringatan kolam reward.
+ *
+ * Kalau IDMX di `MissionRewards` habis, `claim()` REVERT dan pengguna melihat
+ * kegagalan tanpa sebab yang bisa ia pahami — bukan "kolamnya kosong",
+ * melainkan klaim yang berulang kali gagal. Angka ini kira-kira sepuluh hari
+ * beta 100 user pada cap penuh (100 × 250 × 10 = 250.000, dibulatkan naik
+ * dengan margin) — cukup lama untuk mengisi ulang tanpa ada yang terganggu.
+ */
+const AMBANG_KOLAM_IDMX = 1_000_000n;
+
+const IDMX_ABI = parseAbi([
+  "function balanceOf(address owner) view returns (uint256)",
+]);
 
 const EVENT_CLAIMED = parseAbiItem(
   "event Claimed(address indexed user, uint256 indexed missionId, uint256 amount, uint256 nonce, uint8 bucket)",
@@ -341,6 +361,33 @@ export async function jalankanTickMisi(
           .update({ status: "queued" })
           .eq("id", baris.id);
         hasil.gagalKirim += 1;
+      }
+    }
+
+    /* ── 1b. Kolam reward ──────────────────────────────────────────────── */
+    // Diperiksa hanya SETELAH ada yang benar-benar dikirim: itulah satu-satunya
+    // yang menguras kolam, dan memeriksanya tiap menit saat antrean kosong
+    // hanya menambah panggilan RPC tanpa menjawab pertanyaan siapa pun.
+    if (hasil.dikirim > 0) {
+      const idmx = process.env.NEXT_PUBLIC_IDMX_ADDRESS;
+      if (idmx && /^0x[0-9a-fA-F]{40}$/.test(idmx)) {
+        try {
+          const sisa = (await publik.readContract({
+            address: idmx as `0x${string}`,
+            abi: IDMX_ABI,
+            functionName: "balanceOf",
+            args: [kontrak],
+          })) as bigint;
+          if (sisa < AMBANG_KOLAM_IDMX * 10n ** 18n) {
+            hasil.kolamMenipis = formatEther(sisa);
+            console.error(
+              `[misi-relayer] KOLAM REWARD MENIPIS: ${hasil.kolamMenipis} IDMX tersisa di ${kontrak}. Isi ulang sebelum habis — klaim akan revert dan pengguna melihat kegagalan tanpa sebab.`,
+            );
+          }
+        } catch (err) {
+          // Gagal membaca saldo bukan alasan menggagalkan tick.
+          console.error("[misi-relayer] gagal membaca kolam reward:", err);
+        }
       }
     }
 

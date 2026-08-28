@@ -42,6 +42,27 @@ export function LaporanView() {
   const [galatSegel, setGalatSegel] = useState<string | null>(null);
 
   const reqSeq = useRef(0);
+  const sudahTandai = useRef(false);
+
+  /**
+   * Misi "Buka Laporan minggu ini" (§7.6) — dicatat SEKALI per mount.
+   *
+   * Membaca laporan tidak meninggalkan jejak di tabel mana pun, jadi ia harus
+   * dicatat saat terjadi. Idempotensi per pekan ditegakkan indeks unik 0016,
+   * bukan oleh penjaga di sini — `sudahTandai` hanya mencegah permintaan
+   * berulang yang sia-sia dalam satu kunjungan.
+   *
+   * Kegagalan sengaja DITELAN: layar Laporan tidak boleh menampilkan galat
+   * karena sebuah misi gagal tercatat. Yang hilang paling banter 30 IDMX,
+   * dan pekan masih panjang.
+   */
+  useEffect(() => {
+    if (sudahTandai.current) return;
+    sudahTandai.current = true;
+    void fetch("/api/missions/lihat-laporan", { method: "POST" }).catch(
+      () => {},
+    );
+  }, []);
 
   useEffect(() => {
     const seq = ++reqSeq.current;

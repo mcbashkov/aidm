@@ -14,6 +14,9 @@ import type { SaldoIdmx } from "@/lib/token/tipe";
 
 interface WalletCardProps {
   address?: string | null;
+  /** Profil belum terbaca dari server — jangan menyatakan apa pun tentang
+   *  dompet pengguna sampai jawabannya datang. */
+  memuat?: boolean;
   /** Tiga keadaan (lib/token/tipe.ts): memuat → shimmer, terbaca → angka,
    *  gagal → "—" + penjelasan. Menyamakan "belum dimuat" dengan "tidak bisa
    *  dibaca" pernah membuat pesan kegagalan terbaca padahal fetch-nya masih
@@ -40,6 +43,7 @@ interface WalletCardProps {
  */
 export function WalletCard({
   address,
+  memuat = false,
   saldo,
   swapAlasan = null,
   onSwap,
@@ -73,25 +77,34 @@ export function WalletCard({
             Wallet AIDM
           </span>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-            <button
-              type="button"
-              onClick={copy}
-              className="flex items-center gap-2 text-[14px] font-medium tracking-wide"
-            >
-              <span className="tnum">{shortenAddress(address)}</span>
-              {copied ? (
-                <Check className="h-4 w-4 text-gold" aria-hidden />
-              ) : (
-                <Copy className="h-4 w-4 text-wallet-muted" aria-hidden />
-              )}
-            </button>
-            <span className="inline-flex items-center gap-1.5 text-[11.5px] text-wallet-muted">
-              <span
-                className="inline-block h-1.5 w-1.5 rounded-full bg-[#5FBF8A]"
-                aria-hidden
-              />
-              Dompet bawaan · aktif
-            </span>
+            {memuat ? (
+              // Alamat DAN status ditahan bersama: "Dompet bawaan · aktif"
+              // adalah klaim tentang dompet pengguna, dan ia tidak boleh
+              // diucapkan sebelum alamatnya benar-benar terbaca.
+              <Skeleton className="h-5 w-52 bg-white/15" />
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={copy}
+                  className="flex items-center gap-2 text-[14px] font-medium tracking-wide"
+                >
+                  <span className="tnum">{shortenAddress(address)}</span>
+                  {copied ? (
+                    <Check className="h-4 w-4 text-gold" aria-hidden />
+                  ) : (
+                    <Copy className="h-4 w-4 text-wallet-muted" aria-hidden />
+                  )}
+                </button>
+                <span className="inline-flex items-center gap-1.5 text-[11.5px] text-wallet-muted">
+                  <span
+                    className="inline-block h-1.5 w-1.5 rounded-full bg-[#5FBF8A]"
+                    aria-hidden
+                  />
+                  Dompet bawaan · aktif
+                </span>
+              </>
+            )}
           </div>
         </div>
         <span className="shrink-0 rounded-pill border border-wallet-line px-2 py-0.5 text-[11px] font-semibold text-wallet-muted">

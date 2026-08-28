@@ -516,42 +516,104 @@ bagi modal maupun headless — dan keputusannya milik kita sendiri, `/api/me` +
 `profilLengkap()`. Diuji dengan dua akun produksi nyata: profil lengkap →
 diteruskan ke tujuan; profil kosong → tetap di `/onboarding/peran`.
 
-### 5. 🤖 Hidupkan tab Misi tiap hari — **disepakati 2026-08-15, siap dikerjakan**
+### ~~P2-5 — `akun/page.tsx` menggambar keadaan memuat sebagai fakta~~ ✅ **SELESAI 2026-08-27**
+
+Halaman terakhir yang masih membawa kelas bug P0-1. Pada render pertama SETIAP
+kali dibuka, sebelum satu byte pun datang dari server, layar Akun menuliskan
+dua pernyataan tentang akun penggunanya — **"Mode demo"** dan **"Dompet belum
+siap."** — lalu meralat keduanya sedetik kemudian. Kartu dompet bahkan
+menyatakan "Dompet bawaan · aktif" untuk dompet yang belum terbaca.
+
+- [x] `memuat = me === null` dibedakan dari "tidak ada"; label peran jadi
+      skeleton selama memuat, bukan "Mode demo".
+- [x] `swapAlasan` → "Menyiapkan…" selama memuat, bukan "Dompet belum siap."
+- [x] `WalletCard` menerima `memuat`; alamat DAN status ditahan bersama —
+      "aktif" adalah klaim tentang dompet pengguna dan tidak boleh diucapkan
+      sebelum alamatnya benar-benar terbaca.
+
+**Dengan ini kelas bug P0-1 tertutup di seluruh aplikasi.**
+
+### ~~5. Hidupkan tab Misi tiap hari~~ — ✅ **SELESAI 2026-08-27**
 
 Masalahnya nyata: di hari biasa hanya **2 misi** yang bisa diklaim. Setelah
 keduanya selesai, tab Misi jadi layar mati sampai besok. Empat misi berikut
 dipilih bukan sekadar menambah hadiah, tapi karena **membayar perilaku yang
 memang kita inginkan**:
 
-- [ ] Catat pemasukan **dan** pengeluaran hari ini — **20/hari**
+- [x] Catat pemasukan **dan** pengeluaran hari ini — **20/hari** (`both_sides_today`)
       *(laporan hanya berguna kalau dua sisi tercatat; sekarang user bisa cuma
       mencatat pemasukan dan laporannya timpang)*
-- [ ] Catat pakai suara hari ini — **15/hari**
+- [x] Catat pakai suara hari ini — **15/hari** (`voice_tx_today`)
       *(suara adalah pembeda utama vs BukuWarung, tapi tidak ada apa pun yang
       mendorong orang mencobanya)*
-- [ ] Buka Laporan mingguan — **30/minggu**
+- [x] Buka Laporan mingguan — **30/minggu** (`open_report_weekly`)
       *(kebiasaan MEMBACA laporan — inti bankability, bukan sekadar menimbun data)*
-- [ ] Runtun 30 hari — **300/bulan**
+- [x] Runtun 30 hari — **300/bulan** (`streak_30_days`)
       *(runtun 7 hari terlalu cepat selesai lalu tidak ada tangga berikutnya)*
 
 Dampak: 4 misi/hari (dari 2) · 70 → **105 IDMX/hari** · 32.600 → **50.535
 IDMX/tahun**. Cap harian 250 tidak perlu diubah (masih ada ruang 2,4×). Kolam
 100 juta tetap cukup untuk beta 100 user selama ~20 tahun (dari 31).
 
+**Migrasi 0023.** Tiga misi diturunkan dari data sumber lewat RPC baru
+`misi_sinyal_harian` — satu pemindaian menjawab ketiganya (jumlah, ada-masuk,
+ada-keluar, jumlah-suara), menggantikan tiga pemindaian atas tabel yang sama.
+Definisi "unik-valid" tidak bergeser sedikit pun dari 0017, jadi progres misi
+lama tidak berubah. `misi_hitung_harian` sengaja BELUM dihapus: deploy dan
+migrasi tidak pernah serentak, dan versi lama yang masih berjalan beberapa
+detik tidak boleh kehilangan progresnya. **Utang: cabut di migrasi berikutnya
+setelah rilis ini mengendap.**
+
+**Satu misi TIDAK bisa diturunkan.** Membaca laporan tidak meninggalkan jejak
+di tabel mana pun — ia peristiwa, dan peristiwa harus dicatat saat terjadi atau
+hilang selamanya. `POST /api/missions/lihat-laporan` menulis ke `mission_events`
+dengan idempotensi per pekan yang ditegakkan indeks unik 0016 — tabel dan
+indeks yang memang sudah ada untuk itu, dipakai ulang, bukan jalur kedua. Yang
+dicatat hanya satu bit per pekan: "pengguna ini membuka Laporan". Tidak ada
+periode yang dilihat, tidak ada durasi.
+
+**Diuji dengan data nyata**, satu transaksi pada satu waktu:
+
+| keadaan | both_sides | voice | open_report |
+|---|---|---|---|
+| 1 pemasukan via chat | **1/2** | 0/1 | 0/1 |
+| + 1 pengeluaran via **suara** | **2/2 ✓** | **1/1 ✓** | 0/1 |
+| + buka Laporan | 2/2 ✓ | 1/1 ✓ | **1/1 ✓** |
+| POST kedua di pekan sama | — | — | `dicatat: false` (idempoten) |
+
+Progres `1/2` untuk "kedua sisi" disengaja: bar setengah memberi petunjuk yang
+benar — yang kurang bukan "catat lebih banyak", melainkan "catat sisi satunya".
+
 ### 6. 🤖 Utang teknis kecil
 
-- [ ] Peringatan saldo kontrak reward menipis — kalau habis, klaim *revert* dan
-      user melihat kegagalan membingungkan, bukan penjelasan
+- [x] ~~Peringatan saldo kontrak reward menipis~~ — dipasang 2026-08-27 di
+      `lib/missions/relayer.ts`. Diperiksa hanya SETELAH ada klaim yang
+      benar-benar terkirim (itulah satu-satunya yang menguras kolam); di bawah
+      1 juta IDMX ia `console.error` sehingga masuk klaster galat Vercel, dan
+      ikut dilaporkan di respons tick sebagai `misi.kolamMenipis`.
 - [x] ~~Saldo IDMX hardcode `0`~~ — dibaca on-chain 2026-08-22
       (`lib/token/saldo.ts`, batas 2,5 dtk + cache 60 dtk; `null` ≠ 0)
-- [ ] Bundle `/masuk` 848 KB vs target §12 ≤200 KB — SDK Privy, perlu lazy-load
+- [ ] **Bundle `/masuk` 851 KB vs target §12 ≤200 KB** — diukur ulang
+      2026-08-27, **belum dikerjakan, dan sengaja tidak disentuh di batch ini.**
+      Kabar baiknya: SDK Privy TIDAK ada di bundel bersama — seluruh tab
+      aplikasi 100–117 KB. Yang berat hanya `/masuk` (851) dan `/akun` (854),
+      dua layar yang memang memakainya. Menurunkan `/masuk` ke ≤200 KB menuntut
+      SDK ditunda di belakang ketukan tombol, sementara `usePrivy().authenticated`
+      dibaca saat mount untuk mengenali sesi yang masih hidup — itu refaktor
+      pada jalur auth yang baru saja distabilkan dan diverifikasi di produksi.
+      **Keputusan PO diperlukan** sebelum dikerjakan.
 - [x] ~~4 tombol Pengaturan mati~~ — dihidupkan 2026-08-22. Gaya bahasa AI
       tersimpan (migrasi 0020) dan masuk prompt lewat peta nilai; kebijakan
       privasi jadi halaman; ekspor wallet lewat Privy. **Notifikasi sengaja
       tetap menyatakan "belum tersedia"** — push infrastructure memang belum
       ada, dan meminta izin notifikasi untuk sesuatu yang belum bisa dikirim
       lebih buruk daripada mengakuinya.
-- [ ] **`test:api` rapuh di mesin lambat** — `next start` menutup koneksi
+- [x] ~~**`test:api` rapuh di mesin lambat**~~ — diperbaiki 2026-08-27 di
+      harness, sesuai diagnosis di bawah: seluruh `fetch` kini mengirim
+      `connection: close`, jadi tidak ada koneksi menganggur untuk diputus
+      `next start`. Ongkosnya satu handshake TCP per request ke localhost.
+      Catatan aslinya disimpan karena menjelaskan kenapa perbaikannya di
+      harness, bukan di aplikasi: — `next start` menutup koneksi
       menganggur setelah 5 detik, sedangkan harness memanggil `psql` di antara
       request; di mesin yang sedang penuh, spawn `psql` melewati batas itu dan
       fetch berikutnya mati `SocketError: other side closed` di titik yang
