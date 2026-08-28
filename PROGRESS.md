@@ -4,7 +4,7 @@ Pelacak pekerjaan lintas sesi. **README** menjelaskan produk & cara menjalankan;
 berkas ini menjawab satu pertanyaan saja: *apa yang sudah beres, apa berikutnya,
 dan siapa yang mengerjakan.*
 
-Diperbarui: **2026-08-27** · cabang `main`
+Diperbarui: **2026-08-28** · cabang `main`
 
 > ⚠️ **Sisi token digantikan `docs/PERINTAH-AGEN-FINAL.md`.** Untuk apa pun yang
 > menyangkut IDMX/IDM Reborn/swap/kurs/tokenomics, dokumen itu sumber kebenaran
@@ -39,12 +39,12 @@ perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
 
 | Milestone | Status | Bukti |
 |---|---|---|
-| M0 fondasi | ✅ selesai | migrasi 0001–0023, rute & onboarding v3.0 |
+| M0 fondasi | ✅ selesai | migrasi 0001–0025, rute & onboarding v3.0 |
 | M1 parser & tab Catat | ✅ selesai | `test:parser` 200/200 |
 | M2 suara & offline | ✅ selesai | uji lapangan Android 2026-08-14 (3 akun nyata) |
 | M3 Laporan & PDF | ✅ selesai | `test:api` mem-baca ulang isi PDF, bukan cuma header |
 | M4 segel + misi | ✅ **selesai** | klaim diuji PO di aplikasi 2026-08-26 (spinner → Diklaim + tautan opBNBScan); 11 klaim produksi semuanya `confirmed` |
-| M5 premium & kredit | ⬜ belum mulai | — |
+| M5 premium & kredit | 🟡 berjalan | kredit atomik + purge PDP + hardening sesi beres; sisanya menunggu 4 keputusan PO |
 | M6 mainnet & beta | ⬜ belum mulai | — |
 | M7 Play & App Store | ⬜ belum mulai | — |
 
@@ -108,25 +108,29 @@ di bawah; ini hanya menjawab *"mulai dari mana"*.
 
 **Menunggu keputusan PO — memblokir saya:**
 
-| Apa | Kenapa memblokir |
-|---|---|
-| **§16 #8 kurs & #11 tokenomics** | Fitur **Tukar terhalang keduanya**, bukan sekadar "menjelang mainnet". #5 tidak bisa diputuskan sebelum #8. Ini pemblokir terbesar yang tersisa di seluruh produk. |
-| `POST /api/wallet/backfill` | Endpoint pemeliharaan permanen di produksi — dipertahankan sebagai alat operasi, atau dicabut sebelum rilis publik (§ P0-2 B3) |
-| Bundel `/masuk` 851 KB | Dikerjakan sekarang dengan risiko menyentuh jalur auth yang baru distabilkan, atau ditunda sampai setelah beta (§6) |
+| # | Apa | Kenapa memblokir |
+|---|---|---|
+| 1 | **Model kredit gratis** (T-1, §8) | §8.2 berbunyi "reset 00:00 WIB, **tidak menumpuk**"; kode menambah +10 tiap hari tanpa pernah reset — seorang pengguna produksi sudah memegang **120 kredit**. Menumpuk = 3.650 kredit/tahun gratis ≈ 1.216 riset; tidak akan ada yang membeli, dan seluruh M5 dibangun di atas pagar yang bocor. **Harus diputuskan sebelum Midtrans**, karena reset setelah ada pembelian akan memakan kredit berbayar. |
+| 2 | **Cakupan Konten & Wizard** (T-3/T-4, §8) | Keduanya nol mesin: `/premium/konten` kartu statis, `/premium/peluang` tidak ada rutenya. Dibangun di M5, atau dicoret dan dicabut dari `/premium`? |
+| 3 | **Bentuk admin** (T-8, §8) | `admin_users` 0 baris, tidak ada `/api/admin`. §8.2 menjanjikan tarif "dapat diubah admin"; hari ini mengubahnya = SQL langsung ke produksi. Panel UI, atau runbook SQL untuk beta? |
+| 4 | **Bundel `/masuk` 851 KB** | Bukan lagi opsional: kriteria selesai M5 memuat "Lighthouse §12 tercapai", dan §12 memuat bundel ≤ 200 KB gzip. Dikerjakan di dalam M5, atau M5 ditutup dengan §12 sengaja tidak terpenuhi? |
+| 5 | **§16 #8 kurs & #11 tokenomics** | Fitur **Tukar terhalang keduanya**, bukan sekadar "menjelang mainnet". #5 tidak bisa diputuskan sebelum #8. Pemblokir terbesar yang tersisa di seluruh produk — tapi urusannya M6, bukan M5. |
+| 6 | `POST /api/wallet/backfill` | Endpoint pemeliharaan permanen di produksi — dipertahankan sebagai alat operasi, atau dicabut sebelum rilis publik (§ P0-2 B3) |
+
+Ikutan keputusan #1: sembilan pengguna sekarang memegang sampai 120 kredit yang
+**terlihat di layar mereka**. Reset maupun isi-ulang MENGAMBILNYA. Diputihkan
+(jadi saldo permanen) atau dipotong?
 
 **Menunggu tangan PO:** uji batch 2026-08-27 (empat misi baru + halaman Akun) ·
 prompt instal PWA di Android (§7) · verifikasi source enam kontrak di explorer.
 
 **Bisa saya kerjakan tanpa menunggu siapa pun, urutan usul:**
 
-1. **Hardening `/api/auth/session`** (§6) — menutup satu-satunya `TODO` di kode,
-   dan bahannya sudah ada dari B3. Paling murah, paling bersih.
-2. **Cabut `misi_hitung_harian`** (§6) — utang sadar dari 0023, tunggu rilis
-   mengendap.
-3. **Diagnosis `no-response` service worker di `/masuk`** (§6).
-4. **M5 — premium di balik kredit** (§8): pagar Kredit AI, Midtrans, purge
-   `raw_input` 90 hari. Pekerjaan besar berikutnya kalau tidak ada yang lebih
-   mendesak.
+1. **Cabut `misi_hitung_harian`** (§6) — utang sadar dari 0023, rilis sudah
+   mengendap lebih dari sepekan.
+2. **Diagnosis `no-response` service worker di `/masuk`** (§6).
+3. **Sisa M5** (§8) — seluruhnya menunggu keputusan #1–#3 di atas. Yang tidak
+   terhalang sudah selesai 2026-08-28 (lihat §8).
 
 ---
 
@@ -703,9 +707,88 @@ benar — yang kurang bukan "catat lebih banyak", melainkan "catat sisi satunya"
 
 ### 8. 🤖 M5 — premium di balik kredit
 
-- [ ] Fitur riset & konten dipagari Kredit AI (§7.8)
-- [ ] Pembelian kredit Midtrans (QRIS/VA) — env sudah di-scaffold
-- [ ] Hardening PDP: purge `raw_input` 90 hari (§16 #10, sudah diputuskan)
+Kriteria selesai (PRD §14): *"Semua AC §7 lulus staging; Lighthouse §12
+tercapai"* — kalimat kedua itu menyeret bundel `/masuk` ke dalam cakupan M5,
+bukan di luarnya.
+
+**Selesai 2026-08-28** — yang tidak terhalang keputusan siapa pun:
+
+- [x] **Kredit jadi operasi atomik** (0024). Pola `getBalance` → hitung di JS →
+      `INSERT` adalah baca-lalu-tulis tanpa kunci: dua permintaan bersamaan
+      lolos pagar 402 bersama lalu memotong penuh bersama. Seluruh mutasi
+      saldo pindah ke fungsi Postgres ber-advisory-lock per-user
+      (`kredit_harian` · `kredit_potong` · `kredit_saldo`), plus indeks unik
+      parsial `uq_credit_daily_free (user_id, hari_wib)` yang menegakkan "satu
+      hibah per hari WIB" di database. Hari WIB jadi kolom karena
+      `(created_at at time zone 'Asia/Jakarta')::date` STABLE, tidak bisa
+      diindeks — nilainya diisi dari `lib/wib.ts`, sumber WIB tunggal yang sama.
+      Belum pernah gagal di produksi (39 baris, 1 pemakaian seumur hidup); itu
+      bukti belum diuji beban, bukan bukti aman.
+- [x] **Pagar riset menghitung yang sedang berjalan.** Celah over-spend ada di
+      HULU — dua `POST /api/research` lolos berbarengan — bukan di potongannya.
+      Kuota kini `tarif × (berjalan + 1)`, dengan jendela 10 menit supaya
+      antrean yang ditinggalkan (tab ditutup) tidak mengunci kuotanya sendiri
+      selamanya. Diuji langsung: permintaan ke-4 ditolak 402 `needed=12
+      berjalan=3`, saldo tidak terpotong.
+- [x] **`getBalance` melempar, tidak lagi mengembalikan 0 diam-diam.** Versi
+      lama menelan galat baca → `/api/research` menjawab 402 "Kredit tidak
+      cukup" untuk sesuatu yang sebenarnya hiccup database. Angka salah tentang
+      uang pengguna, disampaikan sebagai fakta — kelas bug P0-1.
+- [x] **Purge `raw_input` 90 hari** (0025 + `POST/GET
+      /api/pemeliharaan/purge` + cron harian `15 18 * * *` UTC = 01.15 WIB).
+      Halaman Kebijakan Privasi sudah menjanjikannya; kodenya belum
+      melakukannya. Berbatas 5.000 baris/jalan dengan `for update skip locked`,
+      dan melaporkan `sisa` supaya "cron jalan tapi tak pernah selesai" bisa
+      dibedakan dari "memang sudah bersih". Umur dihitung dari `created_at`
+      (kapan AIDM menerima), bukan `occurred_at` yang bisa dimundurkan.
+      Produksi hari ini: 96 baris ber-`raw_input`, tertua 14 hari — baris
+      pertama jatuh tempo ~12 November 2026, jadi ia dipasang justru selagi
+      masih kosong.
+- [x] **Trigger rollup melewati update tanpa dampak.** Tanpa ini satu batch
+      purge = 10.000 UPSERT ke `daily_rollups` yang netonya nol. Penjaganya
+      hanya menuliskan ulang identitas "x − x = 0" supaya tidak dikerjakan;
+      begitu satu masukan rollup berubah, jalurnya persis seperti semula.
+- [x] **`POST /api/auth/session` berhenti memercayai klien** — menutup
+      satu-satunya `TODO` di seluruh kode (§14 M5). Alamat dompet, email, dan
+      telepon dibaca ulang dari Privy lewat DID hasil verifikasi token. Token
+      membuktikan pengirimnya memegang sesi sah; ia TIDAK membuktikan alamat
+      dompet yang menumpang di JSON yang sama miliknya — dan `wallets.address`
+      adalah tempat reward IDMX dibayarkan. `authProvider` masih boleh datang
+      dari klien (sekadar mencatat tombol mana yang ditekan) tapi ditolak bila
+      metodenya tidak benar-benar tertaut di Privy. Sekaligus menutup
+      `users.email` tertimpa null saat orang berpindah metode masuk: kunci
+      bernilai null tidak lagi ikut dikirim ke upsert.
+- [x] **Teks 402 di Riset** tidak lagi menjanjikan "pembelian kredit hadir di
+      M3" — M3 lewat berminggu-minggu lalu.
+- [x] **`pnpm test:api` hijau penuh pertama kali: 123 lulus, 0 gagal.** Tiga
+      kegagalan yang muncul di jalan pertama adalah harapan uji yang basi, bukan
+      regresi: dua menuntut 400 untuk dompet-belum-siap (taksonomi P0-2 sudah
+      mengubahnya jadi 409 `WALLET_NOT_READY`) dan satu mematok "5 misi"
+      sebelum 0023 menambah empat. Yang ketiga kini diikat ke
+      `count(*) from missions where aktif` supaya tidak basi lagi.
+
+**Terhalang keputusan PO** (lihat "Titik lanjut"):
+
+- [ ] **Model kredit gratis** — §8.2 bilang tidak menumpuk, kode menumpuk.
+      0024 sengaja TIDAK menggesernya: reset/isi-ulang mengambil saldo yang
+      sudah dilihat pengguna, dan memisahkan ember gratis vs berbayar adalah
+      perubahan model ekonomi, bukan perbaikan balapan.
+- [ ] Pembelian kredit Midtrans (QRIS/VA) — env sudah di-scaffold, `orders`
+      0 baris, tidak ada rute maupun webhook. Bagian paling rawan: verifikasi
+      signature webhook (§12) — webhook pembayaran yang tidak diverifikasi
+      berarti siapa pun bisa menerbitkan kredit untuk dirinya sendiri.
+- [ ] Generator Konten (nol mesin) & Wizard Peluang (nol rute) — bangun atau
+      coret.
+- [ ] Panel admin — atau runbook SQL.
+- [ ] Bundel `/masuk` ≤ 200 KB (§12, bagian dari kriteria selesai M5).
+
+**Catatan RLS (T-10).** §12 menuntut "RLS ketat per user". 0008 menyalakan RLS
+di semua tabel tapi hanya menulis policy baca-publik; seluruh akses pengguna
+berjalan lewat service-role yang mem-bypass RLS, dengan filter `user_id` di
+lapisan API — strategi M0 yang disengaja dan terdokumentasi. Risiko nyatanya
+rendah (tidak ada klien yang memegang kunci anon menyentuh tabel user), tapi
+bunyi §12 lebih keras daripada yang dijalankan. Jembatan Privy→Supabase JWT
+masuk M5 atau tidak: belum diputuskan.
 
 ### 9. 🧑 M6 — mainnet & beta tertutup 100 user
 

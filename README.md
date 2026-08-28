@@ -134,6 +134,7 @@ app/
                      laporan · laporan/pdf · laporan/segel · missions · missions/klaim ·
                      missions/lihat-laporan · wallet/saldo · wallet/backfill ·
                      swap/config · swap/vouchers · relayer/tick (swap + misi) ·
+                     pemeliharaan/purge (retensi raw_input 90 hari) ·
                      verify (publik) · research
   not-found.tsx      404 berbahasa Indonesia
   error.tsx          layar galat tak terduga
@@ -166,11 +167,15 @@ lib/
   wallet/            server — alamat dompet, diisi susulan dari Privy bila perlu
   wib.ts             SATU sumber batas hari WIB untuk seluruh aplikasi
   auth/              session-cookie · constants · tujuan (next → sessionStorage)
-  privy/             provider · config · galat-masuk (kalimat galat Indonesia)
+  privy/             provider · config · galat-masuk (kalimat galat Indonesia) ·
+                     server (verifikasi token) · identitas (email/telepon/dompet
+                     dibaca dari Privy, bukan dari klien)
+  credits.ts         saldo & potongan — seluruh mutasi lewat fungsi Postgres
+                     ber-kunci (0024), bukan baca-lalu-tulis di Node
   chains/  supabase/  ai/  agent/  design/  mock/  token/  swap/  env.ts
 contracts/           ReportAttestation.sol · IDMX.sol · MissionRewards.sol (§9.4)
                      + artifacts hasil kompilasi
-supabase/migrations/ skema §10 (0001–0023)
+supabase/migrations/ skema §10 (0001–0025)
 tests/parser-cases.json  200 kalimat uji lintas 5 persona
 ```
 
