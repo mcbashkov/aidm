@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regenerasi ikon PWA dari lambang brand (public/brand/idmlogo.png) memakai ImageMagick.
+# Regenerasi ikon PWA dari lambang brand (public/brand/logo-master.png) memakai ImageMagick.
 # Ikon hasil sudah di-commit; jalankan hanya bila logo berubah:  pnpm icons
 #
 # Sumbernya sengaja LAMBANG BERLIAN saja, bukan kunci horizontal
@@ -8,7 +8,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SRC="$ROOT/public/brand/idmlogo.png"
+SRC="$ROOT/public/brand/logo-master.png"
 ICO="$ROOT/public/icons"
 APP="$ROOT/app"
 
@@ -36,10 +36,12 @@ echo "→ Next app conventions (favicon, icon, apple-icon) — TRANSPARAN"
 convert "$SRC" -resize 512x512 "$APP/icon.png"
 convert -size 180x180 xc:none \( "$SRC" -resize 152x152 \) -gravity center \
   -composite -background none -alpha on "$APP/apple-icon.png"
-# Favicon dirender dari kanvas 256 TANPA padding tambahan: lambangnya sudah
-# membawa ~7% ruang sendiri, dan pada 16px setiap piksel padding ekstra ditukar
-# dengan garis yang lebih tipis dari satu piksel.
-convert "$SRC" -resize 256x256 -background none -alpha on "/tmp/aidm_favicon_src.png"
+# Favicon DIPANGKAS PENUH ke konten (-trim), bukan sekadar diperkecil.
+# Lambangnya membawa ~5% ruang kosong sendiri; pada 16px ruang itu ditukar
+# langsung dengan ketebalan garis, dan garis di lambang ini sudah di bawah satu
+# piksel. Diuji berdampingan pada 16/32/48: pangkas penuh menang di ketiganya.
+convert "$SRC" -trim +repage -resize 256x256 -background none -gravity center \
+  -extent 256x256 -alpha on "/tmp/aidm_favicon_src.png"
 convert "/tmp/aidm_favicon_src.png" -background none -alpha on \
   -define icon:auto-resize=16,32,48 "$APP/favicon.ico"
 
