@@ -4,7 +4,7 @@ Pelacak pekerjaan lintas sesi. **README** menjelaskan produk & cara menjalankan;
 berkas ini menjawab satu pertanyaan saja: *apa yang sudah beres, apa berikutnya,
 dan siapa yang mengerjakan.*
 
-Diperbarui: **2026-08-25** · cabang `main`
+Diperbarui: **2026-08-27** · cabang `main`
 
 > ⚠️ **Sisi token digantikan `docs/PERINTAH-AGEN-FINAL.md`.** Untuk apa pun yang
 > menyangkut IDMX/IDM Reborn/swap/kurs/tokenomics, dokumen itu sumber kebenaran
@@ -39,27 +39,38 @@ perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
 
 | Milestone | Status | Bukti |
 |---|---|---|
-| M0 fondasi | ✅ selesai | migrasi 0001–0020, rute & onboarding v3.0 |
+| M0 fondasi | ✅ selesai | migrasi 0001–0023, rute & onboarding v3.0 |
 | M1 parser & tab Catat | ✅ selesai | `test:parser` 200/200 |
 | M2 suara & offline | ✅ selesai | uji lapangan Android 2026-08-14 (3 akun nyata) |
 | M3 Laporan & PDF | ✅ selesai | `test:api` mem-baca ulang isi PDF, bukan cuma header |
-| M4 segel + misi | ✅ kode selesai | segel & misi **live di opBNB testnet**; sisa: satu klaim manual |
+| M4 segel + misi | ✅ **selesai** | klaim diuji PO di aplikasi 2026-08-26 (spinner → Diklaim + tautan opBNBScan); 11 klaim produksi semuanya `confirmed` |
 | M5 premium & kredit | ⬜ belum mulai | — |
 | M6 mainnet & beta | ⬜ belum mulai | — |
 | M7 Play & App Store | ⬜ belum mulai | — |
 
-**Gerbang otomatis terkini (2026-08-25):** `test:parser` 200/200 ·
+**Gerbang otomatis terkini (2026-08-27):** `test:parser` 200/200 ·
 `test:canonical` 23/23 · typecheck bersih · lint bersih · build sukses.
 
-⚠️ **`test:api` belum bisa dituntaskan di mesin pengembangan sekarang** — bukan
-karena gagal, tapi karena harness-nya putus di tengah (lihat §6 utang teknis).
-Angka 123/123 yang terakhir sah tercatat pada run 2026-08-22 pagi, sebelum batch
-UI. Jangan tulis ulang angka itu sebagai "hijau hari ini" sampai ada satu run
-yang benar-benar selesai.
+⚠️ **`test:api` masih menunggu satu run penuh.** Penyebab kerapuhannya sudah
+dicabut 2026-08-27 (keep-alive dimatikan di harness, §6), tapi belum ada satu
+jalan lengkap sesudahnya. Angka 123/123 yang terakhir sah tercatat pada run
+2026-08-22 pagi, sebelum batch UI. **Jangan tulis ulang angka itu sebagai "hijau
+hari ini"** sampai ada run yang benar-benar selesai — perbaikan harness membuat
+run itu MUNGKIN, bukan membuatnya SUDAH terjadi.
 
-**Produksi:** `aidm-idmtoken.vercel.app` (tim Vercel **Pro** `idmtoken`) —
-auto-deploy dari `main`. Domain `ai.idmtoken.com` **sengaja belum dipasang**;
-menyusul saat siap live.
+**Produksi:** **`ai.idmtoken.com`** — live sejak 2026-08-27, auto-deploy dari
+`main` (tim Vercel **Pro** `idmtoken`; `aidm-idmtoken.vercel.app` tetap hidup).
+`NEXT_PUBLIC_APP_URL` sudah menunjuk domain itu.
+
+**Privy — keadaan yang sudah terverifikasi (dibaca dari API app 2026-08-27):**
+`google_oauth: true` · `email_auth: true` · `sms_auth: false` (karena itu `sms`
+dibuang dari `loginMethods`) · **`merge_accounts_by_email: true`** — satu orang =
+satu DID = satu wallet, apa pun metode masuknya. Allowlist redirect OAuth yang
+DIPAKAI kode hanya satu bentuk: `${origin}/masuk`.
+
+**Kesehatan produksi (2026-08-27):** 9 user · **0 tanpa baris `wallets`** ·
+11 klaim misi semuanya `confirmed` dengan `tx_hash` · **0 klaim menggantung** ·
+82 transaksi.
 
 **On-chain — SEMUA ter-deploy 2026-08-21 (belum diverifikasi source):**
 
@@ -87,6 +98,35 @@ Kursor relayer di DB (`relayer_state`): **dikendalikan cron produksi sejak
 2026-08-21 23:16 UTC**, maju tiap menit dan menempel di kepala rantai (menahan 15
 konfirmasi). Env `SWAP_RELAYER_CURSOR_BLOCK` sudah tidak berlaku sejak baris itu
 ada — karena itu ia sengaja TIDAK dipasang di Vercel.
+
+---
+
+## Titik lanjut — dibaca duluan
+
+Ringkasan satu layar untuk sesi berikutnya. Rinciannya di bagian bernomor
+di bawah; ini hanya menjawab *"mulai dari mana"*.
+
+**Menunggu keputusan PO — memblokir saya:**
+
+| Apa | Kenapa memblokir |
+|---|---|
+| **§16 #8 kurs & #11 tokenomics** | Fitur **Tukar terhalang keduanya**, bukan sekadar "menjelang mainnet". #5 tidak bisa diputuskan sebelum #8. Ini pemblokir terbesar yang tersisa di seluruh produk. |
+| `POST /api/wallet/backfill` | Endpoint pemeliharaan permanen di produksi — dipertahankan sebagai alat operasi, atau dicabut sebelum rilis publik (§ P0-2 B3) |
+| Bundel `/masuk` 851 KB | Dikerjakan sekarang dengan risiko menyentuh jalur auth yang baru distabilkan, atau ditunda sampai setelah beta (§6) |
+
+**Menunggu tangan PO:** uji batch 2026-08-27 (empat misi baru + halaman Akun) ·
+prompt instal PWA di Android (§7) · verifikasi source enam kontrak di explorer.
+
+**Bisa saya kerjakan tanpa menunggu siapa pun, urutan usul:**
+
+1. **Hardening `/api/auth/session`** (§6) — menutup satu-satunya `TODO` di kode,
+   dan bahannya sudah ada dari B3. Paling murah, paling bersih.
+2. **Cabut `misi_hitung_harian`** (§6) — utang sadar dari 0023, tunggu rilis
+   mengendap.
+3. **Diagnosis `no-response` service worker di `/masuk`** (§6).
+4. **M5 — premium di balik kredit** (§8): pagar Kredit AI, Midtrans, purge
+   `raw_input` 90 hari. Pekerjaan besar berikutnya kalau tidak ada yang lebih
+   mendesak.
 
 ---
 
@@ -131,9 +171,11 @@ benar, bukan fitur yang rusak — ia hidup begitu misi pertama diklaim.
       `NEXT_PUBLIC_MISSION_REWARDS_ADDRESS`, `NEXT_PUBLIC_SWAP_INITIATOR_ADDRESS`,
       `NEXT_PUBLIC_SWAP_CLAIM_ADDRESS`, `NEXT_PUBLIC_IDM_REBORN_ADDRESS`,
       `CRON_SECRET`, `SWAP_SIGNER_PRIVATE_KEY`, `MISSION_VOUCHER_PRIVATE_KEY`
-- [ ] Uji jalur sukses: buka tab Misi, klaim "Catat transaksi pertama hari ini"
-      → IDMX masuk, tautan opBNBScan tampil *(jalur sukses on-chain memang tidak
-      diuji otomatis — lihat catatan di bawah)*
+- [x] ~~Uji jalur sukses~~ — **dilakukan PO 2026-08-26**: spinner → ✓ Diklaim +
+      tautan opBNBScan, jatah 0/250 → 20/250, tombol misi lain tetap hidup.
+      Sesudah klaim jadi asinkron (0022) diuji lagi: "Diproses…" berubah sendiri
+      jadi "Diklaim", dan statusnya bertahan setelah tab ditutup.
+      **M4 tertutup penuh.**
 
 `MISSION_RELAYER_PRIVATE_KEY` sengaja tidak dipasang: kodenya jatuh ke
 `SEAL_RELAYER_PRIVATE_KEY` yang sudah ada, dan komentar di `klaim-server.ts`
@@ -593,6 +635,26 @@ benar — yang kurang bukan "catat lebih banyak", melainkan "catat sisi satunya"
       ikut dilaporkan di respons tick sebagai `misi.kolamMenipis`.
 - [x] ~~Saldo IDMX hardcode `0`~~ — dibaca on-chain 2026-08-22
       (`lib/token/saldo.ts`, batas 2,5 dtk + cache 60 dtk; `null` ≠ 0)
+- [ ] **🤖 Cabut `misi_hitung_harian`** — RPC lama yang digantikan
+      `misi_sinyal_harian` (0023). Sengaja dibiarkan hidup satu rilis: deploy
+      aplikasi dan migrasi tidak pernah benar-benar serentak, dan versi lama
+      yang berjalan beberapa detik tidak boleh kehilangan progres misinya.
+      Cabut di migrasi berikutnya setelah 0023 mengendap. **Utang yang dibuat
+      sadar, bukan lupa.**
+- [ ] **🤖 `no-response` service worker di `/masuk`** — terlihat di konsol PO
+      2026-08-27: `The FetchEvent for .../masuk resulted in a network error`
+      lalu `no-response` dari `sw.js`. Halamannya tetap termuat, jadi ini tidak
+      memblokir siapa pun. Tapi `no-response` adalah nama kegagalan yang persis
+      dijelaskan di kepala `app/sw.ts` sebagai "navigasi berhenti tanpa suara",
+      dan `/masuk` SUDAH ada di `JALUR_TANPA_SW`. Dua kemungkinan, belum
+      didiagnosis: service worker versi lama masih memegang tab itu, atau ada
+      jalur yang belum tercakup.
+- [ ] **🤖 Hardening `POST /api/auth/session`** — satu-satunya `TODO` tersisa di
+      seluruh kode (`route.ts:25`): alamat wallet/email masih datang dari BADAN
+      PERMINTAAN setelah token terverifikasi. **Sekarang murah ditutup** —
+      `alamatWalletUser()` (B3) sudah menanyakan Privy sendiri lewat
+      `getUserById(did)`, jadi tinggal berhenti memercayai klien dan membaca
+      dari sumber yang berwenang.
 - [ ] **Bundle `/masuk` 851 KB vs target §12 ≤200 KB** — diukur ulang
       2026-08-27, **belum dikerjakan, dan sengaja tidak disentuh di batch ini.**
       Kabar baiknya: SDK Privy TIDAK ada di bundel bersama — seluruh tab

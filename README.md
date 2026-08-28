@@ -23,9 +23,14 @@ harian bersih tanpa jargon.
 > di kode**: progres diturunkan langsung dari catatan (menghapus transaksi
 > otomatis menurunkannya), anti-abuse duplikat-60-detik, kontrak `IDMX.sol` +
 > `MissionRewards.sol` dengan voucher EIP-712, cap harian & anti-replay
-> ditegakkan on-chain. Sisa: **`pnpm deploy:rewards`** ke testnet — sampai env
-> reward diisi, tombol Klaim nonaktif dengan keterangan jujur dan API menjawab
-> 501, sehingga aman berada di produksi.
+> ditegakkan on-chain. **M4 tuntas 2026-08-26** — kontrak ter-deploy & terdanai,
+> klaim diuji di aplikasi (spinner → Diklaim + tautan opBNBScan). Sejak
+> 2026-08-27 klaim berjalan **asinkron**: permintaan HTTP hanya menulis niat,
+> cron relayer yang mengirim dan merekonsiliasi.
+>
+> **Masuk lewat Google atau email**, keduanya dengan UI kita sendiri — modal
+> Privy tidak dipakai karena SDK-nya tidak bisa diterjemahkan. Sembilan misi
+> aktif: empat harian, dua mingguan, dua bulanan, satu sekali seumur hidup.
 
 ---
 
@@ -127,7 +132,8 @@ app/
                      (+ /riwayat, /premium, /kebijakan-privasi)
   api/               auth/session · me · akun · catat · catat/konfirmasi · transaksi ·
                      laporan · laporan/pdf · laporan/segel · missions · missions/klaim ·
-                     wallet/saldo · swap/config · swap/vouchers · relayer/tick ·
+                     missions/lihat-laporan · wallet/saldo · wallet/backfill ·
+                     swap/config · swap/vouchers · relayer/tick (swap + misi) ·
                      verify (publik) · research
   not-found.tsx      404 berbahasa Indonesia
   error.tsx          layar galat tak terduga
@@ -142,8 +148,11 @@ components/
   research/          RisetView · AnswerArticle — kini di balik /premium
   wallet/            WalletCard · SwapSheet (burn opBNB) · VoucherPanel (klaim BSC)
   account/           SettingsList · LogoutButton · DeleteAccount
-  ui/                Button · Card · Skeleton · GagalMuat (keadaan gagal) · dll
-  pwa/  providers/
+  ui/                Button · Card · Skeleton · GagalMuat (keadaan gagal) ·
+                     BelumTersinkron (salinan cache yang belum tersegarkan) · dll
+  pwa/
+  providers/         MeProvider (identitas + saldo, dua jalur terpisah) ·
+                     KueriProvider (cache pembacaan lintas tab)
 lib/
   parse/             index (orkestrasi) · llm (Haiku §17.1) · fallback (regex) · validate
   catat/             server (helper API) · client (pembungkus fetch)
@@ -152,11 +161,16 @@ lib/
   offline/           antrean IndexedDB
   api/               panggil (pembungkus fetch bersama: ok / demo / offline)
   missions/          index (definisi & target) · server (progres diturunkan) ·
-                     klaim-server (voucher EIP-712) · client
-  privy/  chains/  supabase/  auth/  ai/  agent/  design/  mock/
+                     klaim-server (voucher EIP-712) · relayer (kirim & rekonsiliasi
+                     on-chain) · galat (taksonomi galat klaim) · client
+  wallet/            server — alamat dompet, diisi susulan dari Privy bila perlu
+  wib.ts             SATU sumber batas hari WIB untuk seluruh aplikasi
+  auth/              session-cookie · constants · tujuan (next → sessionStorage)
+  privy/             provider · config · galat-masuk (kalimat galat Indonesia)
+  chains/  supabase/  ai/  agent/  design/  mock/  token/  swap/  env.ts
 contracts/           ReportAttestation.sol · IDMX.sol · MissionRewards.sol (§9.4)
                      + artifacts hasil kompilasi
-supabase/migrations/ skema §10 (0001–0017)
+supabase/migrations/ skema §10 (0001–0023)
 tests/parser-cases.json  200 kalimat uji lintas 5 persona
 ```
 
@@ -394,8 +408,8 @@ Pola layout: <1024px memakai pola mobile (bottom-nav 5 tab + baris status tanpa 
 
 ~~M2 uji suara & offline di perangkat nyata~~ **selesai (uji lapangan 2026-08-14)** ·
 ~~M3 tab Laporan + ekspor PDF~~ **selesai** ·
-~~M4 Segel on-chain + misi pencatatan~~ **selesai** (segel live di testnet; misi
-tinggal `pnpm deploy:rewards`) ·
+~~M4 Segel on-chain + misi pencatatan~~ **selesai 2026-08-26** — segel & reward
+live di opBNB testnet, klaim asinkron lewat cron relayer, sembilan misi aktif ·
 **M5** fitur premium di balik kredit + pembelian kredit + hardening ·
 **M6** mainnet opBNB + beta tertutup 100 user + launch PWA + DappBay ·
 **M7** Google Play (TWA) + App Store (Capacitor).
