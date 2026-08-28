@@ -664,6 +664,34 @@ benar — yang kurang bukan "catat lebih banyak", melainkan "catat sisi satunya"
       sini.
 - [x] ~~**Hardening `POST /api/auth/session`**~~ — selesai 2026-08-28. Lihat §8.
       Menutup satu-satunya `TODO` di seluruh kode.
+- [x] **Taksonomi galat login ternyata MATI** — ditemukan & diperbaiki
+      2026-08-28, lewat peringatan `next build` yang selama ini terlewat:
+      `Attempted import error: 'PrivyErrorCode' is not exported`.
+
+      `PrivyErrorCode` adalah `declare enum` yang diekspor **type-only** oleh
+      `@privy-io/react-auth` — lolos `tsc`, tapi `undefined` saat berjalan.
+      Jadi setiap `case PrivyErrorCode.X` di `lib/privy/galat-masuk.ts`
+      membandingkan dengan `undefined`, dan gagal dua arah:
+
+      · **kode nyata tidak pernah cocok** → seluruh kalimat Indonesia yang
+        ditulis untuk P1-4 tidak pernah tampil; semuanya jatuh ke cadangan.
+        Membatalkan jendela Google pun disambut kotak galat — persis hal yang
+        komentar di berkas itu bersumpah tidak boleh terjadi
+        (`pembatalanPengguna("oauth_user_denied")` mengembalikan `false`).
+      · **galat tanpa kode justru cocok dengan case PERTAMA** → kalimat
+        spesifik yang salah, disampaikan dengan yakin. Orang yang jaringannya
+        putus diberi tahu "alamat emailnya sepertinya keliru".
+
+      Diperbaiki dengan peta konstanta lokal berisi nilai string yang nyata,
+      dijaga `satisfies Record<string, ${'`'}${'$'}{PrivyErrorCode}${'`'}>` — bila Privy mengganti
+      salah satu string di versi berikutnya, `tsc` yang gagal, bukan pengguna
+      yang menerima kalimat keliru. Dibuktikan 16 kasus: kode nyata → kalimat
+      spesifik, kode asing & `undefined` → cadangan, pembatalan dikenali.
+      Peringatan build hilang; `next build` kini bersih sepenuhnya.
+
+      **Pelajarannya bukan tentang Privy.** Peringatan build yang dibiarkan
+      hidup adalah tempat bug bersembunyi paling lama — yang ini lolos sampai
+      produksi dan lolos uji PO, karena jalur bahagia tidak pernah menyentuhnya.
 - [ ] **Bundle `/masuk` 829 KB gzip vs target §12 ≤200 KB — 4,1× di atas
       batas.** Diukur ulang 2026-08-28 dari `app-build-manifest`, dan angka
       851 di keluaran `next build` ternyata **sudah gzip**, bukan mentah —

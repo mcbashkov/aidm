@@ -8,7 +8,45 @@
  * pada pesan Inggris yang bisa berubah kapan saja tanpa pemberitahuan.
  */
 
-import { PrivyErrorCode } from "@privy-io/react-auth";
+import type { PrivyErrorCode } from "@privy-io/react-auth";
+
+/**
+ * Kode galat Privy sebagai NILAI — bukan tipe.
+ *
+ * `PrivyErrorCode` di SDK adalah `declare enum` yang diekspor TYPE-ONLY:
+ * tidak ada objeknya di bundel. `import { PrivyErrorCode }` lolos typecheck
+ * (TypeScript melihat sebuah enum) tapi bernilai `undefined` saat berjalan.
+ * `next build` cuma menggerutu "Attempted import error" — peringatan, bukan
+ * kesalahan, jadi ia lolos sampai produksi.
+ *
+ * Akibatnya setiap `case PrivyErrorCode.X` dulu membandingkan dengan
+ * `undefined`, dan gagal DUA ARAH sekaligus:
+ *
+ *   · galat berkode nyata ("invalid_credentials") tidak cocok dengan apa pun →
+ *     selalu jatuh ke kalimat cadangan yang tidak menolong siapa pun;
+ *   · galat TANPA kode (`undefined`) justru cocok dengan case PERTAMA →
+ *     kalimat spesifik yang SALAH, disampaikan dengan yakin. Orang yang
+ *     jaringannya putus diberi tahu "alamat emailnya sepertinya keliru".
+ *
+ * Nilainya disalin dari `declare enum PrivyErrorCode`. Itu duplikasi, tapi
+ * duplikasi yang jujur — alternatifnya bergantung pada sesuatu yang memang
+ * tidak ada saat berjalan. `satisfies` menjadikannya duplikasi yang DIJAGA:
+ * bila Privy mengganti salah satu string di versi berikutnya, `tsc` yang
+ * gagal, bukan pengguna yang menerima kalimat keliru.
+ */
+const KODE = {
+  ALLOWLIST_REJECTED: "allowlist_rejected",
+  CLIENT_REQUEST_TIMEOUT: "client_request_timeout",
+  DISALLOWED_LOGIN_METHOD: "disallowed_login_method",
+  DISALLOWED_PLUS_EMAIL: "disallowed_plus_email",
+  INVALID_CREDENTIALS: "invalid_credentials",
+  INVALID_DATA: "invalid_data",
+  LINKED_TO_ANOTHER_USER: "linked_to_another_user",
+  OAUTH_ACCOUNT_SUSPENDED: "oauth_account_suspended",
+  OAUTH_USER_DENIED: "oauth_user_denied",
+  TOO_MANY_REQUESTS: "too_many_requests",
+  USER_EXITED_AUTH_FLOW: "exited_auth_flow",
+} as const satisfies Record<string, `${PrivyErrorCode}`>;
 
 /** Batas keras Privy: satu kode OTP hanya boleh dicoba 5 kali. Sesudah itu
  *  kodenya mati dan harus diminta ulang. Angka ini dari dokumentasi
@@ -27,8 +65,8 @@ export const JEDA_KIRIM_ULANG_DETIK = 60;
  */
 export function pembatalanPengguna(kode: unknown): boolean {
   return (
-    kode === PrivyErrorCode.OAUTH_USER_DENIED ||
-    kode === PrivyErrorCode.USER_EXITED_AUTH_FLOW
+    kode === KODE.OAUTH_USER_DENIED ||
+    kode === KODE.USER_EXITED_AUTH_FLOW
   );
 }
 
@@ -47,17 +85,17 @@ export function kodeGalat(err: unknown): string | undefined {
 /** Kalimat untuk galat saat MEMINTA kode ke sebuah alamat email. */
 export function pesanKirimKode(kode: unknown): string {
   switch (kode) {
-    case PrivyErrorCode.INVALID_DATA:
+    case KODE.INVALID_DATA:
       return "Alamat emailnya sepertinya keliru. Coba periksa lagi.";
-    case PrivyErrorCode.DISALLOWED_PLUS_EMAIL:
+    case KODE.DISALLOWED_PLUS_EMAIL:
       return "Email dengan tanda + belum bisa dipakai. Coba alamat lain ya.";
-    case PrivyErrorCode.TOO_MANY_REQUESTS:
+    case KODE.TOO_MANY_REQUESTS:
       return "Terlalu banyak permintaan. Tunggu sebentar, lalu coba lagi.";
-    case PrivyErrorCode.CLIENT_REQUEST_TIMEOUT:
+    case KODE.CLIENT_REQUEST_TIMEOUT:
       return "Kodenya belum terkirim — sambungan terputus. Coba lagi ya.";
-    case PrivyErrorCode.ALLOWLIST_REJECTED:
+    case KODE.ALLOWLIST_REJECTED:
       return "Email ini belum terdaftar untuk mencoba AIDM.";
-    case PrivyErrorCode.DISALLOWED_LOGIN_METHOD:
+    case KODE.DISALLOWED_LOGIN_METHOD:
       return "Masuk lewat email sedang tidak tersedia. Coba lagi nanti ya.";
     default:
       return "Kodenya belum bisa dikirim sekarang. Coba lagi sebentar lagi.";
@@ -74,7 +112,7 @@ export function pesanKirimKode(kode: unknown): string {
  */
 export function pesanKode(kode: unknown, sisaPercobaan: number): string {
   switch (kode) {
-    case PrivyErrorCode.INVALID_CREDENTIALS:
+    case KODE.INVALID_CREDENTIALS:
       // Privy tidak membedakan "kode salah" dari "kode kedaluwarsa" — keduanya
       // datang sebagai invalid_credentials. Kalimatnya karena itu tidak
       // mengaku tahu yang mana; tawaran kode baru menutup kedua kemungkinan.
@@ -85,9 +123,9 @@ export function pesanKode(kode: unknown, sisaPercobaan: number): string {
         return "Kodenya belum cocok. Sisa 1 percobaan sebelum kami kirim kode baru.";
       }
       return "Kodenya belum cocok. Coba periksa lagi.";
-    case PrivyErrorCode.TOO_MANY_REQUESTS:
+    case KODE.TOO_MANY_REQUESTS:
       return "Terlalu banyak percobaan. Tunggu sebentar, lalu minta kode baru.";
-    case PrivyErrorCode.CLIENT_REQUEST_TIMEOUT:
+    case KODE.CLIENT_REQUEST_TIMEOUT:
       return "Jawabanmu belum sampai — sambungan terputus. Coba lagi ya.";
     default:
       return "Belum bisa memasukkanmu sekarang. Coba lagi sebentar lagi.";
@@ -97,15 +135,15 @@ export function pesanKode(kode: unknown, sisaPercobaan: number): string {
 /** Kalimat untuk galat alur Google. */
 export function pesanOauth(kode: unknown): string {
   switch (kode) {
-    case PrivyErrorCode.OAUTH_ACCOUNT_SUSPENDED:
+    case KODE.OAUTH_ACCOUNT_SUSPENDED:
       return "Akun Google itu sedang dibekukan. Coba pakai email saja ya.";
-    case PrivyErrorCode.DISALLOWED_LOGIN_METHOD:
+    case KODE.DISALLOWED_LOGIN_METHOD:
       return "Masuk lewat Google sedang tidak tersedia. Pakai email saja ya.";
-    case PrivyErrorCode.LINKED_TO_ANOTHER_USER:
+    case KODE.LINKED_TO_ANOTHER_USER:
       return "Akun Google itu sudah tertaut ke akun AIDM lain.";
-    case PrivyErrorCode.TOO_MANY_REQUESTS:
+    case KODE.TOO_MANY_REQUESTS:
       return "Terlalu banyak percobaan. Tunggu sebentar, lalu coba lagi.";
-    case PrivyErrorCode.CLIENT_REQUEST_TIMEOUT:
+    case KODE.CLIENT_REQUEST_TIMEOUT:
       return "Sambungan ke Google terputus. Coba lagi ya.";
     default:
       // TIDAK pernah menawarkan modal Privy sebagai cadangan: jatuh ke layar
