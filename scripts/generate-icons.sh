@@ -23,8 +23,14 @@ echo "→ manifest 'any' (transparan)"
 convert "$SRC" -resize 512x512 "$ICO/icon-512.png"
 convert "$SRC" -resize 192x192 "$ICO/icon-192.png"
 
-echo "→ manifest 'maskable' (bg ivory hangat #FAF7F0, zona aman 70%)"
-convert -size 512x512 xc:'#FAF7F0' \( "$SRC" -resize 360x360 \) -gravity center -composite "$ICO/maskable-512.png"
+# Maskable WAJIB opak — Android memotongnya dengan masker (lingkaran/squircle)
+# dan alpha di baliknya menjadi lubang, bukan latar. Warnanya HITAM MURNI,
+# bukan ivory dan bukan --ink #1B1B1B: iOS mengisi alpha apple-touch-icon
+# dengan #000000, jadi hitam murni-lah satu-satunya nilai yang membuat ikon di
+# Android dan iOS benar-benar terlihat sama. Zona aman 70% (lambang 360 dari
+# 512) — diuji terhadap masker lingkaran maupun squircle, tidak terpotong.
+echo "→ manifest 'maskable' (bg hitam #000000, sama dengan hasil iOS, zona aman 70%)"
+convert -size 512x512 xc:'#000000' \( "$SRC" -resize 360x360 \) -gravity center -composite "$ICO/maskable-512.png"
 convert "$ICO/maskable-512.png" -resize 192x192 "$ICO/maskable-192.png"
 
 echo "→ Next app conventions (favicon, icon, apple-icon) — TRANSPARAN"
