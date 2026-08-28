@@ -9,6 +9,15 @@ import { isAnthropicConfigured } from "@/lib/ai/models";
 
 export const runtime = "nodejs";
 
+/**
+ * Umur maksimum sebuah riset yang masih dianggap "sedang berjalan" saat
+ * menghitung kuota. Antrean bisa ditinggalkan — pengguna menekan Riset lalu
+ * menutup tab, dan barisnya tetap `queued` selamanya — jadi tanpa batas umur
+ * satu tab yang ditutup akan mengunci kuotanya sendiri tanpa pernah dipakai.
+ * 10 menit = lebih dari tiga kali `maxDuration` endpoint stream (180 dtk).
+ */
+const JENDELA_BERJALAN_MS = 10 * 60_000;
+
 function currentUserId(): string | null {
   const raw = cookies().get(SESSION_COOKIE)?.value;
   return readSessionValue(raw)?.uid ?? null;
@@ -48,12 +57,32 @@ export async function POST(req: Request) {
     const supa = createSupabaseAdminClient();
     const params = await getCreditParams();
     const balance = await ensureDailyFree(supa, uid);
-    if (balance < params.research) {
+
+    // Riset yang sudah diantre tapi belum selesai IKUT DIHITUNG di pagar ini.
+    // Tanpa itu, dua permintaan bersamaan sama-sama melihat saldo 3, sama-sama
+    // lolos, lalu dua-duanya menagih 3 setelah selesai — saldo berakhir -3 dan
+    // pengguna mendapat dua riset seharga satu. Pembebanan memang baru terjadi
+    // di akhir (charge-on-success §7.2), jadi saldo saja bukan gambaran utuh:
+    // yang sudah dijanjikan kepada pekerjaan berjalan harus ikut dikurangkan.
+    const { count: berjalan, error: errBerjalan } = await supa
+      .from("research_queries")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", uid)
+      .in("status", ["queued", "running"])
+      .gte("created_at", new Date(Date.now() - JENDELA_BERJALAN_MS).toISOString());
+    // Gagal menghitung = tidak tahu berapa yang sedang berjalan. Menganggapnya
+    // nol berarti membuka kembali celah yang baru saja ditutup, jadi pagarnya
+    // dipasang pada asumsi paling aman: seolah ada satu yang berjalan.
+    const antre = errBerjalan ? 1 : (berjalan ?? 0);
+
+    const perlu = params.research * (antre + 1);
+    if (balance < perlu) {
       return NextResponse.json(
         {
           error: "Kredit tidak cukup",
           balance,
-          needed: params.research,
+          needed: perlu,
+          berjalan: antre,
         },
         { status: 402 },
       );

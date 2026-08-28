@@ -190,23 +190,16 @@ function ConfiguredLogin() {
           : user?.phone
             ? "sms"
             : "email";
-        // Login Google menaruh alamatnya di `user.google.email`, BUKAN di
-        // `user.email` — mengirim yang kedua saja membuat `users.email`
-        // ditimpa null setiap kali seseorang berpindah metode. Identitasnya
-        // tidak terganggu (kuncinya `privy_did`), tapi kolomnya terhapus
-        // diam-diam, dan data yang hilang tanpa suara adalah utang.
-        const alamatEmail =
-          user?.email?.address ?? user?.google?.email ?? undefined;
+        // Hanya token + tombol yang ditekan. Alamat email, nomor telepon, dan
+        // alamat dompet TIDAK lagi ikut dikirim: server membacanya sendiri dari
+        // Privy memakai DID hasil verifikasi token (app/api/auth/session).
+        // Klien tidak boleh menjadi sumber bagi apa pun yang menentukan siapa
+        // seseorang atau ke mana rewardnya dibayarkan — dan sekaligus inilah
+        // yang menutup `users.email` ditimpa null saat orang berpindah metode.
         const res = await fetch("/api/auth/session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            accessToken,
-            wallet: user?.wallet?.address,
-            email: alamatEmail,
-            phone: user?.phone?.number,
-            authProvider,
-          }),
+          body: JSON.stringify({ accessToken, authProvider }),
           signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);

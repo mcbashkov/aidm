@@ -144,13 +144,31 @@ export async function GET(
         // Sukses → potong kredit sesuai tarif (§8.2), tepat sekali.
         const tariffs = await getCreditParams();
         const cost = result.cacheHit ? tariffs.research_cache : tariffs.research;
-        const balance = await charge(
-          supa,
-          uid,
-          cost,
-          result.cacheHit ? "research_cache" : "research",
-          queryId,
-        );
+        // Kegagalan LEDGER tidak boleh membuang riset yang sudah jadi.
+        // Pengguna sudah menunggu; membatalkan jawabannya karena pencatatan
+        // saldo gagal menukar kerugian beberapa kredit (kami) dengan kerugian
+        // jawaban (dia) — pertukaran yang salah arah. Tanpa penjaga ini, galat
+        // dari `charge` akan jatuh ke catch besar di bawah dan menandai query
+        // `failed` padahal risetnya berhasil.
+        let balance: number | null = null;
+        try {
+          balance = await charge(
+            supa,
+            uid,
+            cost,
+            result.cacheHit ? "research_cache" : "research",
+            queryId,
+          );
+        } catch (err) {
+          console.error(
+            `[kredit] potong gagal (uid=${uid} query=${queryId} tarif=${cost}):`,
+            err,
+          );
+        }
+        // Apa yang BENAR-BENAR terpotong — bukan tarifnya. Menulis `cost` saat
+        // ledger gagal membuat riwayat pemakaian berbohong ke arah yang
+        // merugikan pengguna.
+        const dipotong = balance === null ? 0 : cost;
 
         const embeddingLiteral = result.embedding
           ? toVectorLiteral(result.embedding)
@@ -189,7 +207,7 @@ export async function GET(
             status: "done",
             cache_hit: result.cacheHit,
             latency_ms: latency,
-            credits_charged: cost,
+            credits_charged: dipotong,
           })
           .eq("id", queryId);
 
@@ -199,7 +217,7 @@ export async function GET(
           confidence: result.confidence,
           cache_hit: result.cacheHit,
           cache_age_days: result.cacheAgeDays ?? null,
-          credits_charged: cost,
+          credits_charged: dipotong,
           balance,
           created_at: saved?.created_at ?? new Date().toISOString(),
         });

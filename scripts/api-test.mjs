@@ -564,8 +564,12 @@ async function main() {
       // gas) tiap kali test dijalankan — mahal untuk suite yang sering jalan.
       // Jalur sukses penuh diverifikasi manual di produksi; yang dijaga di
       // sini adalah penolakan yang jelas untuk akun tanpa wallet.
-      cek("akun tanpa wallet ditolak jelas → 400",
-        r.status === 400 && /wallet/i.test(r.body?.error ?? ""),
+      // Taksonomi galat P0-2: "dompet belum siap" adalah 409 dengan KODE, bukan
+      // 400 dengan kalimat. Kode itulah yang dibaca UI untuk memilih pesannya —
+      // mencocokkan teks berbahasa Indonesia di sini akan pecah setiap kali
+      // kalimatnya diperhalus, padahal kontraknya tidak berubah.
+      cek("akun tanpa wallet ditolak jelas → 409 WALLET_NOT_READY",
+        r.status === 409 && r.body?.code === "WALLET_NOT_READY",
         `dapat ${r.status} ${JSON.stringify(r.body).slice(0, 120)}`);
     }
     const n = sql(`select count(*) from report_seals where user_id='${uidB}'`);
@@ -602,7 +606,12 @@ async function main() {
     const kode = (r.body?.misi ?? []).map((m) => m.code);
     cek("misi riset v2.0 tidak muncul (dinonaktifkan 0016)",
       !kode.includes("first_research_today"), kode.join(","));
-    cek("5 misi v3.0 tampil", kode.length === 5, `dapat ${kode.length}`);
+    // Dulu dipatok ke angka 5 dan langsung basi begitu 0023 menambah empat
+    // misi. Yang benar-benar ingin dijaga bukan JUMLAHNYA melainkan
+    // invariannya: endpoint menampilkan tepat misi yang aktif di database.
+    const misiAktif = Number(sql("select count(*) from missions where aktif"));
+    cek(`semua misi aktif tampil (${misiAktif})`,
+      kode.length === misiAktif, `dapat ${kode.length}, aktif di DB ${misiAktif}`);
 
     const pertama = (r.body?.misi ?? []).find((m) => m.code === "first_tx_today");
     cek("misi 'transaksi pertama' selesai (ada catatan hari ini)",
@@ -682,8 +691,12 @@ async function main() {
     } else {
       // Sama seperti segel: klaim sungguhan mengirim transaksi testnet dan
       // memindahkan IDMX nyata. Yang diuji rutin adalah penolakan jujurnya.
-      cek("akun tanpa wallet ditolak jelas → 400",
-        r.status === 400 && /wallet/i.test(r.body?.error ?? ""),
+      // Taksonomi galat P0-2: "dompet belum siap" adalah 409 dengan KODE, bukan
+      // 400 dengan kalimat. Kode itulah yang dibaca UI untuk memilih pesannya —
+      // mencocokkan teks berbahasa Indonesia di sini akan pecah setiap kali
+      // kalimatnya diperhalus, padahal kontraknya tidak berubah.
+      cek("akun tanpa wallet ditolak jelas → 409 WALLET_NOT_READY",
+        r.status === 409 && r.body?.code === "WALLET_NOT_READY",
         `dapat ${r.status} ${JSON.stringify(r.body).slice(0, 120)}`);
     }
     const n = sql(`select count(*) from mission_claims where user_id='${uidB}'`);

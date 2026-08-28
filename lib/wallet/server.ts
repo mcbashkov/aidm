@@ -27,6 +27,11 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getPrivyServerClient } from "@/lib/privy/server";
+import {
+  ALAMAT_EVM,
+  alamatDariAkun,
+  type AkunPrivy,
+} from "@/lib/privy/identitas";
 
 export type HasilWallet =
   | { status: "ada"; alamat: `0x${string}`; diisiSusulan: boolean }
@@ -37,8 +42,6 @@ export type HasilWallet =
    *  sama, dan menyamakannya membuat gangguan Privy tampak seperti akun yang
    *  belum siap selamanya. */
   | { status: "galat-privy" };
-
-const ALAMAT = /^0x[0-9a-fA-F]{40}$/;
 
 /**
  * Ingatan singkat untuk user yang Privy-nya BELUM punya dompet.
@@ -61,23 +64,6 @@ function tidakDitemukan(err: unknown): boolean {
   return /not\s*found|404/i.test(pesan);
 }
 
-/** Alamat embedded wallet dari akun Privy, bila ada. */
-function alamatDariPrivy(akun: {
-  wallet?: { address?: string } | null;
-  linkedAccounts?: { type?: string; address?: string }[] | null;
-}): `0x${string}` | null {
-  const kandidat = [
-    akun.wallet?.address,
-    ...(akun.linkedAccounts ?? [])
-      .filter((a) => a?.type === "wallet")
-      .map((a) => a?.address),
-  ];
-  for (const a of kandidat) {
-    if (typeof a === "string" && ALAMAT.test(a)) return a as `0x${string}`;
-  }
-  return null;
-}
-
 /**
  * Baca alamat dompet user. Bila barisnya belum ada, tanya Privy sekali lalu
  * simpan — sehingga panggilan berikutnya kembali murni dari Postgres.
@@ -98,7 +84,7 @@ export async function alamatWalletUser(
     .maybeSingle();
 
   const tersimpan = baris?.address;
-  if (typeof tersimpan === "string" && ALAMAT.test(tersimpan)) {
+  if (typeof tersimpan === "string" && ALAMAT_EVM.test(tersimpan)) {
     return { status: "ada", alamat: tersimpan as `0x${string}`, diisiSusulan: false };
   }
 
@@ -115,7 +101,7 @@ export async function alamatWalletUser(
   let alamat: `0x${string}` | null = null;
   try {
     const akun = await privy.getUserById(did);
-    alamat = alamatDariPrivy(akun as Parameters<typeof alamatDariPrivy>[0]);
+    alamat = alamatDariAkun(akun as AkunPrivy);
   } catch (err) {
     // "Privy tidak mengenal DID ini" bukan gangguan Privy — jawabannya pasti,
     // dan artinya memang tidak ada dompet. Menjawabnya 503 "coba lagi" akan
@@ -164,7 +150,7 @@ export async function alamatWalletUser(
       .eq("user_id", uid)
       .maybeSingle();
     const lagi = ulang?.address;
-    if (typeof lagi === "string" && ALAMAT.test(lagi)) {
+    if (typeof lagi === "string" && ALAMAT_EVM.test(lagi)) {
       return { status: "ada", alamat: lagi as `0x${string}`, diisiSusulan: false };
     }
     return { status: "galat-privy" };

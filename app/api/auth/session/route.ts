@@ -4,26 +4,38 @@ import { getPrivyServerClient } from "@/lib/privy/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSessionValue } from "@/lib/auth/session-cookie";
 import { SESSION_COOKIE, SESSION_MAX_AGE } from "@/lib/auth/constants";
+import { bacaIdentitas, type MetodeMasuk } from "@/lib/privy/identitas";
 
 export const runtime = "nodejs";
 
 interface SessionBody {
   accessToken?: string;
-  wallet?: string;
-  email?: string;
-  phone?: string;
+  /** Tombol yang ditekan pengguna. Petunjuk, bukan bukti — divalidasi ke Privy
+   *  di bawah. Tidak ada field identitas lain yang diterima dari klien. */
   authProvider?: string;
 }
+
+const METODE: MetodeMasuk[] = ["google", "email", "sms"];
 
 /**
  * Tukar access token Privy → sesi AIDM.
  * 1) Verifikasi token (server-side) → dapat DID (bukti identitas).
- * 2) Upsert users + wallets (service-role) → 100% akun punya wallet (AC §7.1).
- * 3) Set cookie sesi ber-HMAC.
+ * 2) Baca identitas dari Privy memakai DID itu → email, telepon, dompet.
+ * 3) Upsert users + wallets (service-role) → 100% akun punya wallet (AC §7.1).
+ * 4) Set cookie sesi ber-HMAC.
  *
- * Catatan M0: alamat wallet/email/phone dikirim klien (wallet milik user
- * sendiri) setelah token terverifikasi. TODO: verifikasi ulang lewat
- * privy.getUser(did) saat hardening (§14 M5).
+ * HARDENING §14 M5 (menutup TODO sejak M0). Sebelumnya alamat dompet, email,
+ * dan nomor telepon diambil APA ADANYA dari badan permintaan, dengan alasan
+ * "tokennya sudah terverifikasi". Alasan itu tidak berlaku: token membuktikan
+ * pengirimnya memegang sesi yang sah, ia tidak membuktikan bahwa alamat dompet
+ * yang ikut dikirim di JSON yang sama adalah miliknya. Siapa pun yang punya
+ * akun bisa mengirim token aslinya sendiri berpasangan dengan alamat dompet
+ * orang lain — dan `wallets.address` adalah tempat reward IDMX dibayarkan.
+ *
+ * Sekarang seluruh identitas dibaca ulang dari Privy lewat DID hasil
+ * verifikasi. Yang masih boleh datang dari klien hanya `authProvider`, karena
+ * ia sekadar mencatat tombol mana yang ditekan — dan itu pun ditolak bila
+ * metodenya tidak benar-benar tertaut pada akun tersebut.
  */
 export async function POST(req: Request) {
   const privy = getPrivyServerClient();
@@ -62,37 +74,67 @@ export async function POST(req: Request) {
     );
   }
 
+  // `null` = Privy tidak bisa DITANYA, bukan "penggunanya tidak punya apa-apa".
+  // Login tetap dilanjutkan: tokennya sudah terbukti sah, dan menolak masuk
+  // karena gangguan pihak ketiga menghukum pengguna atas sesuatu yang bukan
+  // urusannya. Yang dilakukan hanyalah TIDAK menulis apa pun yang tidak kita
+  // ketahui — kolom yang sudah terisi dibiarkan apa adanya, dan dompet diisi
+  // susulan oleh `alamatWalletUser()` pada permintaan berikutnya.
+  const identitas = await bacaIdentitas(privy, did);
+
+  // Hanya field yang BENAR-BENAR terbaca yang ikut ditulis. Menyertakan kunci
+  // bernilai null pada upsert akan MENIMPA kolom yang sudah terisi — persis
+  // cara `users.email` pernah terhapus diam-diam saat seseorang berpindah dari
+  // email ke Google. Kunci yang tidak disertakan tidak disentuh sama sekali.
+  const baris: Record<string, unknown> = { privy_did: did };
+  if (identitas?.email) baris.email = identitas.email;
+  if (identitas?.phone) baris.phone = identitas.phone;
+
+  // Klaim klien diterima hanya bila metode itu memang tertaut di Privy.
+  // Kalau tidak, dipakai metode yang ada — dan bila Privy tidak terbaca,
+  // kolomnya tidak disentuh sama sekali.
+  const diklaim = METODE.find((m) => m === body.authProvider);
+  if (identitas) {
+    const dipakai =
+      diklaim && identitas.metode.has(diklaim)
+        ? diklaim
+        : METODE.find((m) => identitas.metode.has(m));
+    if (dipakai) baris.auth_provider = dipakai;
+  }
+
   const { data: userRow, error: userErr } = await supa
     .from("users")
-    .upsert(
-      {
-        privy_did: did,
-        email: body.email ?? null,
-        phone: body.phone ?? null,
-        auth_provider: body.authProvider ?? null,
-      },
-      { onConflict: "privy_did" },
-    )
+    .upsert(baris, { onConflict: "privy_did" })
     .select("id")
     .single();
 
   if (userErr || !userRow) {
-    return NextResponse.json(
-      { error: "Gagal menyimpan user" },
-      { status: 500 },
-    );
+    console.error(`[auth] simpan user gagal (did=${did}):`, userErr);
+    return NextResponse.json({ error: "Gagal menyimpan user" }, { status: 500 });
   }
 
-  if (body.wallet) {
-    await supa.from("wallets").upsert(
+  if (identitas?.alamat) {
+    const { error: errWallet } = await supa.from("wallets").upsert(
       {
         user_id: userRow.id,
-        address: body.wallet,
+        address: identitas.alamat,
         provider: "privy",
         chain_default: "opbnb",
       },
       { onConflict: "user_id" },
     );
+    // Gagal menyimpan dompet TIDAK menggagalkan login: `alamatWalletUser()`
+    // akan mencobanya lagi pada permintaan berikutnya. Yang tidak boleh adalah
+    // gagal diam-diam — `wallets.address` juga unik, dan bentrok di situ
+    // berarti alamat yang sama terdaftar pada user lain.
+    if (errWallet) {
+      console.error(
+        `[auth] simpan dompet gagal (uid=${userRow.id}, sqlstate=${
+          (errWallet as { code?: string }).code ?? "-"
+        }):`,
+        errWallet,
+      );
+    }
   }
 
   cookies().set(
@@ -107,7 +149,7 @@ export async function POST(req: Request) {
     },
   );
 
-  return NextResponse.json({ ok: true, wallet: body.wallet ?? null });
+  return NextResponse.json({ ok: true, wallet: identitas?.alamat ?? null });
 }
 
 export async function DELETE() {

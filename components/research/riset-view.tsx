@@ -79,7 +79,7 @@ export function RisetView({ initialQuery }: { initialQuery: string }) {
       if (res.status === 402) {
         setPhase("error");
         setNotice(
-          "Kredit kamu belum cukup untuk riset baru. Kredit gratis di-reset tiap hari pukul 00.00 WIB — pembelian kredit hadir di M3.",
+          "Kredit kamu belum cukup untuk riset baru. Kredit gratis harian masuk tiap pukul 00.00 WIB.",
         );
         return;
       }

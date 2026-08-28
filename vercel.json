@@ -4,6 +4,10 @@
     {
       "path": "/api/relayer/tick",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/pemeliharaan/purge",
+      "schedule": "15 18 * * *"
     }
   ]
 }
