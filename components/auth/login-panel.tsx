@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -20,47 +20,68 @@ import {
   pesanOauth,
 } from "@/lib/privy/galat-masuk";
 import { simpanTujuanDariUrl } from "@/lib/auth/tujuan";
-import { Button } from "@/components/ui/button";
+import { CarouselVerba } from "@/components/auth/carousel-verba";
 
 /**
- * Logo + judul + sub jadi satu blok (§ revisi header, logo±32px di atas
- * judul) — AuthLayout tidak lagi merender logo terpisah untuk /masuk supaya
- * seluruh blok bisa di-center bersama di viewport.
+ * Layar masuk — tampilan mengikuti docs/mockups/aidm-onboarding-fuse.html.
  *
- * Di sinilah kunci horizontal IDM TOKEN dipakai, bukan lambang berliannya:
- * layar ini satu-satunya yang punya lebar bebas. Kunci itu sudah memuat
- * wordmark-nya sendiri, jadi teks "AIDM" di sebelahnya dihapus — dua wordmark
- * berdampingan hanya saling berebut perhatian.
+ * TIDAK ADA logo di layar ini. Logo sudah tampil penuh layar di splash beberapa
+ * detik sebelumnya; mengulangnya di sini hanya memakan ruang yang seharusnya
+ * milik janji produk. Penggantinya adalah carousel verba — Catat, Lapor,
+ * Segel, Unduh — empat kata yang mengatakan apa yang akan terjadi.
+ *
+ * Perubahan di berkas ini murni PRESENTASI. Mesin autentikasinya —
+ * `mulaiGoogle`, `kirimKode`, `kirimJawaban`, penukaran sesi, dan seluruh
+ * state di bawah — tidak disentuh sama sekali.
  */
-function Intro() {
+
+/** Cangkang full-bleed: gradien mengisi seluruh viewport, konten satu kolom. */
+function Cangkang({
+  children,
+  form = false,
+}: {
+  children: ReactNode;
+  form?: boolean;
+}) {
   return (
-    <div>
-      {/* prefetch dimatikan: /beranda adalah rute TERLINDUNGI, dan di halaman
-          ini pengguna menurut definisi belum punya sesi. Prefetch otomatis
-          Next akan menembak /beranda → middleware memantulkannya ke
-          /masuk?next=/beranda, dan rantai pengalihan itulah yang lewat service
-          worker sebelum login selesai. Tidak ada gunanya memuat awal halaman
-          yang pasti dipantulkan. */}
-      <Link href="/beranda" prefetch={false} className="mb-8 flex">
-        {/* 136×30 = rasio asli 1729:381 setelah dipangkas. Angkanya dikunci
-            supaya kunci logo tidak pernah gepeng kalau ada yang menyetel
-            ulang tinggi blok ini. */}
-        <Image
-          src="/brand/idmtokenlogo.png"
-          alt="IDM TOKEN"
-          width={136}
-          height={30}
-          priority
-        />
-      </Link>
-      <div className="space-y-3">
-        <h1>Catat usahamu, dalam satu ucap.</h1>
-        <p className="text-[15px] leading-relaxed text-ink-muted">
-          Tulis atau ucapkan transaksimu — AIDM merapikannya jadi laporan
-          keuangan yang rapi dan bisa diunduh kapan saja.
-        </p>
+    <div className="onboarding ob-masuk">
+      <div className={`ob-masuk__kolom${form ? " ob-masuk__kolom--form" : ""}`}>
+        {children}
       </div>
     </div>
+  );
+}
+
+/** Judul layar. Dipakai di semua langkah supaya ukurannya tidak melompat. */
+function Judul({ children }: { children: ReactNode }) {
+  return <h1 className="ob-headline">{children}</h1>;
+}
+
+/** Lambang Google pada tombol primer. */
+function IkonGoogle() {
+  return (
+    <svg className="ob-btn__g" viewBox="0 0 24 24" aria-hidden>
+      <path
+        fill="#fff"
+        opacity=".95"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.76h3.56c2.08-1.92 3.28-4.74 3.28-8.09Z"
+      />
+      <path
+        fill="#fff"
+        opacity=".8"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.76c-.98.66-2.23 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"
+      />
+      <path
+        fill="#fff"
+        opacity=".65"
+        d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z"
+      />
+      <path
+        fill="#fff"
+        opacity=".9"
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z"
+      />
+    </svg>
   );
 }
 
@@ -236,24 +257,41 @@ function ConfiguredLogin() {
   // di tengah proses yang sudah berjalan.
   if (syncing) {
     return (
-      <div className="space-y-6">
-        <Intro />
-        <Button size="lg" fullWidth disabled>
-          Menyiapkan akun…
-        </Button>
-      </div>
+      <Cangkang>
+        <CarouselVerba />
+        <div className="ob-sheet">
+          <Judul>
+            Catat usahamu,
+            <br />
+            dalam satu ucap.
+          </Judul>
+          <button type="button" className="ob-btn ob-btn--primer" disabled>
+            Menyiapkan akun…
+          </button>
+        </div>
+      </Cangkang>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <Intro />
+  if (langkah === "pilih") {
+    return (
+      <Cangkang>
+        <CarouselVerba />
 
-      {langkah === "pilih" ? (
-        <div className="space-y-3">
-          <Button
-            size="lg"
-            fullWidth
+        <div className="ob-sheet">
+          <Judul>
+            Catat usahamu,
+            <br />
+            dalam satu ucap.
+          </Judul>
+          <p className="ob-sub">
+            Tulis atau ucapkan transaksimu — AIDM merapikannya jadi laporan
+            keuangan yang rapi dan bisa diunduh kapan saja.
+          </p>
+
+          <button
+            type="button"
+            className="ob-btn ob-btn--primer"
             disabled={!ready || sibukOauth}
             onClick={() => {
               if (syncError) {
@@ -264,44 +302,49 @@ function ConfiguredLogin() {
               void mulaiGoogle();
             }}
           >
+            {syncError ? null : <IkonGoogle />}
             {sibukOauth
               ? "Membuka Google…"
               : syncError
                 ? "Coba lagi"
                 : "Lanjut dengan Google"}
-          </Button>
+          </button>
 
           <button
             type="button"
+            className="ob-btn ob-btn--hantu"
             disabled={!ready || sibukOauth}
             onClick={() => {
               setGalat(null);
               setLangkah("email");
             }}
-            className="w-full py-1 text-center text-[13px] font-semibold text-gold-deep disabled:opacity-40"
           >
             Pakai email saja
           </button>
 
-          {pesan ? <Pesan>{pesan}</Pesan> : (
-            <p className="text-center text-[12px] text-ink-subtle">
-              Akunmu langsung siap dipakai mencatat.
-            </p>
+          {pesan ? (
+            <Pesan>{pesan}</Pesan>
+          ) : (
+            <p className="ob-foot">Akunmu langsung siap dipakai mencatat.</p>
           )}
         </div>
-      ) : null}
+      </Cangkang>
+    );
+  }
 
-      {langkah === "email" ? (
+  if (langkah === "email") {
+    return (
+      <Cangkang form>
         <form
-          className="space-y-3"
+          className="flex flex-col gap-3"
           onSubmit={(e) => {
             e.preventDefault();
             if (emailSah && !mengirimKode) void kirimKode(email.trim());
           }}
         >
-          <div className="space-y-1.5">
-            <h2>Masuk pakai email</h2>
-            <p className="text-[13px] leading-relaxed text-ink-muted">
+          <div>
+            <Judul>Masuk pakai email</Judul>
+            <p className="ob-sub !mb-0">
               Kami kirim kode 6 angka ke emailmu. Tidak perlu kata sandi.
             </p>
           </div>
@@ -318,126 +361,126 @@ function ConfiguredLogin() {
             className="w-full rounded-card border border-line bg-surface px-4 py-3 text-[15px] text-ink outline-none placeholder:text-ink-subtle focus:border-gold-deep"
           />
 
-          <Button
-            size="lg"
-            fullWidth
+          <button
             type="submit"
+            className="ob-btn ob-btn--primer"
             disabled={!emailSah || mengirimKode}
           >
             {mengirimKode ? "Mengirim…" : "Kirim kode"}
-          </Button>
+          </button>
 
           {pesan ? <Pesan>{pesan}</Pesan> : null}
 
           <button
             type="button"
+            className="ob-tautan"
             onClick={() => {
               setGalat(null);
               setLangkah("pilih");
             }}
-            className="w-full py-1 text-center text-[13px] font-semibold text-ink-muted"
           >
             ← Pilih cara lain
           </button>
         </form>
-      ) : null}
+      </Cangkang>
+    );
+  }
 
-      {langkah === "kode" ? (
-        <form
-          className="space-y-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (kode.length === 6 && !memeriksaKode && !kodeHabis) {
-              void kirimJawaban(kode);
+  return (
+    <Cangkang form>
+      <form
+        className="flex flex-col gap-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (kode.length === 6 && !memeriksaKode && !kodeHabis) {
+            void kirimJawaban(kode);
+          }
+        }}
+      >
+        <div>
+          <Judul>Masukkan 6 angka</Judul>
+          <p className="ob-sub !mb-0">
+            Kode sudah dikirim ke{" "}
+            <strong className="text-ink">{email.trim()}</strong>. Cek juga folder
+            spam ya.
+          </p>
+        </div>
+
+        {/*
+          SATU kotak, bukan enam. `autocomplete="one-time-code"` hanya bekerja
+          pada satu field — dan itulah yang membuat ponsel menawarkan kodenya
+          sendiri, sekali ketuk, tanpa mengetik. Enam kotak terpisah terlihat
+          lebih rapi tapi mematikan fitur yang justru paling menolong di
+          layar ini. Jarak antarhuruf yang membuatnya tetap terbaca per angka.
+        */}
+        <input
+          ref={kodeRef}
+          type="text"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={6}
+          value={kode}
+          disabled={memeriksaKode || kodeHabis}
+          onChange={(e) => {
+            const bersih = e.target.value.replace(/\D/g, "").slice(0, 6);
+            setKode(bersih);
+            // Kirim otomatis begitu enam angka lengkap — tidak ada gunanya
+            // menuntut satu ketukan lagi setelah angka terakhir masuk.
+            if (bersih.length === 6 && !memeriksaKode && !kodeHabis) {
+              void kirimJawaban(bersih);
             }
           }}
-        >
-          <div className="space-y-1.5">
-            <h2>Masukkan 6 angka</h2>
-            <p className="text-[13px] leading-relaxed text-ink-muted">
-              Kode sudah dikirim ke <strong className="text-ink">{email.trim()}</strong>.
-              Cek juga folder spam ya.
-            </p>
-          </div>
+          aria-label="Kode 6 angka"
+          className="tnum w-full rounded-card border border-line bg-surface px-4 py-3 text-center text-[24px] font-bold tracking-[0.5em] text-ink outline-none focus:border-gold-deep disabled:opacity-50"
+        />
 
-          {/*
-            SATU kotak, bukan enam. `autocomplete="one-time-code"` hanya bekerja
-            pada satu field — dan itulah yang membuat ponsel menawarkan kodenya
-            sendiri, sekali ketuk, tanpa mengetik. Enam kotak terpisah terlihat
-            lebih rapi tapi mematikan fitur yang justru paling menolong di
-            layar ini. Jarak antarhuruf yang membuatnya tetap terbaca per angka.
-          */}
-          <input
-            ref={kodeRef}
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            value={kode}
-            disabled={memeriksaKode || kodeHabis}
-            onChange={(e) => {
-              const bersih = e.target.value.replace(/\D/g, "").slice(0, 6);
-              setKode(bersih);
-              // Kirim otomatis begitu enam angka lengkap — tidak ada gunanya
-              // menuntut satu ketukan lagi setelah angka terakhir masuk.
-              if (bersih.length === 6 && !memeriksaKode && !kodeHabis) {
-                void kirimJawaban(bersih);
-              }
-            }}
-            aria-label="Kode 6 angka"
-            className="tnum w-full rounded-card border border-line bg-surface px-4 py-3 text-center text-[24px] font-bold tracking-[0.5em] text-ink outline-none focus:border-gold-deep disabled:opacity-50"
-          />
+        {memeriksaKode ? <p className="ob-foot !mt-0">Memeriksa…</p> : null}
 
-          {memeriksaKode ? (
-            <p className="text-center text-[12px] text-ink-subtle">Memeriksa…</p>
-          ) : null}
+        {pesan ? <Pesan>{pesan}</Pesan> : null}
 
-          {pesan ? <Pesan>{pesan}</Pesan> : null}
-
-          <div className="flex items-center justify-center gap-1.5 text-[13px]">
-            {hitungMundur > 0 && !kodeHabis ? (
-              <span className="text-ink-subtle">
-                Kirim ulang dalam{" "}
-                <span className="tnum font-semibold text-ink-muted">
-                  0:{String(hitungMundur).padStart(2, "0")}
-                </span>
+        <div className="flex items-center justify-center gap-1.5 text-[13px]">
+          {hitungMundur > 0 && !kodeHabis ? (
+            <span className="text-ink-subtle">
+              Kirim ulang dalam{" "}
+              <span className="tnum font-semibold text-ink-muted">
+                0:{String(hitungMundur).padStart(2, "0")}
               </span>
-            ) : (
-              <button
-                type="button"
-                disabled={mengirimKode}
-                onClick={() => void kirimKode(email.trim())}
-                className="font-semibold text-gold-deep disabled:opacity-40"
-              >
-                {mengirimKode ? "Mengirim…" : "Kirim ulang kode"}
-              </button>
-            )}
-          </div>
+            </span>
+          ) : (
+            <button
+              type="button"
+              className="ob-tautan"
+              disabled={mengirimKode}
+              onClick={() => void kirimKode(email.trim())}
+            >
+              {mengirimKode ? "Mengirim…" : "Kirim ulang kode"}
+            </button>
+          )}
+        </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setGalat(null);
-              setKode("");
-              setGagalKode(0);
-              setLangkah("email");
-            }}
-            className="w-full py-1 text-center text-[13px] font-semibold text-ink-muted"
-          >
-            ← Ganti email
-          </button>
-        </form>
-      ) : null}
-    </div>
+        <button
+          type="button"
+          className="ob-tautan"
+          onClick={() => {
+            setGalat(null);
+            setKode("");
+            setGagalKode(0);
+            setLangkah("email");
+          }}
+        >
+          ← Ganti email
+        </button>
+      </form>
+    </Cangkang>
   );
 }
 
 /** Satu bentuk untuk seluruh pesan galat & keterangan di layar masuk. */
-function Pesan({ children }: { children: React.ReactNode }) {
+function Pesan({ children }: { children: ReactNode }) {
   return (
     <p
       role="alert"
-      className="rounded-card bg-gold-tint px-4 py-3 text-center text-[12px] leading-relaxed text-ink-muted"
+      className="mt-3 rounded-card bg-gold-tint px-4 py-3 text-center text-[12px] leading-relaxed text-ink-muted"
     >
       {children}
     </p>
@@ -446,8 +489,8 @@ function Pesan({ children }: { children: React.ReactNode }) {
 
 function PlaceholderLogin() {
   return (
-    <div className="space-y-6">
-      <Intro />
+    <Cangkang form>
+      <Judul>Catat usahamu, dalam satu ucap.</Judul>
       <div className="card space-y-1 p-4">
         <p className="text-[13px] font-semibold text-ink">Mode demo</p>
         <p className="text-[13px] leading-relaxed text-ink-muted">
@@ -459,10 +502,10 @@ function PlaceholderLogin() {
           masuk lewat Google atau email.
         </p>
       </div>
-      <Link href="/beranda" className="btn-primary">
+      <Link href="/beranda" className="ob-btn ob-btn--primer">
         Lihat demo Beranda
       </Link>
-    </div>
+    </Cangkang>
   );
 }
 

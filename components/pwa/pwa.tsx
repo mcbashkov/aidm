@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -9,10 +10,37 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 /**
+ * Rute yang TIDAK boleh dilewati banner "Pasang".
+ *
+ * Dua alasan, dan keduanya berdiri sendiri:
+ *
+ *   1. Tata letak. Banner ini `fixed bottom-16 z-50`, sementara layar
+ *      splash & masuk menempelkan tombolnya ke dasar layar. Keduanya berebut
+ *      piksel yang sama, dan yang menang adalah banner — ketukan pada
+ *      "Pakai email saja" mendarat di kartu Pasang. Terbukti di browser:
+ *      kunjungan pertama lolos, kunjungan kedua dan seterusnya (saat banner
+ *      memenuhi syarat tampil) tombolnya tidak pernah menerima klik.
+ *   2. Waktunya salah. §9.5 meminta prompt muncul setelah AKTIVITAS kedua.
+ *      Mencoba masuk bukan aktivitas — meminta orang memasang aplikasi
+ *      sebelum ia punya akun adalah menagih komitmen sebelum memberi nilai.
+ *
+ * Registrasi service worker TIDAK ikut dimatikan: ia tetap berjalan di semua
+ * rute. Yang ditahan hanya kartunya.
+ */
+const TANPA_BANNER = ["/", "/masuk", "/onboarding"];
+
+function diRuteAuth(pathname: string): boolean {
+  return TANPA_BANNER.some(
+    (p) => pathname === p || (p !== "/" && pathname.startsWith(`${p}/`)),
+  );
+}
+
+/**
  * Registrasi service worker + prompt "Pasang" kontekstual (muncul setelah
  * aktivitas ke-2, bukan kunjungan pertama — §9.5).
  */
 export function Pwa() {
+  const pathname = usePathname();
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
     null,
   );
@@ -43,7 +71,10 @@ export function Pwa() {
       window.removeEventListener("beforeinstallprompt", onPrompt);
   }, []);
 
-  if (!show || !deferred) return null;
+  // Peristiwa `beforeinstallprompt` tetap ditangkap dan dihitung di atas —
+  // yang ditahan hanya penampilannya. Begitu pengguna pindah ke layar
+  // aplikasi, kartunya muncul tanpa perlu peristiwa itu terulang.
+  if (!show || !deferred || diRuteAuth(pathname)) return null;
 
   async function install() {
     await deferred?.prompt();

@@ -27,10 +27,20 @@ echo "→ manifest 'maskable' (bg ivory hangat #FAF7F0, zona aman 70%)"
 convert -size 512x512 xc:'#FAF7F0' \( "$SRC" -resize 360x360 \) -gravity center -composite "$ICO/maskable-512.png"
 convert "$ICO/maskable-512.png" -resize 192x192 "$ICO/maskable-192.png"
 
-echo "→ Next app conventions (favicon, icon, apple-icon)"
+echo "→ Next app conventions (favicon, icon, apple-icon) — TRANSPARAN"
+# Ketiganya dirender di atas kanvas KOSONG (xc:none), bukan ivory. Ikon yang
+# membawa latarnya sendiri terlihat seperti stiker tertempel di tab gelap dan
+# di layar utama bertema gelap; alpha membiarkan sistem operasi yang memutuskan
+# latarnya. `-background none -alpha on` dipasang eksplisit karena ImageMagick
+# meratakan alpha saat menulis ICO bila tidak diminta sebaliknya.
 convert "$SRC" -resize 512x512 "$APP/icon.png"
-convert -size 180x180 xc:'#FAF7F0' \( "$SRC" -resize 140x140 \) -gravity center -composite "$APP/apple-icon.png"
-convert -size 256x256 xc:'#FAF7F0' \( "$SRC" -resize 200x200 \) -gravity center -composite "/tmp/aidm_favicon_src.png"
-convert "/tmp/aidm_favicon_src.png" -define icon:auto-resize=16,32,48 "$APP/favicon.ico"
+convert -size 180x180 xc:none \( "$SRC" -resize 152x152 \) -gravity center \
+  -composite -background none -alpha on "$APP/apple-icon.png"
+# Favicon dirender dari kanvas 256 TANPA padding tambahan: lambangnya sudah
+# membawa ~7% ruang sendiri, dan pada 16px setiap piksel padding ekstra ditukar
+# dengan garis yang lebih tipis dari satu piksel.
+convert "$SRC" -resize 256x256 -background none -alpha on "/tmp/aidm_favicon_src.png"
+convert "/tmp/aidm_favicon_src.png" -background none -alpha on \
+  -define icon:auto-resize=16,32,48 "$APP/favicon.ico"
 
 echo "Selesai. Ikon ada di public/icons + app/."

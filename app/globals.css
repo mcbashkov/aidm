@@ -233,3 +233,416 @@ body {
     text-wrap: balance;
   }
 }
+
+/* ==========================================================================
+   ONBOARDING — splash & layar masuk
+   Mengikuti docs/mockups/aidm-onboarding-fuse.html.
+
+   Kenapa CSS tangan, bukan utilitas Tailwind: layar ini hidup dari gradien
+   berlapis, mask, dan geometri carousel yang angkanya saling terikat (tinggi
+   baris 74px ↔ penanda 128px ↔ mask 24–70%). Menuliskannya sebagai rentetan
+   kelas arbitrer membuat hubungan itu tak terbaca, dan yang berikutnya
+   menyentuhnya akan menggeser satu angka tanpa tahu dua angka lain ikut.
+   ========================================================================== */
+
+.onboarding {
+  /* Token layar ini — SENGAJA dilingkup di sini, tidak dinaikkan ke :root.
+     Nilai emas & abu pada mockup berbeda tipis dari palet aplikasi
+     (--gold #EDB415 vs #F0B90B · --gold-deep #B9860C vs #D89E0A ·
+     muted #8E8574 vs #8A8175). Menaikkannya ke global akan menggeser warna
+     SELURUH aplikasi demi dua layar. Dua nilai yang memang identik dengan
+     sistem dibaca dari var aplikasi, supaya tidak lahir dua sumber untuk satu
+     angka yang sama. */
+  --ob-cream: var(--bg); /* #FAF7F0 — identik dengan sistem */
+  --ob-cream-2: #f7efdd;
+  --ob-cream-3: #f3e6c6;
+  --ob-ink: var(--cta); /* #1B1B1B — identik dengan --cta/--charcoal */
+  --ob-ink-soft: #4a463e;
+  --ob-muted: #a79e8c;
+  --ob-muted-2: #8e8574;
+  --ob-gold: #edb415;
+  --ob-gold-deep: #b9860c;
+  --ob-hair: rgba(27, 27, 27, 0.12);
+}
+
+/* ── Splash ─────────────────────────────────────────────────────────────── */
+
+.ob-splash {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 100dvh, bukan 100vh: bilah alamat seluler yang menyusut membuat 100vh
+     lebih tinggi dari layar sebenarnya, dan wordmark terdorong keluar. */
+  min-height: 100dvh;
+  padding: calc(env(safe-area-inset-top) + 24px) 24px
+    calc(env(safe-area-inset-bottom) + 24px);
+  background: radial-gradient(
+    120% 85% at 50% 42%,
+    #fffdf8 0%,
+    var(--ob-cream) 52%,
+    #f1e8d6 100%
+  );
+  cursor: pointer;
+}
+
+.ob-splash__logo {
+  width: 60%;
+  max-width: 236px;
+  height: auto;
+  filter: drop-shadow(0 10px 26px rgba(185, 134, 12, 0.22));
+  opacity: 0;
+  transform: scale(0.9);
+  animation: ob-logo-in 1.5s cubic-bezier(0.16, 0.84, 0.3, 1) forwards;
+}
+
+.ob-splash__wordmark {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom) + 84px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  text-align: center;
+  opacity: 0;
+  animation: ob-fade-up 0.8s ease 0.5s forwards;
+}
+
+.ob-splash__brand {
+  font-family: var(--font-fraunces), Georgia, Cambria, serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ob-gold-deep);
+  /* Letter-spacing menambah ruang SESUDAH huruf terakhir; padding kiri
+     sebesar nilai yang sama mengembalikan blok ke tengah optis. */
+  padding-left: 0.3em;
+}
+
+.ob-splash__by {
+  font-family: var(--font-jakarta), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ob-muted-2);
+  padding-left: 0.2em;
+}
+
+@keyframes ob-logo-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  26% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  82% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.015);
+  }
+}
+
+@keyframes ob-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (min-width: 641px) {
+  .ob-splash__logo {
+    max-width: 260px;
+  }
+}
+
+/* ── Layar masuk ────────────────────────────────────────────────────────── */
+
+.ob-masuk {
+  display: flex;
+  justify-content: center;
+  min-height: 100dvh;
+  /* Full-bleed: gradien mengisi seluruh viewport, bukan hanya kolom kontennya
+     — inilah yang dulu membuat versi desktop tampak mengambang di tengah
+     dengan sisa layar kosong. */
+  background:
+    radial-gradient(
+      150% 62% at 50% 122%,
+      rgba(237, 180, 21, 0.26) 0%,
+      rgba(237, 180, 21, 0.07) 44%,
+      rgba(237, 180, 21, 0) 66%
+    ),
+    linear-gradient(
+      180deg,
+      var(--ob-cream) 0%,
+      var(--ob-cream) 46%,
+      var(--ob-cream-2) 78%,
+      var(--ob-cream-3) 100%
+    );
+}
+
+.ob-masuk__kolom {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 460px;
+  min-height: 100dvh;
+  padding: calc(env(safe-area-inset-top) + 64px) 26px
+    calc(env(safe-area-inset-bottom) + 30px);
+}
+
+/* Langkah email & kode: tidak ada carousel, jadi isinya dipusatkan tegak. */
+.ob-masuk__kolom--form {
+  justify-content: center;
+  gap: 18px;
+}
+
+@media (min-width: 641px) {
+  .ob-masuk__kolom {
+    /* Satu kolom, dipusatkan mendatar DAN tegak. `margin-block:auto` pada
+       item flex-row inilah yang memusatkannya tegak — bukan
+       `justify-content`, yang di sini mengatur sumbu mendatar. */
+    min-height: 0;
+    margin-block: auto;
+    padding-block: 56px;
+  }
+}
+
+/* ── Carousel verba ─────────────────────────────────────────────────────── */
+
+.ob-carousel {
+  position: relative;
+  flex: 1 1 auto;
+  /* Lantai supaya kata tidak terpotong di layar pendek (ponsel mendatar):
+     lebih baik halaman ikut menggulir daripada carousel gepeng. */
+  min-height: 180px;
+  margin-top: 6px;
+  overflow: hidden;
+  -webkit-mask: linear-gradient(
+    180deg,
+    transparent 0,
+    #000 24%,
+    #000 70%,
+    transparent 100%
+  );
+  mask: linear-gradient(
+    180deg,
+    transparent 0,
+    #000 24%,
+    #000 70%,
+    transparent 100%
+  );
+}
+
+@media (min-width: 641px) {
+  .ob-carousel {
+    /* Tinggi TETAP di desktop: tanpa ini carousel memanjang mengisi viewport
+       tinggi dan tombol terdorong ke dasar layar. */
+    flex: 0 0 300px;
+    height: 300px;
+    /* Di mobile carousel punya ~430px sehingga kata terbawah sudah pudar jauh
+       sebelum judul. Pada 300px ia berakhir tepat di atas judul dan keduanya
+       terlihat berdesakan — jarak ini mengembalikan napasnya. */
+    margin-bottom: 18px;
+  }
+}
+
+.ob-track {
+  position: absolute;
+  left: 2px;
+  top: 0;
+  will-change: transform;
+}
+
+.ob-word {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  /* 74px terikat pada penanda 128px di komponen — ubah satu, ubah keduanya. */
+  height: 74px;
+  font-family: var(--font-jakarta), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 44px;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--ob-muted);
+  opacity: 0.3;
+  transition:
+    color 0.5s ease,
+    opacity 0.5s ease;
+}
+
+.ob-word--aktif {
+  color: var(--ob-ink);
+  opacity: 1;
+}
+
+.ob-word__ico {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  color: var(--ob-gold);
+  opacity: 0;
+  transform: scale(0.55) rotate(-8deg);
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s cubic-bezier(0.16, 0.84, 0.3, 1);
+}
+
+.ob-word--aktif .ob-word__ico {
+  opacity: 1;
+  transform: none;
+}
+
+.ob-word__ico svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Sheet: nilai + tombol ──────────────────────────────────────────────── */
+
+.ob-sheet {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.ob-headline {
+  font-family: var(--font-fraunces), Georgia, Cambria, serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-size: 32px;
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  color: var(--ob-ink);
+  margin: 0 0 12px;
+}
+
+.ob-sub {
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ob-ink-soft);
+  margin: 0 0 22px;
+  max-width: 19em;
+}
+
+.ob-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  width: 100%;
+  height: 56px;
+  border: none;
+  border-radius: 999px;
+  font-family: var(--font-jakarta), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    filter 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.ob-btn:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.ob-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* Fokus keyboard WAJIB terlihat — tombol ini gelap, jadi cincinnya emas. */
+.ob-btn:focus-visible,
+.ob-tautan:focus-visible {
+  outline: 2px solid var(--ob-gold-deep);
+  outline-offset: 3px;
+}
+
+.ob-btn--primer {
+  background: var(--ob-ink);
+  color: #fff;
+}
+
+.ob-btn--primer:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.ob-btn--hantu {
+  margin-top: 12px;
+  background: rgba(27, 27, 27, 0.045);
+  color: var(--ob-ink);
+  border: 1px solid var(--ob-hair);
+}
+
+.ob-btn--hantu:hover:not(:disabled) {
+  background: rgba(27, 27, 27, 0.075);
+}
+
+.ob-btn__g {
+  flex: 0 0 19px;
+  width: 19px;
+  height: 19px;
+}
+
+.ob-foot {
+  margin: 16px auto 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ob-muted-2);
+  text-align: center;
+}
+
+.ob-tautan {
+  align-self: center;
+  padding: 6px 4px;
+  background: none;
+  border: none;
+  font-family: var(--font-jakarta), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ob-gold-deep);
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.ob-tautan:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ── Gerak berkurang ────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .ob-splash__logo,
+  .ob-splash__wordmark {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .ob-track,
+  .ob-word,
+  .ob-word__ico,
+  .ob-btn {
+    transition: none;
+  }
+  .ob-word__ico {
+    transform: none;
+  }
+}

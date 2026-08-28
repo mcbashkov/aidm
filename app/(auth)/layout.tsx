@@ -7,21 +7,19 @@ import { usePathname } from "next/navigation";
 
 /**
  * Layout onboarding/auth: satu fokus per layar, tanpa nav (§13).
- * /masuk (§ revisi header): logo+judul+sub+tombol jadi satu blok, di-center
- * penuh di viewport — logonya dirender oleh LoginPanel sendiri, jadi di sini
- * cukup center children tanpa logo terpisah. Onboarding (peran/usaha) TIDAK
- * berubah: logo tetap pinned di atas seperti sebelumnya.
+ *
+ * /masuk TIDAK dibungkus apa pun di sini. Layar itu punya cangkangnya sendiri
+ * (`LoginPanel`) yang harus full-bleed sampai tepi viewport — gradien cream ke
+ * gold wash mengisi seluruh layar. Membungkusnya dengan pembatas `max-w-md`
+ * seperti sebelumnya justru penyebab masalah lama di desktop: konten sempit
+ * mengambang di tengah dengan sisa layar kosong di kanan-kiri.
+ *
+ * Onboarding (peran/usaha) TIDAK berubah: logo tetap pinned di atas.
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
-  if (pathname === "/masuk") {
-    return (
-      <div className="flex min-h-dvh items-center justify-center bg-bg px-6">
-        <div className="w-full max-w-md">{children}</div>
-      </div>
-    );
-  }
+  if (pathname === "/masuk") return <>{children}</>;
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg">
