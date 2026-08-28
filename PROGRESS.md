@@ -633,6 +633,52 @@ periode yang dilihat, tidak ada durasi.
 Progres `1/2` untuk "kedua sisi" disengaja: bar setengah memberi petunjuk yang
 benar — yang kurang bukan "catat lebih banyak", melainkan "catat sisi satunya".
 
+### 5b. ~~Onboarding: splash + layar masuk gaya Fuse~~ — ✅ **SELESAI 2026-08-28**
+
+Perubahan PRESENTASI atas permintaan PO, mengikuti
+`docs/mockups/aidm-onboarding-fuse.html`. Mesin autentikasi tidak disentuh.
+
+- [x] **Splash di rute `/`** — cream + glow radial (bukan hitam: layar hitam
+      pembuka terbaca seperti layar mati di aplikasi pembukuan). Logo
+      fade+scale 1,5 dtk, wordmark menyusul, pindah sendiri ke `/masuk` pada
+      detik ke-2, seluruh layar bisa diketuk untuk melewati. **Hanya untuk yang
+      belum punya sesi** — cookie dibaca di server, yang sudah masuk tetap
+      langsung ke Beranda.
+- [x] **Carousel verba** Catat→Lapor→Segel→Unduh dengan loop tiga-salinan:
+      penunjuk yang mencapai salinan ketiga dikembalikan ke salinan kedua TANPA
+      animasi. Karena keduanya kata sama di posisi sama, lompatannya tak
+      terlihat — tidak pernah "mundur cepat".
+- [x] **Desktop diperbaiki, bukan sekadar diciutkan.** Latar full-bleed sampai
+      tepi viewport (inilah yang dulu membuat login mengambang sempit di tengah
+      dengan sisa layar kosong), kolom 460px dipusatkan mendatar DAN tegak,
+      carousel tinggi tetap 300px, tombol tidak dipepet ke dasar.
+- [x] **Token mockup dilingkup di `.onboarding`, TIDAK dinaikkan ke `:root`** —
+      emas & abunya beda tipis dari palet aplikasi (#EDB415 vs #F0B90B,
+      #B9860C vs #D89E0A) dan menaikkannya akan menggeser warna seluruh
+      aplikasi demi dua layar.
+- [x] **Ikon transparan.** favicon.ico (16/32/48) dan apple-touch-icon 180 kini
+      transparan; maskable Android hitam `#000000` — sama dengan yang diisi iOS
+      sendiri di balik alpha, atas keputusan PO.
+- [x] **Bug ditemukan & diperbaiki:** banner "Pasang AIDM"
+      (`fixed bottom-16 z-50`) menutupi tombol login. Terbukti dengan klik
+      mouse sungguhan — kunjungan pertama lolos, kedua dan seterusnya (saat
+      banner memenuhi syarat tampil) ketukan mendarat di kartu Pasang. Desain
+      lama tidak kena karena kontennya di tengah layar. Banner kini ditahan di
+      rute auth; registrasi service worker tetap jalan.
+
+**Verifikasi:** 91 pemeriksaan Chrome headless lulus 0 gagal, dijalankan DUA
+kali — localhost dan `https://ai.idmtoken.com`. Nol luber mendatar di
+1440/1024/768/390, konsol bersih di produksi (galat CSP Privy hanya artefak
+localhost), carousel terbukti reset satu-langkah bukan animasi mundur,
+reduced-motion diam di 'Catat'.
+
+**Tersisa di tangan PO:** lambang sederhana untuk favicon 16px. Berkas
+`logo-mark-simple.svg` yang dikirim ternyata BELUM disederhanakan — diukur,
+bukan dikira: irisan mendatar menunjukkan 10 garis tebal 4,2–4,6% lebar, angka
+identik dengan `logo-master` (selisih artwork 1,18/kanal = gambar yang sama).
+Yang dibutuhkan: **≤ 3 garis, tebal ≥ 10% lebar, PNG 1024×1024 RGBA.** Tanpa
+itu pun 32/48/180/192/512 sudah baik; hanya 16px yang tetap jadi bercak.
+
 ### 6. 🤖 Utang teknis kecil
 
 - [x] ~~Peringatan saldo kontrak reward menipis~~ — dipasang 2026-08-27 di

@@ -127,6 +127,8 @@ lewat SQL langsung, jadi tidak menambah biaya model.
 
 ```
 app/
+  page.tsx           splash pembuka (logo IDM → /masuk); yang sudah punya sesi
+                     langsung ke Beranda
   (auth)/            masuk + onboarding (peran, usaha) — fokus tunggal per layar
   (app)/             shell + Beranda · Catat · Laporan · Misi · Akun
                      (+ /riwayat, /premium, /kebijakan-privasi)
@@ -147,6 +149,7 @@ components/
   laporan/           SummaryCards · CashflowChart · CategoryBreakdown · SealCard
   layout/            BottomNav (<1024px) · TopNav (≥1024px) · HeaderStats · MobileTopBar
   research/          RisetView · AnswerArticle — kini di balik /premium
+  auth/              Splash · CarouselVerba · LoginPanel (gaya Fuse, §13)
   wallet/            WalletCard · SwapSheet (burn opBNB) · VoucherPanel (klaim BSC)
   account/           SettingsList · LogoutButton · DeleteAccount
   ui/                Button · Card · Skeleton · GagalMuat (keadaan gagal) ·
@@ -167,6 +170,8 @@ lib/
   wallet/            server — alamat dompet, diisi susulan dari Privy bila perlu
   wib.ts             SATU sumber batas hari WIB untuk seluruh aplikasi
   auth/              session-cookie · constants · tujuan (next → sessionStorage)
+  ui/gerak.ts        useGerakBerkurang() — prefers-reduced-motion utk gerak
+                     yang digerakkan JS (carousel, tahan splash)
   privy/             provider · config · galat-masuk (kalimat galat Indonesia) ·
                      server (verifikasi token) · identitas (email/telepon/dompet
                      dibaca dari Privy, bukan dari klien)
