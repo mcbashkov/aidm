@@ -179,7 +179,7 @@ const CATAT_MAKS = 200;
  *  2. **Draft ikut.** Draft adalah pertanyaan yang sedang menunggu jawaban
  *     nominal; kehilangan ia saat pindah tab berarti kehilangan percakapan yang
  *     belum selesai. Draft TIDAK PERNAH ikut dalam angka mana pun — trigger
- *     `daily_rollups` (0012) dan RPC `misi_hitung_harian` (0017) sama-sama
+ *     `daily_rollups` (0012) dan RPC `misi_sinyal_harian` (0023) sama-sama
  *     menyaring `status = 'confirmed'`, jadi jaminan itu ditegakkan DATABASE,
  *     bukan oleh kehati-hatian endpoint ini.
  *

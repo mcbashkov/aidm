@@ -39,7 +39,7 @@ perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
 
 | Milestone | Status | Bukti |
 |---|---|---|
-| M0 fondasi | ✅ selesai | migrasi 0001–0025, rute & onboarding v3.0 |
+| M0 fondasi | ✅ selesai | migrasi 0001–0026, rute & onboarding v3.0 |
 | M1 parser & tab Catat | ✅ selesai | `test:parser` 200/200 |
 | M2 suara & offline | ✅ selesai | uji lapangan Android 2026-08-14 (3 akun nyata) |
 | M3 Laporan & PDF | ✅ selesai | `test:api` mem-baca ulang isi PDF, bukan cuma header |
@@ -126,10 +126,13 @@ prompt instal PWA di Android (§7) · verifikasi source enam kontrak di explorer
 
 **Bisa saya kerjakan tanpa menunggu siapa pun, urutan usul:**
 
-1. **Cabut `misi_hitung_harian`** (§6) — utang sadar dari 0023, rilis sudah
-   mengendap lebih dari sepekan.
-2. **Diagnosis `no-response` service worker di `/masuk`** (§6).
-3. **Sisa M5** (§8) — seluruhnya menunggu keputusan #1–#3 di atas. Yang tidak
+1. ~~Cabut `misi_hitung_harian`~~ — ✅ **beres 2026-08-28** (migrasi 0026).
+2. ~~Diagnosis `no-response` service worker di `/masuk`~~ — ✅ **ternyata sudah
+   selesai sejak commit `44cb43b` + `324966b`.** `app/sw.ts` memuat penanganan
+   lengkapnya (`JALUR_TANPA_SW`, `janganSimpanPengalihan`, cache `pages-v2`) dan
+   `sw.js` di produksi mengandung seluruh penandanya. Entri papan kerja yang
+   basi, bukan pekerjaan yang tertinggal.
+3. **Sisa M5** (§8) — seluruhnya menunggu keputusan #1–#4 di atas. Yang tidak
    terhalang sudah selesai 2026-08-28 (lihat §8).
 
 ---
@@ -639,32 +642,47 @@ benar — yang kurang bukan "catat lebih banyak", melainkan "catat sisi satunya"
       ikut dilaporkan di respons tick sebagai `misi.kolamMenipis`.
 - [x] ~~Saldo IDMX hardcode `0`~~ — dibaca on-chain 2026-08-22
       (`lib/token/saldo.ts`, batas 2,5 dtk + cache 60 dtk; `null` ≠ 0)
-- [ ] **🤖 Cabut `misi_hitung_harian`** — RPC lama yang digantikan
-      `misi_sinyal_harian` (0023). Sengaja dibiarkan hidup satu rilis: deploy
-      aplikasi dan migrasi tidak pernah benar-benar serentak, dan versi lama
-      yang berjalan beberapa detik tidak boleh kehilangan progres misinya.
-      Cabut di migrasi berikutnya setelah 0023 mengendap. **Utang yang dibuat
-      sadar, bukan lupa.**
-- [ ] **🤖 `no-response` service worker di `/masuk`** — terlihat di konsol PO
-      2026-08-27: `The FetchEvent for .../masuk resulted in a network error`
-      lalu `no-response` dari `sw.js`. Halamannya tetap termuat, jadi ini tidak
-      memblokir siapa pun. Tapi `no-response` adalah nama kegagalan yang persis
-      dijelaskan di kepala `app/sw.ts` sebagai "navigasi berhenti tanpa suara",
-      dan `/masuk` SUDAH ada di `JALUR_TANPA_SW`. Dua kemungkinan, belum
-      didiagnosis: service worker versi lama masih memegang tab itu, atau ada
-      jalur yang belum tercakup.
-- [ ] **🤖 Hardening `POST /api/auth/session`** — satu-satunya `TODO` tersisa di
-      seluruh kode (`route.ts:25`): alamat wallet/email masih datang dari BADAN
-      PERMINTAAN setelah token terverifikasi. **Sekarang murah ditutup** —
-      `alamatWalletUser()` (B3) sudah menanyakan Privy sendiri lewat
-      `getUserById(did)`, jadi tinggal berhenti memercayai klien dan membaca
-      dari sumber yang berwenang.
-- [ ] **Bundle `/masuk` 851 KB vs target §12 ≤200 KB** — diukur ulang
-      2026-08-27, **belum dikerjakan, dan sengaja tidak disentuh di batch ini.**
-      Kabar baiknya: SDK Privy TIDAK ada di bundel bersama — seluruh tab
-      aplikasi 100–117 KB. Yang berat hanya `/masuk` (851) dan `/akun` (854),
-      dua layar yang memang memakainya. Menurunkan `/masuk` ke ≤200 KB menuntut
-      SDK ditunda di belakang ketukan tombol, sementara `usePrivy().authenticated`
+- [x] ~~**Cabut `misi_hitung_harian`**~~ — dicabut 2026-08-28 (migrasi 0026).
+      Utang yang dibuat sadar di 0023 dan dibayar tepat waktu: jendela "versi
+      lama masih melayani beberapa detik" sudah tertutup sepekan lebih. Sebelum
+      mencabut, dua hal diperiksa bukan diasumsikan — nol pemanggil di kode
+      (`grep` hanya menemukan komentar) dan `pg_depend` melaporkan nol objek
+      database yang bergantung padanya.
+- [x] ~~**`no-response` service worker di `/masuk`**~~ — **ternyata sudah
+      diperbaiki**, di commit `44cb43b` + `324966b`, sebelum entri ini ditulis.
+      `app/sw.ts` memuat penanganan lengkapnya: `JALUR_TANPA_SW` menaruh
+      `/masuk`, `/onboarding`, `/api/auth` di `NetworkOnly`; plugin
+      `janganSimpanPengalihan` menolak menyimpan respons `opaqueredirect` (akar
+      masalahnya — `cache.put()` menolaknya, `NetworkFirst` menghitung itu
+      sebagai "jaringan gagal", lalu tidak menemukan apa pun di cache →
+      `no-response`); dan cache diberi nama BARU `pages-v2` supaya perangkat
+      yang sudah memasang PWA meninggalkan salinan lama alih-alih mewarisinya.
+      Diverifikasi 2026-08-28 pada `sw.js` yang benar-benar disajikan produksi:
+      seluruh penandanya ada. **Yang basi adalah entri ini, bukan kodenya** —
+      pesan konsol yang dilihat PO datang dari service worker versi lama yang
+      masih memegang tab tersebut, persis kemungkinan pertama yang ditulis di
+      sini.
+- [x] ~~**Hardening `POST /api/auth/session`**~~ — selesai 2026-08-28. Lihat §8.
+      Menutup satu-satunya `TODO` di seluruh kode.
+- [ ] **Bundle `/masuk` 829 KB gzip vs target §12 ≤200 KB — 4,1× di atas
+      batas.** Diukur ulang 2026-08-28 dari `app-build-manifest`, dan angka
+      851 di keluaran `next build` ternyata **sudah gzip**, bukan mentah —
+      koreksi terhadap catatan sebelumnya yang menganggapnya sekadar "di atas
+      target". Penyebabnya persis DUA chunk (SDK Privy): 510,7 + 202,0 KB.
+      Sisanya — aplikasi kita sendiri — hanya **116,5 KB, lolos dengan lapang**
+      (`/beranda` 112,5 KB sebagai pembanding). `/akun` identik: 832,7 KB, dua
+      chunk yang sama, dipakai hanya untuk ekspor dompet.
+
+      Bentuk perbaikannya lebih murah dari dugaan lama. Kekhawatirannya dulu:
+      `usePrivy().authenticated` harus dibaca saat mount untuk mengenali sesi
+      hidup. Itu **tidak perlu SDK sama sekali** — cookie sesi sudah ada dan
+      middleware sudah membacanya. Cukup pantulkan pengguna ber-sesi keluar
+      dari `/masuk` di middleware sebelum satu baris JS jalan, sehingga
+      `/masuk` hanya pernah dirender untuk yang belum masuk, dan SDK dimuat
+      saat tombol ditekan.
+
+      **Bagian dari kriteria selesai M5** ("Lighthouse §12 tercapai"), bukan
+      pekerjaan opsional di luarnya. Catatan lama di bawah dipertahankan:
       dibaca saat mount untuk mengenali sesi yang masih hidup — itu refaktor
       pada jalur auth yang baru saja distabilkan dan diverifikasi di produksi.
       **Keputusan PO diperlukan** sebelum dikerjakan.

@@ -1,0 +1,21 @@
+-- 0026 · Cabut `misi_hitung_harian` — melunasi utang sadar dari 0023.
+--
+-- 0023 menggantinya dengan `misi_sinyal_harian`, yang menjawab tiga pertanyaan
+-- sekaligus (jumlah, ada masuk, ada keluar, jumlah suara) alih-alih memindai
+-- tabel yang sama berkali-kali. Fungsi lama sengaja DIBIARKAN HIDUP saat itu,
+-- dengan alasan yang ditulis eksplisit di 0023: deploy aplikasi dan migrasi
+-- tidak pernah benar-benar serentak, dan instance versi lama yang masih
+-- melayani beberapa detik tidak boleh kehilangan progres misinya.
+--
+-- Jendela itu sudah lama tertutup — 0023 di-apply 2026-08-27 dan rilisnya
+-- mengendap lebih dari sepekan tanpa keluhan. Sebelum mencabut, dua hal
+-- diperiksa, bukan diasumsikan:
+--
+--   1. tidak ada satu pun pemanggil di kode (`grep` hanya menemukan komentar);
+--   2. `pg_depend` melaporkan 0 objek database yang bergantung padanya.
+--
+-- Fungsi yatim yang dibiarkan hidup bukan sekadar berantakan: ia terlihat
+-- seperti jalur yang masih dipakai, dan orang berikutnya yang membaca skema
+-- akan menghabiskan waktu memastikan mana dari keduanya yang benar.
+
+drop function if exists misi_hitung_harian(uuid, date, date);

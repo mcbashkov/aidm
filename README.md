@@ -175,7 +175,7 @@ lib/
   chains/  supabase/  ai/  agent/  design/  mock/  token/  swap/  env.ts
 contracts/           ReportAttestation.sol · IDMX.sol · MissionRewards.sol (§9.4)
                      + artifacts hasil kompilasi
-supabase/migrations/ skema §10 (0001–0025)
+supabase/migrations/ skema §10 (0001–0026)
 tests/parser-cases.json  200 kalimat uji lintas 5 persona
 ```
 
