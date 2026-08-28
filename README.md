@@ -281,6 +281,18 @@ Pola layout: <1024px memakai pola mobile (bottom-nav 5 tab + baris status tanpa 
   pengurutan seri sepenuhnya. Tanpa pemecah seri, Postgres mengembalikan urutan
   fisik — yang TERLAMA di atas — sehingga "Transaksi terakhir" justru tidak
   pernah menampilkan yang baru dicatat.
+- **Alur masuk memakai UI kita, bukan modal Privy.** SDK Privy tidak punya opsi
+  terjemahan (v2.25: satu-satunya `intl` adalah `defaultCountry`), jadi
+  modalnya permanen berbahasa Inggris — "Enter confirmation code", "an email
+  from privy.io" — di layar pertama yang dilihat pedagang. Hook headless
+  (`useLoginWithEmail`, `useLoginWithOAuth`) memberi alur yang sama tanpa UI-nya.
+  Konsekuensinya mengikat: **setiap** pintu masuk harus mengarah ke `/masuk`,
+  tidak ada satu pun yang boleh memanggil `login()` — satu tombol yang lupa
+  membuka kembali seluruh layar Inggris yang sedang dihapus.
+- **Deteksi akun baru vs lama milik kita, bukan Privy.** Pemicunya
+  `usePrivy().authenticated` (state provider, sama bagi modal maupun headless),
+  keputusannya `/api/me` + `profilLengkap()` terhadap database kita sendiri.
+  Karena itu ia tidak ikut berubah saat cara masuk diganti.
 - **URL yang dikirim ke pihak ketiga dirakit sendiri, tidak pernah diambil dari
   `window.location.href`.** Privy mencocokkan `redirect_to` sebagai string UTUH
   dengan allowlist-nya, jadi satu query string yang menempel di halaman —

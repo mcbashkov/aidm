@@ -19,7 +19,7 @@ interface State {
  *
  * Batasnya penting: boundary TIDAK menangkap error asinkron (promise reject,
  * event handler). Untuk itu pemanggilnya tetap perlu try/catch sendiri —
- * lihat `useSafeLogin`.
+ * lihat `lib/privy/galat-masuk.ts`.
  */
 export class ErrorBoundary extends React.Component<Props, State> {
   state: State = { error: null };

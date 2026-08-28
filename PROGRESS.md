@@ -472,6 +472,50 @@ menghapus ketiganya sebelum SDK sempat membacanya — memutus persis alur yang
 sedang diperbaiki, dengan gejala baru yang jauh lebih sulit dilacak. Sekarang
 HANYA `next` yang dibuang; diuji bahwa ketiga parameter callback selamat.
 
+### ~~P1-4 bagian bahasa — layar OTP headless~~ ✅ **SELESAI 2026-08-27**
+
+Modal Privy DIGANTI UI kita. Alasannya bukan kesempurnaan: SDK Privy v2.25
+tidak punya opsi terjemahan sama sekali (satu-satunya `intl` adalah
+`defaultCountry` untuk format nomor HP), jadi "Enter confirmation code" dan
+"an email from privy.io" tidak bisa diubah dari config mana pun. Satu-satunya
+jalan yang benar-benar memenuhi "tidak ada teks Inggris di alur masuk" adalah
+melewati modalnya.
+
+- [x] `useLoginWithOAuth().initOAuth({provider:"google"})` + `useLoginWithEmail()`
+      (`sendCode` / `loginWithCode`), tiga langkah di dalam `/masuk` — bukan
+      halaman terpisah, supaya tombol kembali browser tidak memotong alur.
+- [x] Seluruh enam status `OtpFlowState` dipetakan; galat diterjemahkan dari
+      `PrivyErrorCode` yang nyata (`lib/privy/galat-masuk.ts`), bukan dari
+      pencocokan kata pada pesan Inggris yang bisa berubah diam-diam.
+- [x] Sisa percobaan ditampilkan (batas keras Privy: 5 per kode).
+- [x] TANPA fallback ke modal saat Google gagal — jatuh ke layar Inggris justru
+      merusak yang sedang diperbaiki.
+- [x] **Pintu belakang ditutup:** `header-stats.tsx` masih memanggil
+      `useSafeLogin()` → modal Privy. Diarahkan ke `/masuk`. `use-safe-login.ts`
+      dihapus (kode mati).
+- [x] Bug `users.email` ditimpa null saat login Google — diperbaiki
+      (`user.email?.address ?? user.google?.email`).
+- [x] Istilah crypto dibuang dari layar masuk.
+
+**Satu penyimpangan dari sketsa yang disetujui:** kotak kode **satu**, bukan
+enam. `autocomplete="one-time-code"` hanya bekerja pada satu field — dan itulah
+yang membuat ponsel menawarkan kodenya sendiri, sekali ketuk, tanpa mengetik.
+Enam kotak terpisah lebih rapi di gambar tapi mematikan fitur yang paling
+menolong di layar ini. Jarak antarhuruf menjaga tampilannya tetap terbaca per
+angka.
+
+**Yang TIDAK bisa dipastikan dari tipe:** Privy tidak membedakan "kode salah"
+dari "kode kedaluwarsa" — keduanya `invalid_credentials`. Kalimatnya karena itu
+tidak mengaku tahu yang mana, dan tawaran kode baru menutup kedua kemungkinan.
+
+**Deteksi akun baru vs lama — diverifikasi, tidak terpengaruh headless.**
+Ia tidak pernah bersandar pada event Privy: nol kemunculan `isNewUser`,
+`wasAlreadyAuthenticated`, maupun `onComplete` di seluruh `app/` + `lib/` +
+`components/`. Pemicunya `usePrivy().authenticated` — state provider yang sama
+bagi modal maupun headless — dan keputusannya milik kita sendiri, `/api/me` +
+`profilLengkap()`. Diuji dengan dua akun produksi nyata: profil lengkap →
+diteruskan ke tujuan; profil kosong → tetap di `/onboarding/peran`.
+
 ### 5. 🤖 Hidupkan tab Misi tiap hari — **disepakati 2026-08-15, siap dikerjakan**
 
 Masalahnya nyata: di hari biasa hanya **2 misi** yang bisa diklaim. Setelah

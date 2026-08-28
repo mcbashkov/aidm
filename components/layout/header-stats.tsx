@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Zap, Sparkles } from "lucide-react";
 import { usePrivy } from "@privy-io/react-auth";
 import { isPrivyConfigured } from "@/lib/privy/config";
-import { useSafeLogin } from "@/lib/privy/use-safe-login";
 import { useMe, useSaldoIdmx } from "@/components/providers/me-provider";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SaldoIdmx } from "@/lib/token/tipe";
@@ -128,7 +127,6 @@ function DemoWalletSegment() {
 
 function PrivyWalletSegment() {
   const { ready, authenticated, user } = usePrivy();
-  const { start: startLogin, error } = useSafeLogin();
 
   if (!ready) {
     return (
@@ -138,15 +136,17 @@ function PrivyWalletSegment() {
     );
   }
   if (!authenticated) {
+    // Mengarah ke layar /masuk kita sendiri, BUKAN membuka modal Privy.
+    // Modal itu berbahasa Inggris dan tidak bisa diterjemahkan (SDK v2.25
+    // tidak punya opsi locale sama sekali) — membiarkannya di sini akan
+    // membuka pintu belakang ke layar Inggris yang justru sedang dihapus.
     return (
-      <button
-        type="button"
-        onClick={startLogin}
-        title={error ?? undefined}
+      <Link
+        href="/masuk"
         className={cn(SEGMENT_CLASS, "font-semibold text-gold-deep")}
       >
-        <span className="text-[13px]">{error ? "Coba lagi" : "Masuk"}</span>
-      </button>
+        <span className="text-[13px]">Masuk</span>
+      </Link>
     );
   }
 
