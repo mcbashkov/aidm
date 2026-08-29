@@ -116,6 +116,38 @@ export const CATAT_REQUEST_LIMIT = 400;
  * Mengembalikan null bila RPC tidak tersedia — pemanggil memilih untuk tetap
  * melayani (batas entri masih berlaku), bukan memblokir pencatatan.
  */
+/**
+ * Batas laju per menit (§7.2 anti-abuse, migrasi 0028).
+ *
+ * Sepuluh dipilih dari data, bukan dari perasaan: produksi mencatat rata-rata
+ * 2,82 permintaan per pengguna-HARI dan tertinggi 7. Sepuluh per MENIT berada
+ * jauh di atas langit-langit manusia dan jauh di bawah kecepatan skrip — yang
+ * terhalang hanya yang kedua.
+ */
+export const CATAT_RATE_PER_MENIT = 10;
+export const CATAT_RATE_JENDELA_DETIK = 60;
+
+/**
+ * Naikkan penghitung jendela-menit. Mengembalikan jumlah permintaan dalam
+ * jendela berjalan, atau `null` bila RPC belum ada — dan `null` sengaja
+ * diperlakukan pemanggil sebagai "lewatkan", bukan "tolak": batas laju tidak
+ * boleh menjadi alasan pencatatan berhenti total ketika ada yang salah dengan
+ * penghitungnya sendiri.
+ */
+export async function naikkanRateMenit(
+  supa: SupabaseClient,
+  userId: string,
+  tanggalWib: string,
+): Promise<number | null> {
+  const { data, error } = await supa.rpc("catat_rate_inc", {
+    p_user: userId,
+    p_tanggal: tanggalWib,
+    p_jendela_detik: CATAT_RATE_JENDELA_DETIK,
+  });
+  if (error || typeof data !== "number") return null;
+  return data;
+}
+
 export async function naikkanKuotaRequest(
   supa: SupabaseClient,
   userId: string,

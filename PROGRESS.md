@@ -39,12 +39,12 @@ perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
 
 | Milestone | Status | Bukti |
 |---|---|---|
-| M0 fondasi | ✅ selesai | migrasi 0001–0026, rute & onboarding v3.0 |
+| M0 fondasi | ✅ selesai | migrasi 0001–0028, rute & onboarding v3.0 |
 | M1 parser & tab Catat | ✅ selesai | `test:parser` 200/200 |
 | M2 suara & offline | ✅ selesai | uji lapangan Android 2026-08-14 (3 akun nyata) |
 | M3 Laporan & PDF | ✅ selesai | `test:api` mem-baca ulang isi PDF, bukan cuma header |
 | M4 segel + misi | ✅ **selesai** | klaim diuji PO di aplikasi 2026-08-26 (spinner → Diklaim + tautan opBNBScan); 11 klaim produksi semuanya `confirmed` |
-| M5 premium & kredit | 🟡 berjalan | kredit atomik + purge PDP + hardening sesi beres; sisanya menunggu 4 keputusan PO |
+| M5 premium & langganan | 🟡 berjalan | langganan Rp49.000/bln + Generator Konten + rate limit + runbook berdiri; menunggu uji PO |
 | M6 mainnet & beta | ⬜ belum mulai | — |
 | M7 Play & App Store | ⬜ belum mulai | — |
 
@@ -106,20 +106,16 @@ ada — karena itu ia sengaja TIDAK dipasang di Vercel.
 Ringkasan satu layar untuk sesi berikutnya. Rinciannya di bagian bernomor
 di bawah; ini hanya menjawab *"mulai dari mana"*.
 
-**Menunggu keputusan PO — memblokir saya:**
+**Keputusan PO — SEMUA SUDAH TURUN (2026-08-28). Tidak ada yang terblokir.**
 
-| # | Apa | Kenapa memblokir |
+| # | Keputusan | Isinya |
 |---|---|---|
-| 1 | **Model kredit gratis** (T-1, §8) | §8.2 berbunyi "reset 00:00 WIB, **tidak menumpuk**"; kode menambah +10 tiap hari tanpa pernah reset — seorang pengguna produksi sudah memegang **120 kredit**. Menumpuk = 3.650 kredit/tahun gratis ≈ 1.216 riset; tidak akan ada yang membeli, dan seluruh M5 dibangun di atas pagar yang bocor. **Harus diputuskan sebelum Midtrans**, karena reset setelah ada pembelian akan memakan kredit berbayar. |
-| 2 | **Cakupan Konten & Wizard** (T-3/T-4, §8) | Keduanya nol mesin: `/premium/konten` kartu statis, `/premium/peluang` tidak ada rutenya. Dibangun di M5, atau dicoret dan dicabut dari `/premium`? |
-| 3 | **Bentuk admin** (T-8, §8) | `admin_users` 0 baris, tidak ada `/api/admin`. §8.2 menjanjikan tarif "dapat diubah admin"; hari ini mengubahnya = SQL langsung ke produksi. Panel UI, atau runbook SQL untuk beta? |
-| 4 | **Bundel `/masuk` 851 KB** | Bukan lagi opsional: kriteria selesai M5 memuat "Lighthouse §12 tercapai", dan §12 memuat bundel ≤ 200 KB gzip. Dikerjakan di dalam M5, atau M5 ditutup dengan §12 sengaja tidak terpenuhi? |
-| 5 | **§16 #8 kurs & #11 tokenomics** | Fitur **Tukar terhalang keduanya**, bukan sekadar "menjelang mainnet". #5 tidak bisa diputuskan sebelum #8. Pemblokir terbesar yang tersisa di seluruh produk — tapi urusannya M6, bukan M5. |
-| 6 | `POST /api/wallet/backfill` | Endpoint pemeliharaan permanen di produksi — dipertahankan sebagai alat operasi, atau dicabut sebelum rilis publik (§ P0-2 B3) |
-
-Ikutan keputusan #1: sembilan pengguna sekarang memegang sampai 120 kredit yang
-**terlihat di layar mereka**. Reset maupun isi-ulang MENGAMBILNYA. Diputihkan
-(jadi saldo permanen) atau dipotong?
+| 1 | **Model monetisasi** | Kredit AI **dibatalkan**. Diganti **langganan Rp49.000/bulan**, masa coba 7 hari, pagar wajar 30 riset + 60 konten/bulan. Alasan PO: "kalau pembuatnya bingung, pedagang di Cianjur pasti lebih bingung." |
+| 2 | **Cakupan premium** | Generator Konten **dibangun**. Wizard Peluang **dicoret** — ia agen intelijen pasar, arah yang sudah dibuang dari identitas produk. |
+| 3 | **Admin** | Runbook SQL (`docs/RUNBOOK-ADMIN.md`), bukan panel. |
+| 4 | **Bundel `/masuk`** | Dikerjakan, dengan syarat keras: sesi hidup harus tetap dikenali tanpa menunggu SDK. |
+| 5 | **§16 #5/#8/#11 — tokenomics & kurs** | **SELESAI.** Kurs 50:1 one-way ratchet · alokasi 1 miliar IDM final. Angka kanonik: `docs/PERINTAH-AGEN-FINAL.md` §0.1. Diverifikasi on-chain: **nol perbedaan**. Fitur Tukar tidak lagi terhalang. |
+| 6 | `POST /api/wallet/backfill` | Dipertahankan + `cocokCronSecret` — ternyata **sudah** terpasang sejak awal. |
 
 **Menunggu tangan PO:** uji batch 2026-08-27 (empat misi baru + halaman Akun) ·
 prompt instal PWA di Android (§7) · verifikasi source enam kontrak di explorer.
@@ -738,6 +734,24 @@ itu pun 32/48/180/192/512 sudah baik; hanya 16px yang tetap jadi bercak.
       **Pelajarannya bukan tentang Privy.** Peringatan build yang dibiarkan
       hidup adalah tempat bug bersembunyi paling lama — yang ini lolos sampai
       produksi dan lolos uji PO, karena jalur bahagia tidak pernah menyentuhnya.
+- [ ] **Refaktor bundel `/masuk` DITUNDA 2026-08-28 — dan ini keputusan sadar.**
+
+      Syarat keras PO: "sesi yang masih hidup harus tetap dikenali tanpa
+      menunggu SDK; kalau user yang sudah login jadi harus login ulang,
+      batalkan." Menunda SDK Privy di belakang ketukan tombol melanggar syarat
+      itu pada satu jalur nyata: pengguna yang sesi Privy-nya masih hidup tapi
+      cookie AIDM-nya kedaluwarsa saat ini disinkronkan ULANG secara diam-diam
+      oleh `usePrivy()` di mount. Tanpa SDK di mount, jalur itu mati dan mereka
+      harus menekan tombol masuk lagi — persis kasus yang disuruh dibatalkan.
+      Ditukar dengan yang aman dan nyata (di bawah).
+
+- [x] **Pemilik sesi tidak lagi membayar bundel `/masuk` sama sekali.**
+      Middleware memantulkan siapa pun yang punya cookie sesi dari `/masuk` ke
+      `/beranda`, SEBELUM satu byte JavaScript halaman dikirim. Aman terhadap
+      OAuth: callback Privy mendarat di `/masuk` justru ketika cookie belum
+      lahir, jadi tidak ada callback yang bisa terpantul. Yang masih membayar
+      829 KB hanya pengunjung yang memang belum punya akun.
+
 - [ ] **Bundle `/masuk` 829 KB gzip vs target §12 ≤200 KB — 4,1× di atas
       batas.** Diukur ulang 2026-08-28 dari `app-build-manifest`, dan angka
       851 di keluaran `next build` ternyata **sudah gzip**, bukan mentah —
@@ -797,90 +811,34 @@ itu pun 32/48/180/192/512 sudah baik; hanya 16px yang tetap jadi bercak.
   rekam usaha terverifikasi untuk koperasi/BPR/fintech (PRD P5, Fase 3), bukan
   pada klaim kelayakan kredit per pengguna.
 
-### 8. 🤖 M5 — premium di balik kredit
+### 8. 🤖 M5 — premium di balik LANGGANAN
 
-Kriteria selesai (PRD §14): *"Semua AC §7 lulus staging; Lighthouse §12
-tercapai"* — kalimat kedua itu menyeret bundel `/masuk` ke dalam cakupan M5,
-bukan di luarnya.
+Model kredit **dibatalkan sebelum sempat rilis** (keputusan PO 2026-08-28).
+Skema dua ember yang sudah dirancang dibuang tanpa pernah dimigrasikan —
+keputusan yang benar, dan lebih murah dibuang sekarang daripada setelah ada
+uang di dalamnya.
 
-**Selesai 2026-08-28** — yang tidak terhalang keputusan siapa pun:
+**Yang berdiri sekarang**
 
-- [x] **Kredit jadi operasi atomik** (0024). Pola `getBalance` → hitung di JS →
-      `INSERT` adalah baca-lalu-tulis tanpa kunci: dua permintaan bersamaan
-      lolos pagar 402 bersama lalu memotong penuh bersama. Seluruh mutasi
-      saldo pindah ke fungsi Postgres ber-advisory-lock per-user
-      (`kredit_harian` · `kredit_potong` · `kredit_saldo`), plus indeks unik
-      parsial `uq_credit_daily_free (user_id, hari_wib)` yang menegakkan "satu
-      hibah per hari WIB" di database. Hari WIB jadi kolom karena
-      `(created_at at time zone 'Asia/Jakarta')::date` STABLE, tidak bisa
-      diindeks — nilainya diisi dari `lib/wib.ts`, sumber WIB tunggal yang sama.
-      Belum pernah gagal di produksi (39 baris, 1 pemakaian seumur hidup); itu
-      bukti belum diuji beban, bukan bukti aman.
-- [x] **Pagar riset menghitung yang sedang berjalan.** Celah over-spend ada di
-      HULU — dua `POST /api/research` lolos berbarengan — bukan di potongannya.
-      Kuota kini `tarif × (berjalan + 1)`, dengan jendela 10 menit supaya
-      antrean yang ditinggalkan (tab ditutup) tidak mengunci kuotanya sendiri
-      selamanya. Diuji langsung: permintaan ke-4 ditolak 402 `needed=12
-      berjalan=3`, saldo tidak terpotong.
-- [x] **`getBalance` melempar, tidak lagi mengembalikan 0 diam-diam.** Versi
-      lama menelan galat baca → `/api/research` menjawab 402 "Kredit tidak
-      cukup" untuk sesuatu yang sebenarnya hiccup database. Angka salah tentang
-      uang pengguna, disampaikan sebagai fakta — kelas bug P0-1.
-- [x] **Purge `raw_input` 90 hari** (0025 + `POST/GET
-      /api/pemeliharaan/purge` + cron harian `15 18 * * *` UTC = 01.15 WIB).
-      Halaman Kebijakan Privasi sudah menjanjikannya; kodenya belum
-      melakukannya. Berbatas 5.000 baris/jalan dengan `for update skip locked`,
-      dan melaporkan `sisa` supaya "cron jalan tapi tak pernah selesai" bisa
-      dibedakan dari "memang sudah bersih". Umur dihitung dari `created_at`
-      (kapan AIDM menerima), bukan `occurred_at` yang bisa dimundurkan.
-      Produksi hari ini: 96 baris ber-`raw_input`, tertua 14 hari — baris
-      pertama jatuh tempo ~12 November 2026, jadi ia dipasang justru selagi
-      masih kosong.
-- [x] **Trigger rollup melewati update tanpa dampak.** Tanpa ini satu batch
-      purge = 10.000 UPSERT ke `daily_rollups` yang netonya nol. Penjaganya
-      hanya menuliskan ulang identitas "x − x = 0" supaya tidak dikerjakan;
-      begitu satu masukan rollup berubah, jalurnya persis seperti semula.
-- [x] **`POST /api/auth/session` berhenti memercayai klien** — menutup
-      satu-satunya `TODO` di seluruh kode (§14 M5). Alamat dompet, email, dan
-      telepon dibaca ulang dari Privy lewat DID hasil verifikasi token. Token
-      membuktikan pengirimnya memegang sesi sah; ia TIDAK membuktikan alamat
-      dompet yang menumpang di JSON yang sama miliknya — dan `wallets.address`
-      adalah tempat reward IDMX dibayarkan. `authProvider` masih boleh datang
-      dari klien (sekadar mencatat tombol mana yang ditekan) tapi ditolak bila
-      metodenya tidak benar-benar tertaut di Privy. Sekaligus menutup
-      `users.email` tertimpa null saat orang berpindah metode masuk: kunci
-      bernilai null tidak lagi ikut dikirim ke upsert.
-- [x] **Teks 402 di Riset** tidak lagi menjanjikan "pembelian kredit hadir di
-      M3" — M3 lewat berminggu-minggu lalu.
-- [x] **`pnpm test:api` hijau penuh pertama kali: 123 lulus, 0 gagal.** Tiga
-      kegagalan yang muncul di jalan pertama adalah harapan uji yang basi, bukan
-      regresi: dua menuntut 400 untuk dompet-belum-siap (taksonomi P0-2 sudah
-      mengubahnya jadi 409 `WALLET_NOT_READY`) dan satu mematok "5 misi"
-      sebelum 0023 menambah empat. Yang ketiga kini diikat ke
-      `count(*) from missions where aktif` supaya tidak basi lagi.
+- [x] `subscriptions` · `premium_usage` · `subscription_orders` (migrasi 0027)
+- [x] Gerbang premium di Riset & Konten — non-pelanggan melihat **ajakan
+      berlangganan**, bukan pesan "jatah habis". Mereka tidak pernah punya
+      jatah; kalimat kehabisan menjelaskan hal yang salah.
+- [x] Masa coba 7 hari, sekali seumur akun (`coba_dipakai` tidak pernah direset)
+- [x] Kuota wajar bulanan, atomik di Postgres, reset per bulan WIB
+- [x] **Generator Konten** — mesin + API + layar (4 format, salin sekali ketuk)
+- [x] Midtrans **sekali-bayar 30 hari**, bukan recurring — QRIS & VA secara
+      sifat tidak bisa ditagih otomatis, dan memaksakan recurring berarti
+      memaksa kartu kredit pada pengguna yang tidak punya
+- [x] Webhook Midtrans dengan verifikasi tanda tangan sha512 + idempotensi
+      lewat transisi status atomik
+- [x] Seluruh jejak "kredit" dicabut dari UI
+- [x] Batas laju **10 permintaan/menit** di Catat (migrasi 0028)
+- [x] `docs/RUNBOOK-ADMIN.md`
 
-**Terhalang keputusan PO** (lihat "Titik lanjut"):
+**Yang dilewati, dengan alasan**
 
-- [ ] **Model kredit gratis** — §8.2 bilang tidak menumpuk, kode menumpuk.
-      0024 sengaja TIDAK menggesernya: reset/isi-ulang mengambil saldo yang
-      sudah dilihat pengguna, dan memisahkan ember gratis vs berbayar adalah
-      perubahan model ekonomi, bukan perbaikan balapan.
-- [ ] Pembelian kredit Midtrans (QRIS/VA) — env sudah di-scaffold, `orders`
-      0 baris, tidak ada rute maupun webhook. Bagian paling rawan: verifikasi
-      signature webhook (§12) — webhook pembayaran yang tidak diverifikasi
-      berarti siapa pun bisa menerbitkan kredit untuk dirinya sendiri.
-- [ ] Generator Konten (nol mesin) & Wizard Peluang (nol rute) — bangun atau
-      coret.
-- [ ] Panel admin — atau runbook SQL.
-- [ ] Bundel `/masuk` ≤ 200 KB (§12, bagian dari kriteria selesai M5).
-
-**Catatan RLS (T-10).** §12 menuntut "RLS ketat per user". 0008 menyalakan RLS
-di semua tabel tapi hanya menulis policy baca-publik; seluruh akses pengguna
-berjalan lewat service-role yang mem-bypass RLS, dengan filter `user_id` di
-lapisan API — strategi M0 yang disengaja dan terdokumentasi. Risiko nyatanya
-rendah (tidak ada klien yang memegang kunci anon menyentuh tabel user), tapi
-bunyi §12 lebih keras daripada yang dijalankan. Jembatan Privy→Supabase JWT
-masuk M5 atau tidak: belum diputuskan.
+- [ ] **Refaktor bundel `/masuk` ditunda.** Penjelasan di §6.
 
 ### 9. 🧑 M6 — mainnet & beta tertutup 100 user
 

@@ -3,7 +3,7 @@
 import { HeaderStats } from "./header-stats";
 
 /**
- * Header mobile: hanya baris status Kredit · IDMX · Wallet, rata kanan.
+ * Header mobile: hanya baris status IDMX · Wallet, rata kanan.
  * Logo TIDAK tampil di sini — hanya di splash/login dan manifest/ikon.
  * Aktif di <1024px (pola mobile berlaku sampai tablet — lihat AppLayout).
  */

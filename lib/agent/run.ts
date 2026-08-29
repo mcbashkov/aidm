@@ -172,7 +172,8 @@ export async function runResearchAgent(
   const deadline = AbortSignal.timeout(params.research_timeout_s * 1000);
   const today = new Date().toISOString().slice(0, 10);
 
-  // 1) Moderasi (§7.2): topik di luar lingkup ditolak sopan, kredit kembali.
+  // 1) Moderasi (§7.2): topik di luar lingkup ditolak sopan; jatah bulanan
+  //    memang sudah tercatat di gerbang, dan dari 30 sebulan itu tidak terasa.
   emit({ type: "status", label: "Memeriksa pertanyaan…" });
   const inScope = await moderate(client, question);
   if (!inScope) {
@@ -180,7 +181,7 @@ export async function runResearchAgent(
       ok: false,
       reason: "moderation",
       message:
-        "Maaf, AIDM khusus membantu topik bisnis, pasar, dan pemasaran UMKM. Kredit kamu tidak terpotong — coba tanyakan hal seputar usaha ya.",
+        "Maaf, AIDM khusus membantu topik bisnis, pasar, dan pemasaran UMKM. Coba tanyakan hal seputar usaha ya.",
     };
   }
 
@@ -309,7 +310,7 @@ export async function runResearchAgent(
         ok: false,
         reason: "no_data",
         message:
-          "Semua sumber data sedang tidak bisa diakses, jadi aku tidak bisa memberi jawaban berbasis data sekarang. Kredit kamu tidak terpotong — coba lagi beberapa saat lagi ya.",
+          "Semua sumber data sedang tidak bisa diakses, jadi aku tidak bisa memberi jawaban berbasis data sekarang. Tidak terpotong — coba lagi beberapa saat lagi ya.",
       };
     }
 
@@ -338,7 +339,7 @@ export async function runResearchAgent(
         ok: false,
         reason: "error",
         message:
-          "Jawaban terpotong karena terlalu panjang. Kredit tidak terpotong — coba pertanyaan yang lebih spesifik.",
+          "Jawaban terpotong karena terlalu panjang. Coba pertanyaan yang lebih spesifik.",
       };
     }
     const textBlock = synthesis.content.find((b) => b.type === "text");
@@ -346,7 +347,7 @@ export async function runResearchAgent(
       return {
         ok: false,
         reason: "error",
-        message: "Gagal menyusun jawaban. Kredit tidak terpotong.",
+        message: "Gagal menyusun jawaban. Coba lagi ya.",
       };
     }
     const body = JSON.parse(textBlock.text) as ResearchBody;
@@ -367,8 +368,8 @@ export async function runResearchAgent(
       ok: false,
       reason: "error",
       message: timedOut
-        ? "Riset melewati batas waktu. Kredit tidak terpotong — coba pertanyaan yang lebih spesifik."
-        : "Terjadi gangguan saat riset. Kredit tidak terpotong — coba lagi ya.",
+        ? "Riset melewati batas waktu. Coba pertanyaan yang lebih spesifik."
+        : "Terjadi gangguan saat riset. Coba lagi ya.",
     };
   }
 }

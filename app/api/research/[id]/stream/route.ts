@@ -2,8 +2,6 @@ import { cookies } from "next/headers";
 import { readSessionValue } from "@/lib/auth/session-cookie";
 import { SESSION_COOKIE } from "@/lib/auth/constants";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { charge } from "@/lib/credits";
-import { getCreditParams } from "@/lib/config";
 import { runResearchAgent } from "@/lib/agent/run";
 import { toVectorLiteral } from "@/lib/ai/embeddings";
 import type { ResearchBody } from "@/lib/research";
@@ -81,7 +79,7 @@ export async function GET(
         if (query.status === "failed" || query.status === "refunded") {
           send({
             type: "error",
-            message: "Riset sebelumnya gagal. Kredit tidak terpotong — coba lagi.",
+            message: "Riset sebelumnya gagal. Coba lagi ya.",
           });
           return;
         }
@@ -128,7 +126,7 @@ export async function GET(
         const latency = Date.now() - startedAt;
 
         if (!result.ok) {
-          // Gagal/moderasi → kredit TIDAK terpotong (setara auto-refund, AC §7.2).
+          // Gagal/moderasi → query ditandai, tidak ada uang yang berpindah.
           await supa
             .from("research_queries")
             .update({
@@ -141,34 +139,9 @@ export async function GET(
           return;
         }
 
-        // Sukses → potong kredit sesuai tarif (§8.2), tepat sekali.
-        const tariffs = await getCreditParams();
-        const cost = result.cacheHit ? tariffs.research_cache : tariffs.research;
-        // Kegagalan LEDGER tidak boleh membuang riset yang sudah jadi.
-        // Pengguna sudah menunggu; membatalkan jawabannya karena pencatatan
-        // saldo gagal menukar kerugian beberapa kredit (kami) dengan kerugian
-        // jawaban (dia) — pertukaran yang salah arah. Tanpa penjaga ini, galat
-        // dari `charge` akan jatuh ke catch besar di bawah dan menandai query
-        // `failed` padahal risetnya berhasil.
-        let balance: number | null = null;
-        try {
-          balance = await charge(
-            supa,
-            uid,
-            cost,
-            result.cacheHit ? "research_cache" : "research",
-            queryId,
-          );
-        } catch (err) {
-          console.error(
-            `[kredit] potong gagal (uid=${uid} query=${queryId} tarif=${cost}):`,
-            err,
-          );
-        }
-        // Apa yang BENAR-BENAR terpotong — bukan tarifnya. Menulis `cost` saat
-        // ledger gagal membuat riwayat pemakaian berbohong ke arah yang
-        // merugikan pengguna.
-        const dipotong = balance === null ? 0 : cost;
+        // Tidak ada lagi pemotongan di sini. Akses ditentukan langganan, dan
+        // pagar wajar bulanan sudah dicatat di POST /api/research sebelum
+        // pekerjaan mahal ini dimulai (migrasi 0027).
 
         const embeddingLiteral = result.embedding
           ? toVectorLiteral(result.embedding)
@@ -207,7 +180,7 @@ export async function GET(
             status: "done",
             cache_hit: result.cacheHit,
             latency_ms: latency,
-            credits_charged: dipotong,
+            credits_charged: 0,
           })
           .eq("id", queryId);
 
@@ -217,8 +190,6 @@ export async function GET(
           confidence: result.confidence,
           cache_hit: result.cacheHit,
           cache_age_days: result.cacheAgeDays ?? null,
-          credits_charged: dipotong,
-          balance,
           created_at: saved?.created_at ?? new Date().toISOString(),
         });
       } catch {
@@ -228,7 +199,7 @@ export async function GET(
           .eq("id", queryId);
         send({
           type: "error",
-          message: "Terjadi gangguan. Kredit tidak terpotong — coba lagi ya.",
+          message: "Terjadi gangguan. Coba lagi ya.",
         });
       } finally {
         try {

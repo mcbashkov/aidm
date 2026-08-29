@@ -30,7 +30,7 @@ export const revalidate = 0;
  *
  * Mengembalikan ringkasan, deret harian, rincian kategori, status segel, dan
  * progres valuasi untuk satu periode. **Nol biaya AI** (§7.3): semuanya
- * aritmetika SQL — membuka Laporan tidak boleh memotong Kredit AI, jadi tidak
+ * aritmetika SQL — membuka Laporan tidak boleh menuntut langganan, jadi tidak
  * ada satu pun pemanggilan model di jalur ini.
  */
 export async function GET(req: Request) {

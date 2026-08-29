@@ -111,74 +111,33 @@ dihitung (nominal > 0, bukan duplikat persis dalam 60 detik); menghapus transaks
 
 ---
 
-## 4. Yang BELUM disepakati — inti diskusi
+## 4. Yang sudah dikunci, dan yang masih dibahas
 
-### Pertanyaan A — Alokasi 1 miliar IDM Reborn
+> **A dan B DITUTUP 2026-08-28 oleh PO.** Angka finalnya TIDAK disalin ke sini —
+> ia hidup di `docs/PERINTAH-AGEN-FINAL.md` §0.1, dan itu satu-satunya tempat.
+> Empat salinan angka tokenomics adalah empat tempat untuk menyimpang.
 
-Belum ada dokumen tokenomics. Usulan dari Claude Code (**belum disetujui**):
+### ~~Pertanyaan A — Alokasi 1 miliar IDM Reborn~~ — ✅ DIPUTUSKAN
 
-| Alokasi | % | Token | Vesting |
-|---|---|---|---|
-| Ekosistem & Reward *(termasuk kolam tukar IDMX)* | 25% | 250.000.000 | emisi bertahap 48 bln |
-| Tim & Founder | 15% | 150.000.000 | cliff 12 bln + linear 36 bln |
-| Treasury / Operasional | 15% | 150.000.000 | cliff 6 bln + linear 36 bln |
-| Presale (private + public) | 15% | 150.000.000 | private: cliff 6 + linear 18 bln · public: 25% saat TGE + linear 6 bln |
-| Likuiditas DEX | 10% | 100.000.000 | LP dikunci 24 bln |
-| Cadangan CEX + market making | 8% | 80.000.000 | dibuka saat listing, multisig |
-| Marketing & Partnership | 7% | 70.000.000 | linear 24 bln |
-| Advisor | 3% | 30.000.000 | cliff 12 bln + linear 24 bln |
-| Airdrop komunitas awal | 2% | 20.000.000 | 100% saat TGE |
+Ringkasnya: **Ecosystem & Rewards 30% · Liquidity 20% · Private Sale 15% ·
+Treasury 15% · Team 12% · Marketing 5% · Advisors 3%.** Sirkulasi TGE
+**11,75%** (117,5 juta), harga launch **$0,005**, FDV **$5 juta**.
 
-**Float saat TGE ≈ 15%** (150 juta token beredar).
+Yang berubah dari usulan lama di dokumen ini: Team turun 15% → **12%**,
+Ekosistem naik 25% → **30%**, dan airdrop 2% dihapus. Arahnya sama dengan
+kekhawatiran yang ditulis di sini sebelumnya — porsi tim yang lebih kecil dan
+float yang tidak terlalu tipis. Rincian, vesting, dan tata kelola treasury:
+`docs/PERINTAH-AGEN-FINAL.md` §0.1.
 
-Alasan angka-angka itu dipilih:
-- **Tim 15% + cliff 12 bulan** — di atas 20% jadi bendera merah saat uji tuntas exchange; tanpa cliff, tim bisa menjual di hari pertama.
-- **Float 15%** — Binance belakangan terbuka mengkritik pola *low-float/high-FDV*. Float 5% menaikkan harga awal tapi memperkecil peluang listing.
-- **LP dikunci 24 bulan** — likuiditas tak terkunci adalah ciri paling umum rug pull.
-- **Cadangan CEX terpisah 8%** — market maker akan minta inventori; kalau tidak dialokasikan sejak awal, terpaksa mengambil dari pos lain yang sudah dijanjikan.
+### ~~Pertanyaan B — Kurs IDMX → IDM Reborn~~ — ✅ DIPUTUSKAN
 
-**Peringatan yang sudah disampaikan ke PO:** jangan merancang tokenomics
-"supaya masuk Binance" — listing spot Binance sangat sulit dan tidak bisa
-direncanakan. Yang realistis adalah merancang agar **tidak diskualifikasi**, lalu
-masuk lewat jalur ekosistem BNB Chain (Binance Alpha, Binance Wallet campaign,
-DappBay) yang lebih terbuka. Juga: **presale punya konsekuensi hukum di
-Indonesia** (Bappebti/OJK) dan perlu review legal — di luar kompetensi agen.
+**50 IDMX = 1 IDM**, dengan **one-way ratchet** — kurs hanya boleh membaik bagi
+pengguna, tidak pernah memburuk, dan itu ditegakkan kontrak (`setRate` menolak
+nilai yang lebih buruk), bukan kebijakan.
 
-**Yang ingin didiskusikan:** apakah proporsi ini masuk akal untuk proyek utilitas
-di ekosistem BNB Chain? Ada pos yang kurang atau kebesaran?
-
----
-
-### Pertanyaan B — Kurs IDMX → IDM Reborn
-
-**Rumus yang dipakai:**
-
-```text
-kurs (IDMX per IDM) = IDMX_terbit_selama_periode ÷ IDM_kolam_tukar
-IDMX_terbit         = user_aktif × reward_per_user_per_tahun × tahun
-IDMX_bisa_ditukar   = IDM_kolam_tukar × kurs        ← BATAS KERAS
-```
-
-Baris ketiga yang menentukan: **kolam IDM-lah yang membatasi, bukan pasokan IDMX.**
-
-Dengan asumsi kolam tukar = **150 juta IDM** (15% dari total), 5 tahun, rata-rata
-20.000 pengguna aktif, dan reward **50.535 IDMX/pengguna/tahun** (versi misi yang
-diusulkan, lihat Pertanyaan D):
-
-| Kurs | IDMX bisa ditukar | Kolam bertahan | Pengguna rajin dapat |
-|---|---|---|---|
-| 25 : 1 | 3,75 miliar | 3,7 tahun | 2.021 IDM/tahun |
-| 34 : 1 *(titik impas)* | 5,10 miliar | 5,0 tahun | 1.486 IDM/tahun |
-| **50 : 1** *(usulan)* | **7,50 miliar** | **7,4 tahun** | **1.011 IDM/tahun** |
-| 100 : 1 | 15,0 miliar | 14,8 tahun | 505 IDM/tahun |
-
-**Usulan Claude Code: 50 : 1**, dengan alasan **mulai konservatif**. Menaikkan
-kemurahan hati selalu bisa dilakukan; menurunkannya menghancurkan kepercayaan
-secara permanen. Peninjauan ulang tiap kuartal sudah disepakati sebagai mekanisme.
-
-**Yang ingin didiskusikan:** apakah 50:1 wajar? Adakah cara lain menetapkan kurs
-selain membagi kolam dengan proyeksi emisi — misalnya kurs mengambang mengikuti
-harga pasar, atau kurs berjenjang?
+Sudah **terverifikasi on-chain** 2026-08-28: `rateIdmxPerIdm = 50`, kolam
+`SwapClaim` berisi 150.000.000 IDM. Nol perbedaan antara keputusan dan yang
+ter-deploy.
 
 ---
 

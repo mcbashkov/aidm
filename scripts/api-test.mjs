@@ -234,10 +234,10 @@ async function main() {
     cek("user lain tak bisa konfirmasi draft A → 404", r.status === 404, `dapat ${r.status}`);
   }
 
-  console.log("\n── 4. Kredit AI tidak tersentuh (§7.2 #5) ──");
+  console.log("\n── 4. Catat tidak menyentuh tabel uang mana pun (§7.2 #5) ──");
   {
     const n = sql(`select count(*) from credit_ledger where user_id='${uidA}'`);
-    cek("credit_ledger user A kosong", n === "0", `dapat ${n} baris`);
+    cek("credit_ledger (beku sejak 0027) tetap kosong", n === "0", `dapat ${n} baris`);
   }
 
   console.log("\n── 5. GET /api/transaksi (§11) ──");
@@ -451,7 +451,7 @@ async function main() {
   }
   {
     const n = sql(`select count(*) from credit_ledger where user_id='${uidB}'`);
-    cek("membuka Laporan tidak memotong kredit (AC §7.3)", n === "0", `dapat ${n}`);
+    cek("membuka Laporan tidak menyentuh tabel uang (AC §7.3)", n === "0", `dapat ${n}`);
   }
 
   console.log("\n── 11. GET /api/laporan/pdf (§7.3) ──");

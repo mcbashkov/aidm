@@ -29,6 +29,71 @@
 | Cap misi | `setCap(0, 250e18)` harian · `setCap(1, 450e18)` bulanan |
 | Gas | opBNB disponsori (dust top-up); klaim BSC dibayar user |
 
+
+### 0.1 Tokenomics IDM Reborn — FINAL (dikunci PO 2026-08-28)
+
+> **Ini blok kanonik.** PRD, README, PROGRESS, dan BRIEF-EKONOMI-TOKEN merujuk
+> ke sini, tidak menyalin angkanya. Empat salinan angka tokenomics adalah empat
+> tempat untuk menyimpang.
+>
+> **Diverifikasi terhadap on-chain 2026-08-28 — nol perbedaan.**
+> `IDMReborn.totalSupply` = 1.000.000.000 · kolam di `SwapClaim` = 150.000.000 ·
+> `rateIdmxPerIdm` = 50 · `IDMX.totalSupply` = 50.000.000.000. Ratchet satu arah
+> ditegakkan kode (`setRate` menolak nilai yang memburuk bagi pengguna).
+
+| Parameter | Nilai |
+|---|---|
+| Suplai | **1.000.000.000 IDM** — tetap, tanpa mint, tanpa tax |
+| Jaringan | BNB Chain |
+| Harga launch | **$0,005** · FDV **$5.000.000** |
+| Private sale | **$500.000 @ $0,00333** (diskon 33%) |
+| Likuiditas | **$400.000** masuk pool · **$100.000** operasional launch |
+| Fee transfer | **1 IDM flat, 100% burn** |
+| Kurs IDMX→IDM | **50 : 1**, one-way ratchet |
+
+**Alokasi**
+
+| Pos | % | Token | Rincian |
+|---|---:|---:|---|
+| Ecosystem & Rewards | 30% | 300.000.000 | 150 jt kolam swap (unlock TGE, terkunci kontrak) + 150 jt reward vesting 48 bln |
+| Liquidity | 20% | 200.000.000 | 80 jt DEX LP (locked 12–24 bln) + 120 jt CEX reserve |
+| Private Sale | 15% | 150.000.000 | $500k @ $0,00333 |
+| Treasury | 15% | 150.000.000 | Multisig 3-of-5 + timelock |
+| Team & Founders | 12% | 120.000.000 | Cliff 12 bln + vesting 24 bln |
+| Marketing | 5% | 50.000.000 | TGE 15%, vesting 12 bln |
+| Advisors | 3% | 30.000.000 | Cliff 6 bln + vesting 18 bln |
+
+**Vesting**
+
+| Pos | TGE | Cliff | Linear |
+|---|---|---|---|
+| Private Sale | 5% (7.500.000) | 3 bln | 12 bln |
+| Team | 0% | 12 bln | 24 bln |
+| Advisors | 0% | 6 bln | 18 bln |
+| Ecosystem reward (150 jt) | 5% | — | 48 bln |
+| Kolam swap (150 jt) | **unlock penuh**, terkunci di kontrak SwapClaim | — | — |
+| Treasury | 10% | — | 36 bln |
+| Marketing | 15% | — | 12 bln |
+| DEX LP (80 jt) | **unlock penuh**, LP token di-lock 12–24 bln | — | — |
+| CEX Reserve (120 jt) | 0% | — | cair hanya dengan perjanjian listing resmi |
+
+**Sirkulasi TGE = 117.500.000 (11,75%)** · market cap awal **$587.500**.
+
+> **Dinyatakan terbuka, bukan disembunyikan:** kolam swap 150 juta **tidak**
+> dihitung sebagai sirkulasi (belum diklaim siapa pun) tetapi **tetap masuk
+> FDV**. Menyembunyikannya dari FDV akan membuat angka FDV lebih cantik dan
+> lebih bohong.
+
+**Treasury.** Gnosis Safe **3-of-5**, alamat dipublikasikan. Timelock **48–72
+jam** untuk pengeluaran > 1 juta IDM. Alokasi internal: Operasional 40% ·
+Kemitraan 25% · Cadangan darurat 20% (butuh **4-of-5**) · Buyback & burn 15%.
+**Tidak untuk gaji founder/C-level.** Laporan treasury tiap kuartal.
+
+**Parameter yang masih perlu ditinjau sebelum mainnet:**
+`maxIdmxPerVoucher` kini **2.000 IDMX** (= 40 IDM per klaim) — setelan
+konservatif testnet, kemungkinan terlalu ketat bagi pengguna yang menabung
+setahun.
+
 ---
 
 ## 1. Banner wajib (permintaan langsung PO)

@@ -16,15 +16,15 @@ Alur kerja: PRD ini → Claude Code (build & integrasi)
 | Tagline internal | "Riset pasar, dalam satu tanya" | **"Catat usahamu, dalam satu ucap"** |
 | Tab inti | Riset | **Catat** |
 | Tab kedua | Konten (generator) | **Laporan** (laporan keuangan) |
-| Riset pasar | Fitur utama, gratis-harian | **Fitur premium** (satelit, di balik Kredit AI) |
+| Riset pasar | Fitur utama, gratis-harian | **Fitur premium** (satelit, di balik langganan) |
 | Generator konten | Fitur MVP | **Fitur premium** (satelit) |
 | Target pengguna | UMKM + calon wirausaha | **Pelaku mikro definisi diperluas** (UMKM, ojol, freelancer, penjual online) |
 | Biaya AI inti | Mahal (riset multi-tool) | **Murah** (parsing kalimat pendek) |
 | Baris "Out of scope" | "Fitur pencatatan keuangan — di luar fokus AIDM" | **DIHAPUS — kini justru fitur inti** |
 
-**Yang TIDAK berubah dan tidak boleh dibongkar:** seluruh sistem desain (§13), palet ivory-emas gaya Alma, tipografi Fraunces + Plus Jakarta Sans, auth Privy + embedded wallet, struktur 3 token, ekonomi Kredit AI, arsitektur PWA + TWA + Capacitor, target DappBay. **Build frontend yang sudah ada dipertahankan** — yang diganti adalah isi tab, bukan kerangka aplikasi.
+**Yang TIDAK berubah dan tidak boleh dibongkar:** seluruh sistem desain (§13), palet ivory-emas gaya Alma, tipografi Fraunces + Plus Jakarta Sans, auth Privy + embedded wallet, struktur 3 token, arsitektur PWA + TWA + Capacitor, target DappBay. **Build frontend yang sudah ada dipertahankan** — yang diganti adalah isi tab, bukan kerangka aplikasi.
 
-**Kode yang sudah ada:** rute `/riset` → jadi `/catat`; rute `/konten` → jadi `/laporan`. Logika agen riset **tidak dihapus** — dipindahkan ke belakang paywall Kredit AI (§7.8).
+**Kode yang sudah ada:** rute `/riset` → jadi `/catat`; rute `/konten` → jadi `/laporan`. Logika agen riset **tidak dihapus** — dipindahkan ke belakang langganan Premium (§7.8).
 
 ---
 
@@ -38,7 +38,7 @@ AIDM adalah **project crypto secara terbuka** di opBNB, prinsip Web3 "proud but 
 
 1. **Punya akun = punya wallet.** Otomatis sejak daftar, tanpa seed phrase, gas disponsori.
 2. **Aktivitas riil diberi reward IDMX**, ditukar ke Token IDM Reborn via pool resmi.
-3. **Kredit AI dibeli dengan uang saja** — tidak pernah dari token (kepatuhan store + pemisahan ekonomi).
+3. **Langganan Premium dibayar dengan uang saja** — tidak pernah dari token (kepatuhan store + pemisahan ekonomi).
 
 Pilar Web3 keempat yang **baru di v3.0**:
 
@@ -68,7 +68,7 @@ Pilar Web3 keempat yang **baru di v3.0**:
 | **Kebiasaan** | **% user aktif mencatat ≥ 4 hari/minggu** | **≥ 35%** |
 | Retensi | D30 retention | ≥ 30% (naik dari 20% v2.0 — pencatatan harian menopang) |
 | Bankability | User dengan ≥ 3 bulan data berturut | 5.000 |
-| Monetisasi | Konversi free → beli kredit (fitur premium) | ≥ 3% |
+| Monetisasi | Konversi free → langganan Premium | ≥ 3% |
 | On-chain | UAW harian (klaim misi + segel laporan + tukar) | 1.500+ |
 | Token | Volume tukar IDMX→IDM Reborn | tumbuh konsisten bulanan |
 | Ranking | Posisi DappBay | terdaftar M6 → naik merebut top kategori |
@@ -105,13 +105,13 @@ Pilar Web3 keempat yang **baru di v3.0**:
 2. **Catat: pencatatan transaksi via percakapan teks & suara** (fitur inti baru)
 3. **Laporan Keuangan: ringkasan bulan, arus kas, kategori, porsi terverifikasi, ekspor PDF**
 4. **Segel Laporan on-chain (hash attestation) + badge terverifikasi**
-5. Sistem Kredit AI: gratis harian + pembelian dengan uang — **catat & laporan TIDAK memakai kredit**
+5. Langganan Premium bulanan — **catat & laporan SELALU gratis, di luar langganan**
 6. Misi & Reward IDMX (klaim gasless) — pemicu misi disesuaikan ke aktivitas mencatat
 7. Tukar IDMX → Token IDM Reborn (pool resmi) — **tidak berubah**
 8. Riwayat transaksi (daftar, filter, edit, hapus)
 9. Profil, pengaturan, kartu wallet — **tidak berubah**
 10. Panel admin minimum — **tidak berubah**
-11. **Riset Pasar & Generator Konten sebagai fitur premium** (kode v2.0 dipertahankan, dipindah ke balik kredit)
+11. **Riset Pasar & Generator Konten sebagai fitur premium** (kode v2.0 dipertahankan, dipindah ke balik langganan)
 
 ### Fase 2
 - **Kasbon** (utang-piutang: piutang pelanggan, utang supplier, jatuh tempo, pengingat WA, tandai lunas)
@@ -132,7 +132,7 @@ Pilar Web3 keempat yang **baru di v3.0**:
 - Menampilkan data keuangan pengguna di on-chain (hanya hash — §9.4)
 - Menjadi lembaga penyalur pinjaman atau perantara pinjaman
 - Trading, DEX, chart harga token di dalam aplikasi
-- Membeli Kredit AI dengan token; menjual token in-app
+- Membayar langganan dengan token; menjual token in-app
 - Custody dana rupiah
 - Menyentuh Native Token (IDM lama)
 - Scraping kontinyu 24/7 (riset premium tetap on-demand)
@@ -150,7 +150,7 @@ Pilar Web3 keempat yang **baru di v3.0**:
 2. Privy membuat wallet EVM otomatis di balik layar (tanpa seed phrase terlihat).
 3. **Layar peran (DIUBAH):** "Kamu berpenghasilan dari mana?" → pilihan kartu: **Dagang/warung · Ojek online · Freelance/jasa · Jualan online · Lainnya**. (Menggantikan "Saya mau mulai usaha / Saya sudah punya usaha".)
 4. Layar kategori & kota (tetap, taksonomi §10).
-5. Masuk Beranda; kredit gratis harian aktif.
+5. Masuk Beranda; masa coba Premium 7 hari berjalan.
 
 **AC.**
 - [ ] Nol sampai Beranda ≤ 60 detik, tanpa istilah wallet/seed/gas di alur.
@@ -170,7 +170,7 @@ Pilar Web3 keempat yang **baru di v3.0**:
 2. **Optimistic save + kartu konfirmasi.** Entri langsung tersimpan; kartu menampilkan hasil bacaan dengan opsi ketuk untuk koreksi/hapus. BUKAN formulir yang harus disubmit.
 3. **Kalau ragu, tanya SATU hal saja.** Nominal hilang → tanya nominal. Jangan tanya kategori + metode bayar + tanggal sekaligus.
 4. **Metode bayar dideteksi & disimpan** (`tunai` default, `qris`, `transfer`, `ewallet`). Ini yang mengisi porsi terverifikasi di laporan.
-5. **GRATIS — nol Kredit AI.** Mencatat tidak pernah memotong kredit. Ini keputusan ekonomi inti: pencatatan adalah pengait harian, monetisasi ada di lapisan premium.
+5. **GRATIS selamanya.** Mencatat tidak pernah dipungut biaya, termasuk lewat suara — dan tidak menyentuh langganan sama sekali. Ini keputusan ekonomi inti: pencatatan adalah pengait harian, monetisasi ada di lapisan premium.
 6. **Suara & offline sejak MVP.** Web Speech API on-device (gratis) → teks → pipeline sama. Entri offline diantrekan lokal (IndexedDB) dan disinkronkan saat online.
 
 **Alur.**
@@ -196,7 +196,7 @@ Pilar Web3 keempat yang **baru di v3.0**:
 - [ ] "beli beras" (tanpa nominal) → agen bertanya nominal saja, tidak lebih.
 - [ ] Input suara → teks → entri tersimpan, tanpa biaya server tambahan.
 - [ ] Entri dibuat saat offline tersimpan lokal dan tersinkron otomatis ≤ 30 detik setelah online.
-- [ ] Mencatat tidak pernah memotong Kredit AI (`credit_ledger` tidak bertambah baris untuk aksi catat).
+- [ ] Mencatat tidak pernah menyentuh langganan maupun kuota premium.
 - [ ] Entri bisa diedit dan dihapus dari kartu konfirmasi maupun dari tab Laporan.
 - [ ] Parsing p90 ≤ 3 detik; fallback aktif saat LLM gagal.
 
@@ -234,7 +234,7 @@ Pilar Web3 keempat yang **baru di v3.0**:
 - [ ] Ringkasan, grafik, kategori, dan porsi terverifikasi konsisten dengan data `transactions` untuk periode terpilih (uji dengan dataset seed).
 - [ ] Layar Laporan render p90 ≤ 1,5 detik untuk user dengan 5.000 transaksi.
 - [ ] PDF ter-generate ≤ 10 detik, terbaca rapi di A4, memuat semua blok wajib termasuk kalimat baku verifikasi.
-- [ ] Membuka Laporan tidak memotong Kredit AI.
+- [ ] Membuka Laporan tidak menuntut langganan.
 - [ ] Transaksi bisa diedit/dihapus dari daftar di dalam Laporan, dan angka ikut berubah seketika.
 
 ---
@@ -321,24 +321,24 @@ Cap total default ≤ 250 IDMX/user/hari (misi bulanan di luar cap harian, cap t
 
 ---
 
-### 7.7 Kredit AI, Tukar IDMX, Wallet, Riwayat, Profil
+### 7.7 Langganan Premium, Tukar IDMX, Wallet, Riwayat, Profil
 
 **Seluruhnya tidak berubah dari v2.0** (§7.5, §7.7, §7.9 lama) kecuali dua hal:
 
-1. **Tarif kredit diperbarui** (§8.2) — catat & laporan = 0 kredit.
+1. **Model monetisasi diganti** (§8.2) — langganan bulanan, bukan kredit satuan. Catat & laporan tetap gratis dan di luar langganan.
 2. **Riwayat** kini berarti riwayat **transaksi** (dengan filter tanggal/jenis/kategori, pencarian, edit, hapus, ekspor CSV), bukan riwayat riset. Riwayat riset premium tetap ada di dalam menu fitur premium.
 
 ---
 
 ### 7.8 Fitur Premium (Riset Pasar & Generator Konten)
 
-**Deskripsi.** Seluruh kemampuan agen riset v2.0 **dipertahankan kodenya** dan dipindahkan menjadi fitur premium berbayar Kredit AI. Diakses dari menu **Lainnya/Premium**, bukan dari bottom-nav.
+**Deskripsi.** Seluruh kemampuan agen riset v2.0 **dipertahankan kodenya** dan dipindahkan menjadi fitur di balik **langganan Premium**. Diakses dari menu **Premium**, bukan dari bottom-nav.
 
 Alasan: biaya AI riset 50–200× lebih mahal daripada parsing pencatatan (ingestion multi-sumber + konteks panjang + model besar). Menggratiskannya membakar uang; menjadikannya premium membuatnya justru sumber pendapatan.
 
 **Isi:** Riset tren on-demand (tools `tiktok_trends`, `google_trends_id`, `marketplace_snapshot`, `web_search`, `corpus_search`), Wizard Peluang Usaha, Generator Konten. Alur, ketentuan, dan AC mengikuti PRD v2.0 §7.2–7.4 tanpa perubahan teknis.
 
-**Perubahan satu-satunya:** tidak ada kuota gratis harian untuk fitur ini; setiap pemakaian memotong kredit sesuai §8.2.
+**Perubahan satu-satunya:** keduanya hanya terbuka untuk pelanggan aktif atau yang sedang masa coba (§8.2).
 
 ---
 
@@ -354,28 +354,41 @@ Alasan: biaya AI riset 50–200× lebih mahal daripada parsing pencatatan (inges
 
 ---
 
-## 8. Ekonomi Token & Kredit
+## 8. Ekonomi Token & Langganan
 
 ### 8.1 Struktur 3 Token
-**Tidak berubah dari v2.0** — Native Token (IDM lama, tidak disentuh) · Token IDM Reborn (BSC, 1 miliar, pair BNB) · IDMX (opBNB, 10 triliun, reward in-app). Alur nilai dan pemisahan rel kredit/token tetap sama persis.
+**Tidak berubah dari v2.0** — Native Token (IDM lama, tidak disentuh) · Token IDM Reborn (BSC, 1 miliar, pair BNB) · IDMX (opBNB, 10 triliun, reward in-app). Alur nilai dan pemisahan rel uang/token tetap sama persis. Angka tokenomics final: `docs/PERINTAH-AGEN-FINAL.md` §0.1 — satu-satunya sumber.
 
-### 8.2 Parameter Kredit (default — dapat diubah admin)
+### 8.2 Langganan Premium (dikunci PO 2026-08-28)
 
-| Parameter | Nilai default |
+| | Gratis | Premium |
+|---|---|---|
+| Catat (teks & suara) | ✅ tanpa batas | ✅ tanpa batas |
+| Laporan & PDF | ✅ | ✅ |
+| Misi & reward IDMX | ✅ | ✅ |
+| Segel laporan on-chain | ✅ | ✅ |
+| Riset Tren | ❌ | ✅ |
+| Generator Konten | ❌ | ✅ |
+
+| Parameter | Nilai |
 |---|---|
-| **Catat transaksi (teks/suara)** | **0 kredit — GRATIS selamanya** |
-| **Lihat Laporan & unduh PDF** | **0 kredit — GRATIS** |
-| **Segel laporan on-chain** | **0 kredit** (gas disponsori) |
-| Kredit gratis harian (untuk fitur premium) | 10 kredit (reset 00:00 WIB, tidak menumpuk) |
-| Premium: Riset segar | 3 kredit |
-| Premium: Riset dari cache | 1 kredit |
-| Premium: Wizard Peluang Usaha | 3 kredit |
-| Premium: Generator konten | 1 kredit |
-| Fase 2: Analisis keuangan mendalam AI ("kenapa untungku turun?") | 2 kredit |
-| Paket PWA/web (QRIS/VA) | 50 kredit Rp15.000 · 200 kredit Rp49.000 · 500 kredit Rp99.000 |
-| Paket Play/App Store | SKU setara, harga menyerap fee store |
+| Harga | **Rp49.000 / bulan** |
+| Masa coba | **7 hari**, sekali seumur akun |
+| Pagar wajar | **30 Riset + 60 Konten / bulan** (reset awal bulan WIB) |
+| Pembayaran | Midtrans Snap, sekali bayar → +30 hari dari sisa berjalan |
 
-**Prinsip ekonomi v3.0:** pencatatan gratis = pengait harian bermarjin nyaris nol biaya → laporan gratis = nilai yang membuat orang bertahan → premium AI mahal = sumber pendapatan → token = lapisan reward & kepemilikan → B2B API verifikasi (Fase 3) = pendapatan terbesar di belakang.
+**Kuota adalah pagar anti-abuse, bukan angka yang dipamerkan.** Pengguna normal
+tidak boleh pernah merasakannya — pemakaian riset tertinggi sepanjang hidup
+aplikasi di produksi adalah 4. Karena itu sisa kuota **dilarang** ditampilkan
+sebagai penghitung di layar utama; ia hanya keterangan kecil di /premium, dan
+menonjol hanya saat benar-benar mendekati batas.
+
+**Kenapa bukan kredit.** Model kredit menuntut pengguna memahami empat konsep
+sebelum memakai satu fitur: apa itu kredit, berapa harganya, mana yang hangus,
+mana yang tidak. Langganan menuntut satu keputusan. *(Model Kredit AI dibekukan
+pada migrasi 0027; `credit_ledger` dipertahankan sebagai arsip.)*
+
+**Prinsip ekonomi v3.0:** pencatatan gratis = pengait harian bermarjin nyaris nol biaya → laporan gratis = nilai yang membuat orang bertahan → langganan premium = sumber pendapatan → token = lapisan reward & kepemilikan → B2B API verifikasi (Fase 3) = pendapatan terbesar di belakang.
 
 ### 8.3 Parameter Reward & Tukar
 **Tidak berubah dari v2.0**, kecuali daftar misi (§7.6) dan tambahan cap terpisah untuk misi bulanan segel laporan.
@@ -461,7 +474,7 @@ contract ReportAttestation {
 
 ## 10. Model Data (Supabase Postgres)
 
-> RLS aktif di semua tabel user-facing. Tabel v2.0 yang tetap dipakai: `users`, `wallets`, `categories`, `credit_ledger`, `orders`, `missions`, `mission_events`, `mission_claims`, `swaps`, `withdrawals`, `app_config`, `admin_users`, `research_queries`, `research_results`, `trend_corpus`, `content_generations` (empat terakhir kini melayani fitur premium).
+> RLS aktif di semua tabel user-facing. Tabel v2.0 yang tetap dipakai: `users`, `wallets`, `categories`, `missions`, `mission_events`, `mission_claims`, `swaps`, `withdrawals`, `app_config`, `admin_users`, `research_queries`, `research_results`, `trend_corpus`, `content_generations` (empat terakhir kini melayani fitur premium). Tabel BARU sejak 0027: `subscriptions`, `premium_usage`, `subscription_orders`. Tabel BEKU (arsip, tidak ditulis lagi): `credit_ledger`, `orders`.
 
 **Perubahan & tabel baru:**
 
@@ -539,7 +552,7 @@ readiness_scores(
 
 ## 11. API Endpoints
 
-Endpoint v2.0 tetap (auth, me, credits, orders, missions, swap, wallet, admin, research, content). **Endpoint baru/berubah:**
+Endpoint v2.0 tetap (auth, me, missions, swap, wallet, research, content) + `langganan` (status · bayar · webhook). **Endpoint baru/berubah:**
 
 ```
 POST /api/catat                   -- {text, source:'chat'|'voice'} → {entries[], pertanyaan?}
@@ -581,7 +594,7 @@ Mengikuti v2.0 (Lighthouse ≥ 90, LCP ≤ 2,5s, INP < 200ms, CLS < 0,1, bundle 
 
 **Layar:**
 1. **Onboarding** — splash → auth → "Kamu berpenghasilan dari mana?" (5 kartu) → kategori + kota. Wallet tercipta diam-diam.
-2. **Beranda** — sapaan + chip kredit & IDMX; **kartu hari ini (masuk / keluar / sisa)** sebagai blok utama; tombol besar "Catat"; ringkasan misi hari ini; 3 transaksi terakhir. Maksimal 4 blok (aturan hierarki v2.0).
+2. **Beranda** — sapaan + chip IDMX; **kartu hari ini (masuk / keluar / sisa)** sebagai blok utama; tombol besar "Catat"; ringkasan misi hari ini; 3 transaksi terakhir. Maksimal 4 blok (aturan hierarki v2.0).
 3. **Catat** — chat: bubble pengguna, kartu konfirmasi entri (jenis, nominal, kategori, metode bayar + "Ubah"), chip saran kontekstual per `earner_type`, kolom input + **tombol mikrofon**, indikator offline bila antre.
 4. **Laporan** — pemilih periode; kartu ringkasan (angka besar Fraunces); grafik arus kas; rincian kategori; porsi terverifikasi; kartu Segel Laporan; tombol Unduh PDF; kartu terkunci "Valuasi usaha terbuka setelah 6 bulan".
 5. **Detail Transaksi / Edit** — sheet: jenis, nominal, kategori, metode bayar, tanggal, catatan, hapus.
@@ -589,7 +602,7 @@ Mengikuti v2.0 (Lighthouse ≥ 90, LCP ≤ 2,5s, INP < 200ms, CLS < 0,1, bundle 
 7. **Misi & Reward** — sama seperti v2.0, isi misi disesuaikan (§7.6).
 8. **Wallet** — sama persis seperti v2.0 (kartu gelap-emas, tukar, hubungkan eksternal, kirim).
 9. **Sheet Tukar IDMX → IDM** — sama persis seperti v2.0.
-10. **Premium** — etalase fitur berbayar: Riset Tren, Peluang Usaha, Generator Konten (UI v2.0 dipakai ulang) + info kredit.
+10. **Premium** — satu harga, satu tombol: Riset Tren + Generator Konten. Tanpa matematika kupon, tanpa penghitung kuota di layar utama.
 11. **Profil & Pengaturan** — profil usaha (+ nama usaha, earner type), preferensi, privasi, hapus akun, ekspor wallet.
 12. **Admin** — tambah panel: statistik pencatatan (transaksi/hari, akurasi parser, koreksi manual, rasio fallback), monitor segel laporan.
 
@@ -606,7 +619,7 @@ Mengikuti v2.0 (Lighthouse ≥ 90, LCP ≤ 2,5s, INP < 200ms, CLS < 0,1, bundle 
 | **M2** (minggu 4) | Input **suara** + antrean **offline** + sinkronisasi | Entri suara & offline tersimpan benar di perangkat Android kelas menengah |
 | **M3** (minggu 5) ✅ **SELESAI 2026-08-14** | **Tab Laporan**: agregasi, grafik, kategori, porsi terverifikasi + **ekspor PDF** | AC §7.3 lulus — `GET /api/laporan` (rollup + RPC `laporan_kategori`, migrasi 0015), `GET /api/laporan/pdf` (`@react-pdf/renderer`); diverifikasi `pnpm test:api` 87/87 termasuk pembacaan ulang isi PDF |
 | **M4** (minggu 6) ✅ **SELESAI 2026-08-14** | `ReportAttestation.sol` di testnet + alur Segel + badge + blok verifikasi PDF; misi pencatatan | **Segel LIVE di opBNB testnet** — kontrak ter-deploy, laporan nyata tersegel (hash + tx + tautan explorer tampil di UI); kanonikalisasi §17.2 dijaga `pnpm test:canonical` (vektor emas terkunci, uji avalanche 1-rupiah). **Misi §7.6 terpasang penuh**: progres DITURUNKAN dari catatan (hapus transaksi otomatis menurunkan progres — AC lulus, diuji regresi), anti-abuse duplikat-persis-60-detik (RPC 0017), cap harian 250 & cap bulanan 150 terpisah, kontrak `IDMX.sol` + `MissionRewards.sol` (voucher EIP-712, nonce anti-replay, cap ditegakkan ON-CHAIN sesuai AC), `POST /api/missions/klaim` gasless via relayer, tab Misi hidup. Diverifikasi `pnpm test:api` 115/115. **Sisa operasional:** `pnpm deploy:rewards` ke testnet — sampai env reward diisi, tombol Klaim nonaktif dengan keterangan & API menjawab 501 |
-| **M5** (minggu 7) | Fitur premium di balik kredit (riset/konten v2.0 dipindah) + pembelian kredit + wallet + admin + hardening PDP | Semua AC §7 lulus staging; Lighthouse §12 tercapai |
+| **M5** (minggu 7) | Fitur premium di balik langganan (riset/konten v2.0 dipindah) + pembayaran Midtrans + wallet + runbook admin + hardening PDP | Semua AC §7 lulus staging; Lighthouse §12 tercapai |
 | **M6** (minggu 8) | Kontrak ke mainnet opBNB; beta tertutup 100 user (target: 30 pedagang, 30 ojol, 40 lainnya); perbaikan; **launch publik PWA**; submit DappBay | PWA live; DappBay diajukan; ≥ 60% beta user mencatat ≥ 4 hari/minggu |
 | **M7** (minggu 9–10) | Rilis Google Play (TWA + Billing) & submit iOS (Capacitor + StoreKit); kampanye ranking DappBay | Aplikasi live; metrik on-chain berjalan |
 | **Fase 2** | Kasbon · katalog & HPP · Skor Kesiapan · OCR nota · bot WhatsApp · staking · referral | — |
@@ -629,7 +642,7 @@ Mengikuti v2.0 (Lighthouse ≥ 90, LCP ≤ 2,5s, INP < 200ms, CLS < 0,1, bundle 
 | **Kebocoran data keuangan** | Fatal — data pribadi bernilai tinggi | RLS ketat; enkripsi at-rest; **hash-only on-chain**; audit payload transaksi on-chain; minimisasi `raw_input`; pen-test sebelum launch |
 | **Farming misi dengan transaksi palsu** | Emisi IDMX bocor + data sampah | Reward per milestone bukan per poin (Skor); transaksi dihapus membatalkan progres; deteksi pola nominal seragam; cap harian di kontrak |
 | Biaya AI > revenue | Runway terbakar | Parser pakai model murah; cache; fitur mahal (riset) berbayar penuh; dashboard biaya vs revenue |
-| Review Google Play / App Store | Delay rilis | Kredit hanya via billing store di native; tanpa penjualan token in-app; wallet non-custodial; teks UI bebas framing investasi |
+| Review Google Play / App Store | Delay rilis | Langganan hanya via billing store di native; tanpa penjualan token in-app; wallet non-custodial; teks UI bebas framing investasi |
 | Ketergantungan provider wallet | Lock-in | Ekspor wallet sejak MVP; abstraksi layer wallet |
 
 ---
@@ -645,7 +658,7 @@ Mengikuti v2.0 (Lighthouse ≥ 90, LCP ≤ 2,5s, INP < 200ms, CLS < 0,1, bundle 
 1. **Nama tab & tagline final** — *(selesai)* "Catat" (`nav-items.ts`) + tagline "Catat usahamu, dalam satu ucap." (`login-panel.tsx`) sudah diimplementasikan.
 2. **Domain produk** — *(diputuskan 2026-08-14)* `ai.idmtoken.com` — subdomain dari domain token yang sudah ada.
 3. **Provider embedded wallet** — Privy (default, sudah terpasang). *(selesai)*
-4. **Payment gateway** — *(diputuskan 2026-08-08)* Midtrans. Lihat `.env.local.example` (dipakai mulai M3, pembelian kredit QRIS/VA).
+4. **Payment gateway** — *(diputuskan 2026-08-08)* Midtrans. Lihat `.env.local.example`. Bentuknya **sekali-bayar 30 hari**, bukan recurring: QRIS & VA yang dipakai mayoritas pengguna secara sifat tidak bisa ditagih otomatis, dan memaksakan recurring berarti memaksa kartu kredit.
 5. **Kurs awal IDMX → IDM Reborn** + kebijakan peninjauan. **Masih terbuka** — mekanisme disepakati (kurs tetap awal, bukan floating, ditinjau ulang per kuartal, diumumkan di UI sebelum user menukar), tapi rasio angkanya adalah keputusan finansial yang belum ditetapkan. *(sebelum M6)*
 6. **Perlakuan IDMX masuk pool** — *(diputuskan 2026-08-14)* Burn — deflasi sederhana, tanpa mekanisme redistribusi/governance tambahan.
 7. **Angka reward misi pencatatan** — *(dikonfirmasi 2026-08-14)* Pakai default §7.6 apa adanya (+20/+50/+100/+150/+50, cap 250 IDMX/hari); tetap configurable admin sehingga aman diubah tanpa deploy ulang.

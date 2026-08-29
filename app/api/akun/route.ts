@@ -11,7 +11,7 @@ export const runtime = "nodejs";
  * PDP hak penghapusan).
  *
  * Satu `delete from users` sudah cukup: SEMUA tabel turunan memakai
- * `on delete cascade` (0002 dst.), jadi transaksi, rollup, segel, kredit, dan
+ * `on delete cascade` (0002 dst.), jadi transaksi, rollup, segel, langganan, dan
  * wallet ikut terhapus tanpa daftar tabel yang harus dijaga manual di sini —
  * daftar seperti itu pasti tertinggal saat tabel baru ditambahkan.
  *

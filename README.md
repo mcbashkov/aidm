@@ -12,7 +12,7 @@ harian bersih tanpa jargon.
 > **Pivot v3.0 (§0 PRD).** Versi 2.0 adalah agen *riset pasar* ("kamu bertanya, agen
 > menjawab"). v3.0 membalik arah: **kamu memberi tahu, agen mencatat**. Riset pasar &
 > generator konten tetap ada, tapi turun jadi **fitur premium** di `/premium` —
-> bukan lagi jantung produk. Mencatat **selalu gratis, nol Kredit AI**.
+> bukan lagi jantung produk. Mencatat **selalu gratis**, di luar langganan.
 >
 > **Status: M1–M4 selesai** (roadmap PRD §14). Parser pencatatan, tab Catat,
 > Riwayat, Laporan (agregasi server), dan ekspor PDF teruji di
@@ -132,7 +132,8 @@ app/
   (auth)/            masuk + onboarding (peran, usaha) — fokus tunggal per layar
   (app)/             shell + Beranda · Catat · Laporan · Misi · Akun
                      (+ /riwayat, /premium, /kebijakan-privasi)
-  api/               auth/session · me · akun · catat · catat/konfirmasi · transaksi ·
+  api/               auth/session · me · akun · langganan (+bayar, webhook) · konten ·
+                     catat · catat/konfirmasi · transaksi ·
                      laporan · laporan/pdf · laporan/segel · missions · missions/klaim ·
                      missions/lihat-laporan · wallet/saldo · wallet/backfill ·
                      swap/config · swap/vouchers · relayer/tick (swap + misi) ·
@@ -175,12 +176,13 @@ lib/
   privy/             provider · config · galat-masuk (kalimat galat Indonesia) ·
                      server (verifikasi token) · identitas (email/telepon/dompet
                      dibaca dari Privy, bukan dari klien)
-  credits.ts         saldo & potongan — seluruh mutasi lewat fungsi Postgres
-                     ber-kunci (0024), bukan baca-lalu-tulis di Node
+  langganan/         index (harga · kuota · masa coba) · server (status, kuota,
+                     perpanjangan) · midtrans (Snap + verifikasi webhook)
+  konten/            index (format) · server (mesin Generator Konten)
   chains/  supabase/  ai/  agent/  design/  mock/  token/  swap/  env.ts
 contracts/           ReportAttestation.sol · IDMX.sol · MissionRewards.sol (§9.4)
                      + artifacts hasil kompilasi
-supabase/migrations/ skema §10 (0001–0026)
+supabase/migrations/ skema §10 (0001–0028)
 tests/parser-cases.json  200 kalimat uji lintas 5 persona
 ```
 
@@ -198,7 +200,7 @@ User (chat/suara) → POST /api/catat
 
 Prinsip yang mengikat: **satu kalimat boleh jadi banyak entri**; **dilarang mengarang
 nominal** (tidak disebut → simpan sebagai draft + tanya **satu** hal saja); **mencatat
-tidak pernah memotong Kredit AI**.
+tidak pernah dipungut biaya**, termasuk lewat suara.
 
 ## Laporan & ekspor PDF (§7.3)
 
@@ -214,7 +216,7 @@ Seluruh agregasi di server; layar tidak pernah menjumlah transaksi sendiri. Bata
 periode dihitung sekali di `lib/laporan/periode.ts` sebagai **tanggal WIB**, lalu
 diturunkan jadi ISO — dua sumber data (rollup bertipe `date`, transaksi bertipe
 `timestamptz`) karena itu memotong garis yang sama persis, sehingga total kategori
-selalu sama dengan total ringkasan. **Membuka Laporan & mengunduh PDF = 0 kredit.**
+selalu sama dengan total ringkasan. **Membuka Laporan & mengunduh PDF selalu gratis.**
 
 Isi PDF mengikuti kebutuhan penilai KUR: kop usaha, ringkasan, arus kas 12 bulan,
 rincian kategori, porsi terverifikasi, blok verifikasi, dan footer wajib. Angka yang
@@ -420,7 +422,7 @@ Pola layout: <1024px memakai pola mobile (bottom-nav 5 tab + baris status tanpa 
 ~~M3 tab Laporan + ekspor PDF~~ **selesai** ·
 ~~M4 Segel on-chain + misi pencatatan~~ **selesai 2026-08-26** — segel & reward
 live di opBNB testnet, klaim asinkron lewat cron relayer, sembilan misi aktif ·
-**M5** fitur premium di balik kredit + pembelian kredit + hardening ·
+**M5** fitur premium di balik langganan Rp49.000/bln + Midtrans + hardening ·
 **M6** mainnet opBNB + beta tertutup 100 user + launch PWA + DappBay ·
 **M7** Google Play (TWA) + App Store (Capacitor).
 

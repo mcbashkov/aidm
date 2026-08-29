@@ -4,11 +4,13 @@ import { parseCatat } from "@/lib/parse";
 import { todayWib } from "@/lib/wib";
 import {
   CATAT_DAILY_LIMIT,
+  CATAT_RATE_PER_MENIT,
   CATAT_REQUEST_LIMIT,
   currentUserId,
   entriDibuatHariIni,
   getKategoriMaps,
   naikkanKuotaRequest,
+  naikkanRateMenit,
   rowToTx,
   TX_COLUMNS,
   type TxRow,
@@ -22,8 +24,10 @@ export const runtime = "nodejs";
  * Optimistic save (§7.2 prinsip #2): entri bernominal langsung `confirmed`;
  * field wajib kosong → `draft` + satu pertanyaan klarifikasi.
  *
- * GRATIS — nol Kredit AI (§7.2 prinsip #5): route ini TIDAK menyentuh
- * credit_ledger sama sekali. Jangan tambahkan pemotongan di sini.
+ * GRATIS SELAMANYA (§7.2 prinsip #5): route ini TIDAK menyentuh langganan
+ * maupun kuota premium sama sekali, dan tidak boleh. Mencatat adalah pengait
+ * harian produk ini — memungutnya berarti memungut hal yang membuat seluruh
+ * sisanya bernilai.
  */
 export async function POST(req: Request) {
   const uid = currentUserId();
@@ -57,6 +61,20 @@ export async function POST(req: Request) {
   const today = todayWib();
 
   try {
+    // Batas LAJU sebelum batas harian: tanpa ini, jatah 400 percakapan sehari
+    // bisa dihabiskan skrip dalam satu menit. Manusia tidak pernah menyentuh
+    // sepuluh per menit (produksi: rata-rata 2,82 per HARI, tertinggi 7).
+    const dalamMenit = await naikkanRateMenit(supa, uid, today);
+    if (dalamMenit !== null && dalamMenit > CATAT_RATE_PER_MENIT) {
+      return NextResponse.json(
+        {
+          error:
+            "Terlalu cepat. Tunggu sebentar lalu kirim lagi ya — catatanmu aman.",
+        },
+        { status: 429, headers: { "Retry-After": "60" } },
+      );
+    }
+
     // Batas percakapan/hari — dinaikkan SEBELUM parser dipanggil supaya
     // kalimat yang tidak menghasilkan entri pun ikut terhitung (kalau tidak,
     // parser LLM berbayar bisa dipanggil tanpa batas).

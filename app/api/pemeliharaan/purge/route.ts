@@ -30,7 +30,8 @@ const RETENSI_HARI = 90;
 const BATAS_PER_JALAN = 5000;
 
 /**
- * POST/GET /api/pemeliharaan/purge — satu putaran pemusnahan `raw_input`.
+ * POST/GET /api/pemeliharaan/purge — satu putaran pemeliharaan harian:
+ * pemusnahan `raw_input` yang lewat retensi + penyapuan langganan kedaluwarsa.
  *
  * Bentuknya endpoint berpenjadwal, sama seperti `/api/relayer/tick`, dengan
  * alasan yang sama: aplikasi ini hidup di Vercel dan tidak punya proses
@@ -51,6 +52,22 @@ async function purge(req: Request) {
       { error: "Supabase belum dikonfigurasi." },
       { status: 501 },
     );
+  }
+
+  // Langganan yang lewat tanggal diturunkan ke 'tidak_aktif'. Ini KEBERSIHAN,
+  // bukan penegakan: `statusLangganan()` sudah memperlakukan tanggal yang lewat
+  // sebagai tidak aktif pada saat dibaca, jadi hak akses tidak pernah menunggu
+  // cron berikutnya. Yang dikerjakan di sini hanya merapikan barisnya.
+  let langgananDisapu: number | null = null;
+  const { data: sapu, error: errSapu } = await supa.rpc(
+    "langganan_sapu_kedaluwarsa",
+  );
+  if (errSapu) {
+    // Tidak menggagalkan seluruh tick: purge `raw_input` punya tenggat hukum
+    // sendiri dan tidak boleh berhenti karena pekerjaan lain tersandung.
+    console.error("[pemeliharaan] sapu langganan gagal:", errSapu);
+  } else {
+    langgananDisapu = typeof sapu === "number" ? sapu : 0;
   }
 
   const { data, error } = await supa.rpc("purge_raw_input", {
@@ -90,6 +107,7 @@ async function purge(req: Request) {
     retensiHari: RETENSI_HARI,
     dihapus,
     sisa: sisa ?? null,
+    langgananDisapu,
   });
 }
 

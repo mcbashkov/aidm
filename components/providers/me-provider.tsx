@@ -9,6 +9,7 @@ import {
 } from "react";
 import { usePathname } from "next/navigation";
 import type { SaldoIdmx, SaldoResponse } from "@/lib/token/tipe";
+import type { Langganan } from "@/lib/langganan";
 
 export interface Me {
   authenticated: boolean;
@@ -20,7 +21,7 @@ export interface Me {
     kota?: string;
   } | null;
   wallet?: { address?: string } | null;
-  credits?: number;
+  langganan?: Langganan;
 }
 
 const MeContext = createContext<Me | null>(null);
@@ -29,14 +30,14 @@ const SaldoContext = createContext<SaldoIdmx>({ keadaan: "memuat" });
 /**
  * Sumber data shell aplikasi — DUA jalur yang sengaja tidak saling menunggu.
  *
- *   /api/me            Postgres. Nama usaha, peran, kredit. Selalu tersedia,
+ *   /api/me            Postgres. Nama usaha, peran, langganan. Selalu tersedia,
  *                      selesai dalam milidetik.
  *   /api/wallet/saldo  RPC opBNB. Bisa lambat sampai 2,5 detik, bisa gagal.
  *
  * Dulu keduanya satu permintaan, dan akibatnya terlihat di layar: sapaan
  * pengguna tertahan menunggu pembacaan rantai, padahal namanya sudah ada di
  * database sejak awal. Memisahkannya berarti kegagalan RPC hanya menyentuh
- * satu angka — nama, kredit, dan sisa layar tidak ikut terseret.
+ * satu angka — nama, langganan, dan sisa layar tidak ikut terseret.
  *
  * Keduanya dibaca sekali di sini, bukan di tiap komponen. Header selalu
  * ter-mount lewat app layout, jadi hook per-komponen akan menembak endpoint

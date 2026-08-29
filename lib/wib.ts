@@ -40,7 +40,7 @@ export function bulanWib(now = new Date()): string {
 
 /**
  * Tengah malam WIB hari berjalan sebagai ISO UTC — batas untuk membandingkan
- * kolom `timestamptz` (kuota harian, kredit gratis harian).
+ * kolom `timestamptz` (kuota harian catat).
  */
 export function wibDayStartIso(now = new Date()): string {
   const wib = new Date(now.getTime() + WIB_OFFSET_MS);

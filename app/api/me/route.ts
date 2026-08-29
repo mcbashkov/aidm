@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { readSessionValue } from "@/lib/auth/session-cookie";
 import { SESSION_COOKIE } from "@/lib/auth/constants";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { ensureDailyFree } from "@/lib/credits";
+import { statusLangganan } from "@/lib/langganan/server";
 
 export const runtime = "nodejs";
 // Data milik satu pengguna: tidak boleh pernah dirender statis maupun
@@ -20,7 +20,7 @@ function currentUserId(): string | null {
   return readSessionValue(raw)?.uid ?? null;
 }
 
-/** Profil + saldo kredit (§11 GET /api/me). Postgres saja — saldo token
+/** Profil + status langganan (§11 GET /api/me). Postgres saja — saldo token
  *  on-chain hidup di GET /api/wallet/saldo. */
 export async function GET() {
   const uid = currentUserId();
@@ -29,8 +29,10 @@ export async function GET() {
   }
   try {
     const supa = createSupabaseAdminClient();
-    // Kredit gratis harian (§7.1 alur #4) — idempoten per hari WIB.
-    const credits = await ensureDailyFree(supa, uid);
+    // Status langganan menggantikan saldo kredit (§8, migrasi 0027). Ia dibaca
+    // di sini karena header dan setiap gerbang premium menanyakannya, dan
+    // jawabannya harus datang dari satu tempat.
+    const langganan = await statusLangganan(supa, uid);
     const [{ data: user }, { data: wallet }] = await Promise.all([
       supa
         .from("users")
@@ -74,7 +76,7 @@ export async function GET() {
       authenticated: true,
       user: user ? { ...userRest, kategori_slug } : user,
       wallet,
-      credits,
+      langganan,
     });
   } catch {
     return jsonPribadi({ authenticated: true, unconfigured: true });

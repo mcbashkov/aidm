@@ -31,7 +31,7 @@ interface Me {
 export default function AkunPage() {
   const [me, setMe] = useState<Me | null>(null);
   // Saldo datang dari jalurnya sendiri (/api/wallet/saldo) — kegagalan RPC
-  // tidak boleh ikut mengosongkan nama usaha atau kredit di layar ini.
+  // tidak boleh ikut mengosongkan nama usaha atau status langganan di layar ini.
   const saldo = useSaldoIdmx();
   const [swapConfig, setSwapConfig] = useState<SwapConfig | null>(null);
   const [sheetTerbuka, setSheetTerbuka] = useState(false);

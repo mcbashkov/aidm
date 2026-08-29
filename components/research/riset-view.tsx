@@ -76,10 +76,20 @@ export function RisetView({ initialQuery }: { initialQuery: string }) {
         }, 600);
         return;
       }
+      // 402 = belum berlangganan. Bukan "jatah habis" — orang ini tidak pernah
+      // punya jatah, dan menyodorkan kalimat kehabisan kepadanya menjelaskan
+      // hal yang salah.
       if (res.status === 402) {
         setPhase("error");
         setNotice(
-          "Kredit kamu belum cukup untuk riset baru. Kredit gratis harian masuk tiap pukul 00.00 WIB.",
+          "Riset Tren ada di paket Premium. Buka halaman Premium untuk mencobanya gratis 7 hari.",
+        );
+        return;
+      }
+      if (res.status === 429) {
+        setPhase("error");
+        setNotice(
+          "Kamu sudah memakai seluruh jatah riset bulan ini. Kuotanya pulih awal bulan depan.",
         );
         return;
       }

@@ -3,20 +3,11 @@ import { cookies } from "next/headers";
 import { readSessionValue } from "@/lib/auth/session-cookie";
 import { SESSION_COOKIE } from "@/lib/auth/constants";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { ensureDailyFree } from "@/lib/credits";
-import { getCreditParams } from "@/lib/config";
+import { statusLangganan, pakaiKuota } from "@/lib/langganan/server";
+import { premiumAktif, KUOTA_BULANAN } from "@/lib/langganan";
 import { isAnthropicConfigured } from "@/lib/ai/models";
 
 export const runtime = "nodejs";
-
-/**
- * Umur maksimum sebuah riset yang masih dianggap "sedang berjalan" saat
- * menghitung kuota. Antrean bisa ditinggalkan — pengguna menekan Riset lalu
- * menutup tab, dan barisnya tetap `queued` selamanya — jadi tanpa batas umur
- * satu tab yang ditutup akan mengunci kuotanya sendiri tanpa pernah dipakai.
- * 10 menit = lebih dari tiga kali `maxDuration` endpoint stream (180 dtk).
- */
-const JENDELA_BERJALAN_MS = 10 * 60_000;
 
 function currentUserId(): string | null {
   const raw = cookies().get(SESSION_COOKIE)?.value;
@@ -25,8 +16,8 @@ function currentUserId(): string | null {
 
 /**
  * POST /api/research (§11): buat query riset → {query_id}.
- * Kredit TIDAK dipotong di sini — dipotong saat sukses (cache/segar) di
- * endpoint stream; gagal total = tidak terpotong (AC §7.2).
+ * Akses ditentukan LANGGANAN, bukan saldo. Pagar wajar bulanan dicatat di
+ * sini, sebelum pekerjaan mahal dimulai.
  */
 export async function POST(req: Request) {
   const uid = currentUserId();
@@ -55,36 +46,34 @@ export async function POST(req: Request) {
 
   try {
     const supa = createSupabaseAdminClient();
-    const params = await getCreditParams();
-    const balance = await ensureDailyFree(supa, uid);
-
-    // Riset yang sudah diantre tapi belum selesai IKUT DIHITUNG di pagar ini.
-    // Tanpa itu, dua permintaan bersamaan sama-sama melihat saldo 3, sama-sama
-    // lolos, lalu dua-duanya menagih 3 setelah selesai — saldo berakhir -3 dan
-    // pengguna mendapat dua riset seharga satu. Pembebanan memang baru terjadi
-    // di akhir (charge-on-success §7.2), jadi saldo saja bukan gambaran utuh:
-    // yang sudah dijanjikan kepada pekerjaan berjalan harus ikut dikurangkan.
-    const { count: berjalan, error: errBerjalan } = await supa
-      .from("research_queries")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", uid)
-      .in("status", ["queued", "running"])
-      .gte("created_at", new Date(Date.now() - JENDELA_BERJALAN_MS).toISOString());
-    // Gagal menghitung = tidak tahu berapa yang sedang berjalan. Menganggapnya
-    // nol berarti membuka kembali celah yang baru saja ditutup, jadi pagarnya
-    // dipasang pada asumsi paling aman: seolah ada satu yang berjalan.
-    const antre = errBerjalan ? 1 : (berjalan ?? 0);
-
-    const perlu = params.research * (antre + 1);
-    if (balance < perlu) {
+    // GERBANG PREMIUM. Riset hanya untuk pelanggan aktif atau yang sedang
+    // masa coba. Yang belum berlangganan TIDAK diberi tahu "kuota habis" —
+    // mereka tidak pernah punya kuota; yang benar adalah ajakan berlangganan,
+    // dan itulah yang dibaca kode `PREMIUM_DIPERLUKAN` di layar.
+    const langganan = await statusLangganan(supa, uid);
+    if (!premiumAktif(langganan)) {
       return NextResponse.json(
         {
-          error: "Kredit tidak cukup",
-          balance,
-          needed: perlu,
-          berjalan: antre,
+          code: "PREMIUM_DIPERLUKAN",
+          message: "Riset Tren ada di paket Premium.",
         },
         { status: 402 },
+      );
+    }
+
+    // Pagar wajar bulanan. Dipakai DI DEPAN dan atomik: pemeriksaan yang
+    // terpisah dari pencatatannya selalu punya celah di antara keduanya.
+    // Riset yang gagal tetap memakai satu jatah — dari 30 sebulan, itu tidak
+    // akan pernah terasa, dan menukarnya dengan pengembalian jatah berarti
+    // membuka kembali celah yang baru saja ditutup.
+    const kuota = await pakaiKuota(supa, uid, "riset");
+    if (!kuota.boleh) {
+      return NextResponse.json(
+        {
+          code: "KUOTA_BULANAN",
+          message: `Kamu sudah memakai ${KUOTA_BULANAN.riset} riset bulan ini. Kuotanya pulih awal bulan depan.`,
+        },
+        { status: 429 },
       );
     }
 
@@ -104,7 +93,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       query_id: query.id,
       force_fresh: forceFresh,
-      balance,
+      sisaKuota: kuota.sisa,
     });
   } catch {
     return NextResponse.json(
