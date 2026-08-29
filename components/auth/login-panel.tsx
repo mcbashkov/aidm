@@ -21,6 +21,7 @@ import {
 } from "@/lib/privy/galat-masuk";
 import { simpanTujuanDariUrl } from "@/lib/auth/tujuan";
 import { CarouselVerba } from "@/components/auth/carousel-verba";
+import { TautanLegal } from "@/components/layout/tautan-legal";
 
 /**
  * Layar masuk — tampilan mengikuti docs/mockups/aidm-onboarding-fuse.html.
@@ -327,6 +328,11 @@ function ConfiguredLogin() {
           ) : (
             <p className="ob-foot">Akunmu langsung siap dipakai mencatat.</p>
           )}
+
+          {/* Layar ini publik dan sering jadi halaman pertama yang dibuka
+              peninjau merchant — dokumen hukum harus terjangkau dari sini
+              juga, bukan hanya dari dalam aplikasi. */}
+          <TautanLegal ringkas className="mt-5" />
         </div>
       </Cangkang>
     );

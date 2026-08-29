@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { Bagian } from "@/components/legal/bagian";
 
 export const metadata: Metadata = {
-  title: "Kebijakan Privasi · AIDM",
+  title: "Kebijakan Privasi",
   description:
     "Data apa yang AIDM simpan, untuk apa, berapa lama, dan hak apa yang kamu punya atasnya.",
 };
@@ -24,13 +23,6 @@ export default function KebijakanPrivasiPage() {
   return (
     <div className="space-y-section">
       <header className="space-y-3">
-        <Link
-          href="/akun"
-          className="inline-flex items-center gap-1.5 text-[13px] text-ink-muted underline-offset-2 hover:underline"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          Kembali ke Akun
-        </Link>
         <h1>Kebijakan Privasi</h1>
         <p className="text-[13px] text-ink-subtle">
           Berlaku sejak 22 Agustus 2026 · mengacu UU No. 27 Tahun 2022 tentang
@@ -146,22 +138,5 @@ export default function KebijakanPrivasiPage() {
         </p>
       </Bagian>
     </div>
-  );
-}
-
-function Bagian({
-  judul,
-  children,
-}: {
-  judul: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="space-y-2">
-      <h2 className="px-1">{judul}</h2>
-      <div className="card space-y-3 p-5 text-[13.5px] leading-relaxed text-ink-muted">
-        {children}
-      </div>
-    </section>
   );
 }

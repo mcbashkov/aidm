@@ -5,6 +5,7 @@ import { MobileTopBar } from "@/components/layout/mobile-top-bar";
 import { HeaderStats } from "@/components/layout/header-stats";
 import { MeProvider } from "@/components/providers/me-provider";
 import { KueriProvider } from "@/components/providers/kueri-provider";
+import { TautanLegal } from "@/components/layout/tautan-legal";
 
 /** Shell aplikasi: top nav (tablet/desktop) + header & bottom nav (mobile). */
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -23,6 +24,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             TopNav supaya logo/nav/HeaderStats sejajar dengan konten. */}
         <main className="mx-auto w-full max-w-2xl px-4 pb-28 pt-4 lg:max-w-[1320px] lg:px-6 lg:pb-12 lg:pt-8">
           {children}
+          {/* Dokumen hukum harus bisa ditemukan dari SETIAP halaman — syarat
+              persetujuan merchant Midtrans, dan sekaligus hal yang wajar
+              diharapkan pengguna yang membayar. */}
+          <TautanLegal className="mt-10 border-t border-line pt-6" />
         </main>
         <BottomNav />
       </div>
