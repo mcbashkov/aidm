@@ -4,12 +4,14 @@ Pelacak pekerjaan lintas sesi. **README** menjelaskan produk & cara menjalankan;
 berkas ini menjawab satu pertanyaan saja: *apa yang sudah beres, apa berikutnya,
 dan siapa yang mengerjakan.*
 
-Diperbarui: **2026-08-28** · cabang `main`
+Diperbarui: **2026-08-29** · cabang `main`
 
 > ⚠️ **Sisi token digantikan `docs/PERINTAH-AGEN-FINAL.md`.** Untuk apa pun yang
 > menyangkut IDMX/IDM Reborn/swap/kurs/tokenomics, dokumen itu sumber kebenaran
-> tunggal — bagian "Ekonomi reward IDMX" di bawah **sudah usang** (masih menyebut
-> suplai & kurs versi lama). Bagian lain papan kerja ini tetap berlaku.
+> tunggal, dan **§0.1 di dokumen itu memuat tokenomics final** (dikunci PO
+> 2026-08-28, diverifikasi on-chain: nol perbedaan). Bagian "Ekonomi reward
+> IDMX" di bawah **sudah usang** — jangan dipakai. Bagian lain papan kerja ini
+> tetap berlaku.
 >
 > **Batch sisi token — kemajuan:** ✅ **Langkah 1–5 SELESAI & TER-DEPLOY ke
 > testnet 2026-08-21** (alamat lengkap di tabel On-chain di bawah). Enam kontrak
@@ -44,12 +46,16 @@ perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
 | M2 suara & offline | ✅ selesai | uji lapangan Android 2026-08-14 (3 akun nyata) |
 | M3 Laporan & PDF | ✅ selesai | `test:api` mem-baca ulang isi PDF, bukan cuma header |
 | M4 segel + misi | ✅ **selesai** | klaim diuji PO di aplikasi 2026-08-26 (spinner → Diklaim + tautan opBNBScan); 11 klaim produksi semuanya `confirmed` |
-| M5 premium & langganan | 🟡 berjalan | langganan Rp49.000/bln + Generator Konten + rate limit + runbook berdiri; menunggu uji PO |
-| M6 mainnet & beta | ⬜ belum mulai | — |
+| M5 premium & langganan | 🟡 **hampir tuntas** | migrasi 0027+0028 live · alur langganan diuji ujung-ke-ujung di produksi **14/14** · halaman hukum publik · sisa: kunci Midtrans + bundel `/masuk` |
+| M6 mainnet & beta | ⬜ belum mulai | **tidak lagi terhalang** — §16 #5/#8/#11 sudah diputuskan |
 | M7 Play & App Store | ⬜ belum mulai | — |
 
-**Gerbang otomatis terkini (2026-08-27):** `test:parser` 200/200 ·
-`test:canonical` 23/23 · typecheck bersih · lint bersih · build sukses.
+**Gerbang otomatis terkini (2026-08-29):** `test:parser` 200/200 ·
+`test:canonical` 23/23 · `test:api` 123/123 · typecheck bersih · lint bersih ·
+build sukses **tanpa peringatan**.
+
+**Produksi 2026-08-29:** 12 pengguna · 117 transaksi · 13 klaim misi ·
+48 baris `credit_ledger` (arsip, beku) · 0 baris yatim.
 
 ⚠️ **`test:api` masih menunggu satu run penuh.** Penyebab kerapuhannya sudah
 dicabut 2026-08-27 (keep-alive dimatikan di harness, §6), tapi belum ada satu
@@ -120,16 +126,22 @@ di bawah; ini hanya menjawab *"mulai dari mana"*.
 **Menunggu tangan PO:** uji batch 2026-08-27 (empat misi baru + halaman Akun) ·
 prompt instal PWA di Android (§7) · verifikasi source enam kontrak di explorer.
 
-**Bisa saya kerjakan tanpa menunggu siapa pun, urutan usul:**
+**Menunggu tangan PO — memblokir rilis pembayaran:**
 
-1. ~~Cabut `misi_hitung_harian`~~ — ✅ **beres 2026-08-28** (migrasi 0026).
-2. ~~Diagnosis `no-response` service worker di `/masuk`~~ — ✅ **ternyata sudah
-   selesai sejak commit `44cb43b` + `324966b`.** `app/sw.ts` memuat penanganan
-   lengkapnya (`JALUR_TANPA_SW`, `janganSimpanPengalihan`, cache `pages-v2`) dan
-   `sw.js` di produksi mengandung seluruh penandanya. Entri papan kerja yang
-   basi, bukan pekerjaan yang tertinggal.
-3. **Sisa M5** (§8) — seluruhnya menunggu keputusan #1–#4 di atas. Yang tidak
-   terhalang sudah selesai 2026-08-28 (lihat §8).
+1. **Kunci Midtrans ke Vercel** — `MIDTRANS_SERVER_KEY` (sandbox). **JANGAN**
+   set `MIDTRANS_IS_PRODUCTION`. Kunci PO berawalan `Mid-server-` tanpa `SB-`
+   tapi secara empiris SANDBOX (diuji: sandbox 201 + token, produksi 401) —
+   aturan prefix `SB-` tidak berlaku untuk akun ini.
+2. **Payment Notification URL** di dashboard Midtrans →
+   `https://ai.idmtoken.com/api/langganan/webhook`
+3. Uji alur langganan sendiri (masa coba → Riset & Konten terbuka).
+
+**Bisa saya kerjakan tanpa menunggu siapa pun:**
+
+1. **Bundel `/masuk` 829 KB** — satu-satunya sisa M5. Refaktornya ditunda atas
+   syarat keras PO (lihat §6); penggantinya sudah jalan.
+2. **M6 — mainnet & beta tertutup.** Tidak lagi terhalang: §16 #5/#8/#11 sudah
+   diputuskan dan tokenomics-nya terverifikasi cocok dengan on-chain.
 
 ---
 
@@ -835,6 +847,19 @@ uang di dalamnya.
 - [x] Seluruh jejak "kredit" dicabut dari UI
 - [x] Batas laju **10 permintaan/menit** di Catat (migrasi 0028)
 - [x] `docs/RUNBOOK-ADMIN.md`
+
+- [x] **Halaman hukum publik** — `/syarat-ketentuan` & `/pengembalian-dana`
+      (grup rute baru `(publik)`, shell ringan sendiri, 162 B per halaman).
+      Prasyarat persetujuan merchant Midtrans. `/kebijakan-privasi` ikut
+      dipindah ke sana: sebelumnya ia hidup di dalam shell aplikasi dengan
+      tautan "Kembali ke Akun" — jalan buntu bagi pengunjung tanpa sesi, yang
+      akan dipantulkan ke `/masuk`. URL ketiganya tidak berubah. Diuji di
+      browser pada konteks INCOGNITO terhadap produksi: 38 pemeriksaan lulus,
+      nol cookie sesi, tanpa `noindex`, tautan footer bisa diklik dari `/masuk`.
+- [x] **Diuji ujung-ke-ujung di produksi, 14/14** — gerbang 402 sebelum
+      langganan, masa coba 7 hari + tolakan 409 pada percobaan kedua, Generator
+      Konten menghasilkan salinan yang memakai konteks usaha, kuota tercatat,
+      rate limit menolak permintaan ke-11.
 
 **Yang dilewati, dengan alasan**
 

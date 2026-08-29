@@ -131,13 +131,16 @@ app/
                      langsung ke Beranda
   (auth)/            masuk + onboarding (peran, usaha) — fokus tunggal per layar
   (app)/             shell + Beranda · Catat · Laporan · Misi · Akun
-                     (+ /riwayat, /premium, /kebijakan-privasi)
+                     (+ /riwayat, /premium)
+  (publik)/          dokumen hukum TANPA login — /syarat-ketentuan ·
+                     /pengembalian-dana · /kebijakan-privasi (shell ringan
+                     sendiri; prasyarat merchant Midtrans)
   api/               auth/session · me · akun · langganan (+bayar, webhook) · konten ·
                      catat · catat/konfirmasi · transaksi ·
                      laporan · laporan/pdf · laporan/segel · missions · missions/klaim ·
                      missions/lihat-laporan · wallet/saldo · wallet/backfill ·
                      swap/config · swap/vouchers · relayer/tick (swap + misi) ·
-                     pemeliharaan/purge (retensi raw_input 90 hari) ·
+                     pemeliharaan/purge (retensi raw_input + sapu langganan) ·
                      verify (publik) · research
   not-found.tsx      404 berbahasa Indonesia
   error.tsx          layar galat tak terduga
@@ -184,6 +187,10 @@ contracts/           ReportAttestation.sol · IDMX.sol · MissionRewards.sol (§
                      + artifacts hasil kompilasi
 supabase/migrations/ skema §10 (0001–0028)
 tests/parser-cases.json  200 kalimat uji lintas 5 persona
+docs/                PERINTAH-AGEN-FINAL.md (sumber tunggal sisi token —
+                     §0.1 tokenomics final) · RUNBOOK-ADMIN.md (operasi admin
+                     lewat SQL; tiap query + dampak + cara membatalkan) ·
+                     RELAYER-SWAP.md · mockups/
 ```
 
 ## Alur pencatatan (§9.2)
@@ -268,7 +275,9 @@ Pola layout: <1024px memakai pola mobile (bottom-nav 5 tab + baris status tanpa 
   jadi tidak ada daftar tabel yang harus dijaga manual dan tertinggal saat tabel baru
   ditambahkan.
 - **Bundle ≤ 200 KB (§12):** target optimasi lanjutan (lazy-load Privy, code-split)
-  digarap pada milestone kualitas M5. SDK Privy saat ini masuk shared bundle.
+  digarap pada milestone kualitas M5. SDK Privy hanya dibayar di /masuk & /akun,
+  dan sejak 2026-08-29 pemilik sesi dipantulkan middleware dari /masuk sebelum
+  satu byte JavaScript halaman dikirim — jadi mereka tidak membayarnya sama sekali.
 - **Chain fitur Tukar dirakit di server, bukan di klien.** `AIDM_REWARD_CHAIN` dan
   `AIDM_SWAP_CHAIN` sengaja TIDAK berawalan `NEXT_PUBLIC_`, jadi di browser keduanya
   `undefined` dan resolver akan diam-diam jatuh ke `NEXT_PUBLIC_DEFAULT_CHAIN` — nilai
@@ -422,7 +431,9 @@ Pola layout: <1024px memakai pola mobile (bottom-nav 5 tab + baris status tanpa 
 ~~M3 tab Laporan + ekspor PDF~~ **selesai** ·
 ~~M4 Segel on-chain + misi pencatatan~~ **selesai 2026-08-26** — segel & reward
 live di opBNB testnet, klaim asinkron lewat cron relayer, sembilan misi aktif ·
-**M5** fitur premium di balik langganan Rp49.000/bln + Midtrans + hardening ·
+~~M5 premium di balik langganan~~ **hampir tuntas 2026-08-29** — langganan
+Rp49.000/bln, masa coba 7 hari, Generator Konten, rate limit catat, runbook
+admin, halaman hukum publik; sisa: kunci Midtrans + bundel `/masuk` ·
 **M6** mainnet opBNB + beta tertutup 100 user + launch PWA + DappBay ·
 **M7** Google Play (TWA) + App Store (Capacitor).
 
