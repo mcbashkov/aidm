@@ -36,17 +36,17 @@ Status sampai akhir Fase 1 + analisis otomatis.
 | Severity | Jumlah | ID |
 |---|---|---|
 | Critical | 1 | F-01 |
-| High | 3 | F-02, F-03, F-04 |
+| High | 4 | F-02, F-03, F-04, F-08 |
 | Medium | 2 | F-05, F-06 |
 | Low | 0 | — |
 | Informational | 1 | F-07 |
-| **Total** | **7** | |
+| **Total** | **8** | |
 
-Catatan penting tentang angka ini: **nol** dari tujuh temuan berasal dari
+Catatan penting tentang angka ini: **nol** dari delapan temuan berasal dari
 Slither. Slither tidak menemukan satu pun masalah nyata (rincian dan alasan
-di §4). Ketujuh temuan berasal dari pemetaan hak istimewa di Fase 1 — yaitu
-dari pertanyaan "apa yang bisa dilakukan pemegang kunci", bukan dari pola
-kode yang salah. Ini konsisten dengan gaya kontraknya: kodenya rapi dan
+di §4). Kedelapan temuan berasal dari pemetaan hak istimewa di Fase 1 dan
+dari pemeriksaan konfigurasi on-chain (§1.3) — yaitu dari pertanyaan "apa
+yang bisa dilakukan pemegang kunci", bukan dari pola kode yang salah. Ini konsisten dengan gaya kontraknya: kodenya rapi dan
 konservatif; permukaan risikonya ada pada kepercayaan operasional, bukan
 pada bug implementasi.
 
@@ -64,6 +64,8 @@ yang sama seperti yang dianalisis di sini.
 | Tahap | Alat / metode | Status |
 |---|---|---|
 | Analisis statik otomatis | Slither 0.11.5, solc 0.8.26 (biner statis resmi), 101 detektor | ✅ Selesai |
+| Pencocokan bytecode on-chain ↔ kode sumber | Kompilasi ulang + `eth_getCode`, dengan masking slot `immutableReferences` | ✅ Selesai (§1.2) |
+| Pemeriksaan konfigurasi on-chain | `eth_call` atas peran istimewa, parameter, dan saldo | ✅ Selesai (§1.3) |
 | Rekonstruksi arsitektur & alur nilai | Pembacaan manual baris-per-baris | ✅ Selesai (Fase 1) |
 | Model ancaman & peta hak istimewa | Pembacaan manual, berbantuan AI | ✅ Selesai (Fase 1) |
 | Sapuan kelas kerentanan | Manual, checklist SWC/SCSVS | ⬜ Fase 2 |
@@ -103,31 +105,34 @@ Semua nomor baris di seluruh dokumen ini merujuk ke commit tersebut.
 
 | Kontrak | Chain | Alamat (testnet) | Solidity | Baris (total / tanpa banner) | Verifikasi source | Dependensi |
 |---|---|---|---|---|---|---|
-| `IDMX.sol` | opBNB Testnet (5611) | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` | `0.8.26` (pinned) | 145 / 122 | ⚠️ TIDAK YAKIN | Tidak ada |
-| `MissionRewards.sol` | opBNB Testnet (5611) | `0xbc6f412024cee7e8117bd1ee35759d027fce11e5` | `0.8.26` (pinned) | 287 / 264 | ⚠️ TIDAK YAKIN | Tidak ada |
-| `ReportAttestation.sol` | opBNB Testnet (5611) | `0xa83c201c3759fa1a92bd17dbebb46b85029a84c4` | `0.8.26` (pinned) | 180 / 157 | ⚠️ TIDAK YAKIN | Tidak ada |
-| `SwapInitiator.sol` | opBNB Testnet (5611) | `0xa4f00039540dfdd040635a17090bf4e797168b63` | `0.8.26` (pinned) | 253 / 230 | ⚠️ TIDAK YAKIN | Tidak ada |
-| `IDMReborn.sol` | BSC Testnet (97) | `0x78c7e68142e7e1b564c0fd342954aa515a3d2f5b` | `0.8.26` (pinned) | 158 / 135 | ⚠️ TIDAK YAKIN | Tidak ada |
-| `SwapClaim.sol` | BSC Testnet (97) | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` | `0.8.26` (pinned) | 287 / 264 | ⚠️ TIDAK YAKIN | Tidak ada |
+| `IDMX.sol` | opBNB Testnet (5611) | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` | `0.8.26` (pinned) | 145 / 122 | ✅ bytecode cocok · explorer ⬜ | Tidak ada |
+| `MissionRewards.sol` | opBNB Testnet (5611) | `0xbc6f412024cee7e8117bd1ee35759d027fce11e5` | `0.8.26` (pinned) | 287 / 264 | ✅ bytecode cocok · explorer ⬜ | Tidak ada |
+| `ReportAttestation.sol` | opBNB Testnet (5611) | `0xa83c201c3759fa1a92bd17dbebb46b85029a84c4` | `0.8.26` (pinned) | 180 / 157 | ✅ bytecode cocok · explorer ⬜ | Tidak ada |
+| `SwapInitiator.sol` | opBNB Testnet (5611) | `0xa4f00039540dfdd040635a17090bf4e797168b63` | `0.8.26` (pinned) | 253 / 230 | ✅ bytecode cocok · explorer ⬜ | Tidak ada |
+| `IDMReborn.sol` | BSC Testnet (97) | `0x78c7e68142e7e1b564c0fd342954aa515a3d2f5b` | `0.8.26` (pinned) | 158 / 135 | ✅ bytecode cocok · explorer ⬜ | Tidak ada |
+| `SwapClaim.sol` | BSC Testnet (97) | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` | `0.8.26` (pinned) | 287 / 264 | ✅ bytecode cocok · explorer ⬜ | Tidak ada |
 | | | | | **1.310 / 1.172** | | |
 
 **"Tanpa banner"** = dikurangi 23 baris header ASCII-art + tautan kanal resmi
 yang identik di keenam berkas (baris 1–23 setiap berkas).
 
-**Verifikasi source — TIDAK YAKIN.** Pra-audit ini dijalankan sepenuhnya
-offline terhadap kode sumber lokal. Status verifikasi di opBNBScan dan BscScan
-**belum dikonfirmasi** dan harus diperiksa sebelum dokumen ini diserahkan.
-Auditor akan menanyakan ini lebih dulu.
-
-**Perlu dikonfirmasi — tabrakan alamat.** `IDMX` (opBNB Testnet) dan
-`SwapClaim` (BSC Testnet) tercatat pada alamat yang **sama persis**
-(`0xccf955…f09a`). Penjelasan yang paling mungkin: keduanya di-deploy oleh
-dompet yang sama dengan nonce yang sama di dua chain berbeda, sehingga alamat
-`CREATE` yang dihasilkan identik — perilaku normal, bukan kesalahan. Namun
-kemungkinan lain adalah salah salin di berkas konfigurasi. **TIDAK YAKIN** —
-harus diverifikasi langsung ke kedua explorer sebelum dokumen diserahkan.
-
 **Semua alamat di atas adalah testnet.** Belum ada deployment mainnet.
+
+**Verifikasi source di explorer masih ⬜.** Publikasi source ke
+opbnb-testnet.bscscan.com dan testnet.bscscan.com belum dilakukan. Namun
+kesetaraan kode sumber dengan bytecode on-chain **sudah dibuktikan secara
+independen** di §1.2 — bukti yang secara teknis lebih kuat daripada badge
+verifikasi explorer, karena tidak bergantung pada pihak ketiga mana pun.
+Verifikasi explorer tetap perlu dilakukan demi transparansi publik dan karena
+bursa mensyaratkannya.
+
+**Tabrakan alamat — TERJAWAB, bukan kesalahan konfigurasi.** `IDMX` (opBNB
+Testnet) dan `SwapClaim` (BSC Testnet) memang berbagi alamat yang sama persis
+(`0xccf955…f09a`). Pembacaan `eth_getCode` mengonfirmasi bahwa di alamat itu
+terdapat **kode yang berbeda di dua chain**: 1.629 byte (IDMX) di opBNB
+Testnet dan 3.659 byte (SwapClaim) di BSC Testnet, masing-masing cocok dengan
+kode sumbernya sendiri. Ini tabrakan `CREATE` yang wajar — deployer dan nonce
+yang sama menghasilkan alamat yang sama di dua chain — bukan salah salin.
 
 ### 1.1 Parameter deployment (testnet saat ini)
 
@@ -152,6 +157,136 @@ memverifikasi nilai on-chain yang sebenarnya.
 
 Untuk mainnet, `globalThreshold` dan `lifetimeCap` wajib diisi dari env dan
 skrip menolak berjalan tanpa keduanya (`scripts/deploy-swap-opbnb.mjs:56-63`).
+
+---
+
+### 1.2 Pembuktian kesetaraan bytecode on-chain ↔ kode sumber
+
+Pertanyaan pertama setiap auditor adalah: *apakah kode yang saya baca memang
+kode yang berjalan di chain?* Pertanyaan itu dijawab langsung, tanpa
+bergantung pada explorer.
+
+**Metode.** Setiap berkas dikompilasi ulang dengan solc `0.8.26` dan setelan
+yang identik dengan skrip deploy (optimizer aktif, 200 runs, `evmVersion`
+dibiarkan default), lalu `evm.deployedBytecode` dibandingkan dengan hasil
+`eth_getCode` pada alamat yang bersangkutan.
+
+Perbandingan mentah menunjukkan tiga kontrak "tidak cocok" **dengan panjang
+byte yang persis sama** — tanda khas placeholder `immutable`, yang baru diisi
+saat konstruksi dan karena itu tidak ada dalam hasil kompilasi lokal.
+Hipotesis ini diuji, bukan diasumsikan: seluruh slot pada
+`evm.deployedBytecode.immutableReferences` dinolkan di kedua sisi, lalu
+perbandingan diulang.
+
+**Hasil — keenam kontrak cocok.**
+
+| Kontrak | Badan kode (slot immutable di-mask) | Metadata CBOR | Slot immutable |
+|---|---|---|---|
+| `IDMX` | ✅ identik | ✅ identik | 0 |
+| `IDMReborn` | ✅ identik | ✅ identik | 0 |
+| `MissionRewards` | ✅ identik | ✅ identik | 5 |
+| `SwapInitiator` | ✅ identik | ✅ identik | 2 |
+| `SwapClaim` | ✅ identik | ✅ identik | 6 |
+| `ReportAttestation` | ✅ identik | 🟡 berbeda | 0 |
+
+**Nilai `immutable` yang terbaca dari bytecode on-chain**, dan karena itu tidak
+dapat diubah oleh siapa pun setelah deployment:
+
+| Kontrak | Field | Nilai on-chain | Seharusnya | |
+|---|---|---|---|---|
+| `MissionRewards` | `token` | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` | alamat `IDMX` | ✅ |
+| `SwapInitiator` | `idmx` | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` | alamat `IDMX` | ✅ |
+| `SwapClaim` | `idm` | `0x78c7e68142e7e1b564c0fd342954aa515a3d2f5b` | alamat `IDMReborn` | ✅ |
+
+Ini **menutup asumsi kepercayaan A-6** (§3.3): alamat token yang dipakai
+ketiga kontrak bukan lagi sesuatu yang harus dipercaya, melainkan fakta yang
+sudah diverifikasi dari bytecode. Konsekuensinya, dasar penilaian "positif
+palsu" untuk temuan `reentrancy-events` Slither (§4.3.2) kini berpijak pada
+bukti, bukan pada asumsi deployment.
+
+**`domainSeparator` EIP-712 terikat chainId yang benar.** Kedua nilai
+`domainSeparator` yang tertanam di bytecode dihitung ulang secara independen
+dan cocok persis:
+
+| Kontrak | chainId | `domainSeparator` | |
+|---|---|---|---|
+| `MissionRewards` | 5611 (opBNB Testnet) | `0x8315ddac…24fd5` | ✅ |
+| `SwapClaim` | 97 (BSC Testnet) | `0x642dfa82…da463` | ✅ |
+
+Karena chainId dan `address(this)` ikut masuk ke dalam `domainSeparator`,
+voucher yang sah di satu chain secara matematis tidak dapat dipakai ulang di
+chain lain maupun di kontrak lain. Perlindungan replay lintas chain
+**terbukti bekerja**, bukan sekadar terlihat benar di kode.
+
+**Satu catatan — metadata `ReportAttestation` berbeda.** Badan kodenya identik,
+sehingga perilakunya dijamin sama; yang berbeda hanya hash IPFS metadata di
+ekor bytecode. Hash itu mencakup teks sumber **persis**, termasuk komentar dan
+spasi. Kedua versi yang ada di riwayat git (`c2bf2c5` dan `99a6136`) diuji dan
+**tidak ada yang menghasilkan hash metadata on-chain**. Kesimpulan yang jujur:
+kontrak ini di-deploy dari teks sumber antara yang tidak pernah di-commit —
+kemungkinan besar hanya berbeda pada komentar, karena bytecode fungsionalnya
+identik. **TIDAK YAKIN** teks persisnya seperti apa; teks itu tampaknya sudah
+tidak ada. Dampak praktisnya terbatas: verifikasi explorer untuk kontrak ini
+mungkin menghasilkan *similar match* alih-alih *exact match*.
+
+Catatan reproduksibilitas terkait: `package.json:50` menyematkan `solc` sebagai
+`^0.8.26`. Tanda caret memungkinkan `pnpm install` di kemudian hari menarik
+minor version yang lebih baru — dan memang `solc@0.8.36` sudah ikut terpasang
+di `node_modules`. Kompilasi ulang di masa depan karena itu tidak dijamin
+menghasilkan bytecode yang sama dengan yang sekarang ada on-chain, kecuali
+versinya dipatok persis.
+
+### 1.3 Konfigurasi on-chain terverifikasi (testnet)
+
+Dibaca langsung lewat `eth_call`. Ini basis fakta untuk §3.2.
+
+**Peran istimewa:**
+
+| Peran | Alamat |
+|---|---|
+| `owner` `MissionRewards` | `0x1842498b06c146b5360d4b8d863a04a7c33fb2f3` |
+| `owner` `ReportAttestation` | `0x1842498b06c146b5360d4b8d863a04a7c33fb2f3` |
+| `owner` `SwapInitiator` | `0x1842498b06c146b5360d4b8d863a04a7c33fb2f3` |
+| `owner` `SwapClaim` | `0x1842498b06c146b5360d4b8d863a04a7c33fb2f3` |
+| `voucherSigner` `MissionRewards` | `0x1842498b06c146b5360d4b8d863a04a7c33fb2f3` |
+| `relayer` `ReportAttestation` | `0x1842498b06c146b5360d4b8d863a04a7c33fb2f3` |
+| `swapSigner` `SwapClaim` | `0xbc2bfb1a2765700b846abad68328b15093763c97` |
+| `owner` `IDMX` / `IDMReborn` | — tidak ada, sesuai desain ✅ |
+
+**Enam dari tujuh peran dipegang satu alamat yang sama.** Lihat temuan
+**F-08 (High)**. `pendingOwner` keempat kontrak bernilai `address(0)`, jadi
+tidak ada perpindahan kepemilikan yang sedang menunggu — kepemilikan belum
+dipindahkan ke multisig mana pun.
+
+**Parameter — tidak ada drift dari nilai deploy:**
+
+| Kontrak | Parameter | On-chain | Nilai deploy | |
+|---|---|---|---|---|
+| `MissionRewards` | `caps[0]` | 250 IDMX | 250 | ✅ |
+| `MissionRewards` | `caps[1]` | 450 IDMX | 450 | ✅ |
+| `SwapInitiator` | `weeklyCap` | 2.000 IDMX | 2.000 | ✅ |
+| `SwapInitiator` | `globalThreshold` | 100.000 IDMX | 100.000 | ✅ |
+| `SwapInitiator` | `lifetimeCap` | 200.000 IDMX | 200.000 | ✅ |
+| `SwapClaim` | `rateIdmxPerIdm` | 50 | 50 | ✅ |
+| `SwapClaim` | `maxIdmxPerVoucher` | 2.000 IDMX | 2.000 | ✅ |
+
+**Suplai, kolam, dan aktivitas:**
+
+| Item | Nilai |
+|---|---|
+| `IDMX.totalSupply` | 50.000.000.000 IDMX (utuh, belum ada burn) |
+| `IDMReborn.totalSupply` | 1.000.000.000 IDM (utuh) |
+| Kolam IDM di `SwapClaim` | 150.000.000 IDM |
+| Float IDMX di `MissionRewards` | 99.999.340 IDMX (≈660 IDMX sudah diklaim) |
+| `SwapInitiator.totalBurned` | 0 IDMX |
+| `SwapInitiator.nonceCounter` | 0 |
+| `paused` (keempat kontrak) | semuanya aktif, tidak ada yang ter-pause |
+
+`totalBurned` dan `nonceCounter` yang masih nol berarti **belum ada satu pun
+swap lintas chain yang dieksekusi** di testnet. Jalur yang memikul risiko
+tertinggi dalam sistem ini karena itu belum pernah dilalui transaksi nyata —
+konteks yang perlu diketahui auditor saat menilai kematangan operasional
+(Fase 4).
 
 ---
 
@@ -539,16 +674,30 @@ jejak. Korban dapat menyegel ulang sendiri lewat `attest`
 | `owner` `SwapInitiator` | Tidak (DoS + rusak invarian) | — | Fase 3/4 |
 | `relayer` `ReportAttestation` | Tidak | — | — |
 
-**Catatan konfigurasi yang belum terjawab — TIDAK YAKIN.** Dokumen ini tidak
-dapat menentukan apakah keenam peran di atas dipegang oleh alamat yang
-**berbeda**, apakah ada di antaranya yang berupa multisig atau timelock, dan
-apakah kunci penandatangan disimpan di HSM/KMS. Komentar di
-`ReportAttestation.sol:46-47` menyatakan kepemilikan produksi akan dipindahkan
-ke "timelocked multisig", tetapi itu konfigurasi deployment, bukan kode, dan
-**belum diverifikasi on-chain di pra-audit ini**. Kalau ternyata semua peran
-dipegang satu EOA yang sama, severity F-01 sampai F-04 harus dinaikkan, karena
-satu kebocoran kunci meruntuhkan seluruh sistem sekaligus. Ini pemeriksaan
-Fase 4.
+⚠️ **Pada konfigurasi testnet saat ini, enam baris pertama tabel ini adalah
+satu kunci yang sama** (§1.3). Plafon gabungannya: 150.000.000 IDM + seluruh
+float IDMX, dari satu kompromi. Lihat **F-08**.
+
+**Catatan konfigurasi — TERVERIFIKASI, dan hasilnya buruk.** Pembacaan
+on-chain (§1.3) menunjukkan **enam dari tujuh peran di atas dipegang oleh satu
+alamat yang sama**, `0x1842498b06c146b5360d4b8d863a04a7c33fb2f3`: keempat
+`owner`, `voucherSigner` `MissionRewards`, dan `relayer` `ReportAttestation`.
+Hanya `swapSigner` yang terpisah. `pendingOwner` keempat kontrak masih
+`address(0)`, jadi kepemilikan belum dipindahkan ke multisig mana pun.
+
+Konsekuensinya, tabel di atas **tidak boleh dibaca sebagai enam permukaan
+serangan yang terpisah**. Pada konfigurasi testnet saat ini, kolom "kerusakan
+maksimum" untuk `owner` `SwapClaim`, `owner` `MissionRewards`, `owner`
+`SwapInitiator`, `voucherSigner`, dan `relayer` semuanya terjadi **sekaligus**
+dari satu kebocoran kunci. Yang paling tajam: `voucherSigner` adalah kunci
+panas yang harus tersedia bagi server aplikasi untuk menandatangani voucher
+misi, dan kunci itulah yang juga memegang `SwapClaim.sweep` atas kolam 150 juta
+IDM. Lihat temuan **F-08 (High)**.
+
+Komentar `ReportAttestation.sol:46-47` menyatakan kepemilikan produksi akan
+dipindahkan ke "timelocked multisig". Rencana itu **belum terlaksana** pada
+deployment testnet. **TIDAK YAKIN** apakah kunci penandatangan disimpan di
+HSM/KMS dan bagaimana prosedur rotasinya — itu tetap pemeriksaan Fase 4.
 
 ### 3.3 Asumsi kepercayaan — hal yang dianggap benar tapi TIDAK ditegakkan kode
 
@@ -563,7 +712,7 @@ kode pun** yang memastikannya.
 | A-3 | **Relayer swap menandatangani `idmxBurned` yang persis sama dengan yang dibakar.** | Tidak ada. | Pembayaran berlebih, dibatasi hanya oleh `maxIdmxPerVoucher` (`SwapClaim.sol:235`). |
 | A-4 | **Server tidak menerbitkan voucher misi untuk misi yang tidak diselesaikan.** | Tidak ada. Kontrak tidak tahu apa arti `missionId` — komentar `MissionRewards.sol:61` menyatakannya eksplisit: "opaque to this contract". | Reward diterbitkan tanpa dasar. Dibatasi cap per-alamat, tidak dibatasi secara agregat. Lihat **F-03**. |
 | A-5 | **Satu manusia tidak mengendalikan banyak alamat (anti-Sybil).** | Tidak ada di kontrak. Semua cap (`claimedOnDay`, `usedThisWeek`) dikunci per-alamat. | Cap harian/mingguan dilewati dengan membuat alamat baru. Anti-Sybil sepenuhnya bergantung pada backend (KYC/deteksi akun) yang di luar lingkup audit ini. |
-| A-6 | **`token` di `MissionRewards` dan `idm` di `SwapClaim` menunjuk ke kontrak ERC-20 yang benar dan tidak punya callback hook.** | Sebagian: keduanya `immutable` (`MissionRewards.sol:77`, `SwapClaim.sol:75`) sehingga tidak bisa diganti setelah deploy. Tetapi nilai awalnya adalah parameter konstruktor yang tidak diverifikasi. | Salah alamat pada saat deploy = kontrak tidak berfungsi (dan tidak bisa diperbaiki tanpa deploy ulang). Ini juga dasar mengapa temuan reentrancy Slither dinilai positif palsu (§4). |
+| A-6 | ~~**`token` di `MissionRewards` dan `idm` di `SwapClaim` menunjuk ke kontrak ERC-20 yang benar.**~~ ✅ **TIDAK LAGI ASUMSI** | Terverifikasi on-chain di §1.2: nilai `immutable` dibaca langsung dari bytecode dan cocok dengan alamat `IDMX`/`IDMReborn`. Karena `immutable`, nilai itu tidak dapat diubah siapa pun. | — (asumsi ditutup; dasar penilaian positif palsu §4.3.2 kini berpijak pada bukti) |
 | A-7 | **Operator mengikuti urutan operasi yang benar saat mengubah cap.** Yaitu: naikkan `maxIdmxPerVoucher` (BSC) **sebelum** `weeklyCap` (opBNB); perketat `lifetimeCap` **sebelum** memperbaiki `rate`. | Tidak ada. Hanya komentar: `SwapInitiator.sol:143-147`, `SwapInitiator.sol:158-166`, `SwapClaim.sol:175-178`. Kedua kontrak ada di chain berbeda sehingga saling-kunci on-chain memang tidak mungkin. | Jendela waktu di mana burn diterima yang voucher-nya akan ditolak — persis hal yang menurut komentar `SwapInitiator.sol:37-42` tidak boleh terjadi. Analisis Fase 3. |
 | A-8 | **Kunci `voucherSigner`, `swapSigner`, dan `relayer` disimpan aman dan terpisah dari kunci `owner`.** | Tidak ada. | Lihat §3.2. |
 | A-9 | **Chain opBNB dan BSC keduanya hidup dan tidak melakukan reorg dalam.** | Tidak ada. Relayer bereaksi terhadap event; kedalaman konfirmasi yang dipakai relayer di luar lingkup audit kontrak ini. | Reorg di opBNB setelah relayer menandatangani → voucher untuk burn yang tidak jadi terjadi. **TIDAK YAKIN** seberapa besar risiko praktisnya; perlu ditanyakan ke auditor. |
@@ -1497,6 +1646,104 @@ Dipertimbangkan bersama F-02.
 
 ---
 
+### F-08 — Enam dari tujuh peran istimewa dipegang satu kunci yang sama, termasuk kunci panas server
+
+| | |
+|---|---|
+| **ID** | F-08 |
+| **Severity** | **High** (menjadi **Critical** bila konfigurasi ini terbawa ke mainnet) |
+| **Kontrak:baris** | Konfigurasi deployment, bukan cacat kode. Fungsi terdampak: `SwapClaim.sol:190-193`, `MissionRewards.sol:158-180`, `SwapInitiator.sol:148-176`, `ReportAttestation.sol:106-115`, `:146-153` |
+| **Sumber** | Pemeriksaan konfigurasi on-chain (§1.3) |
+| **Status** | Terbuka |
+| **Commit perbaikan** | — |
+
+**Deskripsi.**
+Pembacaan `eth_call` terhadap deployment testnet menunjukkan satu alamat,
+`0x1842498b06c146b5360d4b8d863a04a7c33fb2f3`, memegang enam dari tujuh peran
+istimewa dalam sistem:
+
+- `owner` `SwapClaim` — termasuk `sweep` atas kolam 150.000.000 IDM
+- `owner` `MissionRewards` — termasuk `sweep` atas float IDMX
+- `owner` `SwapInitiator` — termasuk `setPaused` atas satu-satunya pintu keluar IDMX
+- `owner` `ReportAttestation`
+- `voucherSigner` `MissionRewards` — penandatangan voucher reward
+- `relayer` `ReportAttestation` — penyegel atas nama user
+
+Hanya `swapSigner` (`0xbc2bfb1a…3c97`) yang terpisah. `pendingOwner` keempat
+kontrak bernilai `address(0)`: tidak ada perpindahan kepemilikan ke multisig
+yang sedang berjalan.
+
+Ini bukan cacat kode. Setiap kontrak menulis perannya sebagai variabel yang
+terpisah dan **memang dirancang** untuk diisi alamat yang berbeda — kodenya
+sudah benar. Yang bermasalah adalah konfigurasi deployment-nya.
+
+Yang membuat temuan ini lebih serius daripada sekadar "kurang pemisahan
+tugas" adalah **sifat salah satu peran yang digabungkan**. `voucherSigner`
+bukan kunci dingin: ia harus tersedia bagi server aplikasi setiap kali sebuah
+voucher reward ditandatangani, sehingga ia hidup di lingkungan dengan
+permukaan serangan yang jauh lebih luas — variabel lingkungan, dependensi
+npm, akses operasional, kompromi host. Menggabungkan kunci panas itu dengan
+kepemilikan `SwapClaim` berarti kompromi server aplikasi tidak lagi berhenti
+pada "penyerang dapat menerbitkan voucher misi palsu" (F-03), melainkan
+langsung menjadi "penyerang memanggil `sweep` dan mengambil kolam 150 juta IDM
+dalam satu transaksi" (F-01).
+
+Efek utama temuan ini terhadap F-01 sampai F-04 adalah pada **likelihood**,
+bukan pada impact. Keempat temuan itu ditulis dengan asumsi implisit bahwa
+kunci `owner` adalah kunci dingin yang jarang dipakai dan terpisah dari kunci
+penandatangan. Konfigurasi on-chain membatalkan asumsi tersebut.
+
+Temuan ini juga membatalkan sebagian mitigasi berlapis yang dicatat sebagai
+kekuatan sistem di §3.5: rem `SwapInitiator` (weekly cap, circuit breaker)
+memang menahan penyerang yang hanya memegang `voucherSigner` — tetapi pemegang
+kunci yang sama juga adalah `owner` `SwapInitiator`, sehingga ia dapat
+menaikkan `weeklyCap` dan `globalThreshold` lebih dulu, atau melewati jalur
+swap sepenuhnya lewat `SwapClaim.sweep`.
+
+**Skenario eksploitasi.**
+1. Penyerang mengompromikan server aplikasi — jalur yang sama yang menjadi
+   prasyarat F-03, dan permukaan serangan terluas dalam sistem ini.
+2. Alih-alih menerbitkan voucher misi (lambat, dibatasi rem berlapis di
+   `SwapInitiator`), penyerang memakai kunci yang sama untuk memanggil
+   `SwapClaim.sweep(alamat_penyerang, saldo_penuh)` di BSC.
+3. Kolam 150.000.000 IDM berpindah dalam satu transaksi.
+4. Opsional, dalam blok yang sama: `MissionRewards.sweep` mengambil float
+   IDMX, dan `SwapInitiator.setPaused(true)` mengunci pintu keluar sehingga
+   pemulihan menjadi lebih sulit.
+
+Tidak ada satu pun langkah di atas yang memerlukan kunci kedua, persetujuan
+kedua, atau jeda waktu.
+
+**Penilaian severity.**
+Ditetapkan **High** dan bukan Critical karena deployment yang diperiksa adalah
+**testnet**, sehingga aset yang benar-benar berisiko saat ini adalah aset uji.
+Yang membuatnya tetap High dan bukan Informational: skrip deploy yang sama
+(`scripts/deploy-rewards.mjs`, `deploy-swap-bsc.mjs`, `deploy-swap-opbnb.mjs`)
+meneruskan `owner = msg.sender` (`MissionRewards.sol:133`,
+`SwapInitiator.sol:131`, `SwapClaim.sol:135`, `ReportAttestation.sol:99`) dan,
+ketika `MISSION_VOUCHER_ADDRESS` kosong, memakai alamat deployer sebagai
+penandatangan (`scripts/deploy-rewards.mjs:139`) — yaitu penggabungan ini
+adalah **perilaku default dari prosedur deployment**, bukan kekhilafan sekali
+jalan. Tanpa
+perubahan prosedur, konfigurasi yang sama akan terbentuk lagi di mainnet, dan
+di sana severity-nya **Critical**.
+
+`scripts/deploy-rewards.mjs:127-131` memang memuat peringatan agar owner
+dipindahkan ke multisig sebelum mainnet, dan `deploy-swap-opbnb.mjs:56-63`
+menolak berjalan di mainnet tanpa parameter yang dihitung eksplisit. Keduanya
+menunjukkan kesadaran atas risiko ini. Yang belum ada adalah penegakannya.
+
+**Rekomendasi (ringkas, dirinci di Fase 4).**
+Pisahkan minimal tiga peran ke tiga kunci berbeda: (a) `owner` — multisig
+dengan timelock, tidak pernah menyentuh server; (b) `voucherSigner` dan
+`swapSigner` — kunci panas terpisah satu sama lain, tanpa kewenangan `owner`
+apa pun; (c) `relayer` — kunci operasional terpisah. Isi
+`MISSION_VOUCHER_ADDRESS` agar penandatangan tidak jatuh ke alamat deployer.
+Verifikasi pemisahan ini sebagai gerbang rilis mainnet, bukan sebagai
+langkah pasca-deploy.
+
+---
+
 ## 9. Lampiran
 
 ### 9.1 Keluaran mentah Slither
@@ -1546,6 +1793,7 @@ akurasi timestamp (A-10), dan kebenaran alamat token saat deploy (A-6).
 
 | Tanggal | Fase | Yang ditambahkan | Commit |
 |---|---|---|---|
+| 2026-08-31 | Verifikasi on-chain (pelengkap Fase 1) | §1.2 pembuktian kesetaraan bytecode on-chain ↔ kode sumber untuk keenam kontrak (termasuk masking `immutableReferences`, ekstraksi nilai immutable, dan verifikasi ulang `domainSeparator`). §1.3 konfigurasi on-chain terverifikasi. Menutup asumsi A-6 dan menjawab pertanyaan tabrakan alamat di §1. Temuan baru **F-08**. Ditambahkan `scripts/verify-contracts.mjs`. | `31857946` (kode yang dianalisis) |
 | 2026-08-31 | Bagian A — Slither | §4 lengkap (konfigurasi, tabel triase 11 temuan, penjelasan 4 kelas positif palsu, batas analisis otomatis). Lampiran §9.1 + berkas `slither-raw.txt` dan `slither-raw.json`. | `31857946` (kode yang dianalisis) |
 | 2026-08-31 | Fase 1 — Rekonstruksi & threat model | Kerangka dokumen §0–§9. §1 informasi kontrak + parameter deployment. §2 arsitektur, diagram alur nilai lintas chain, empat pintu keluar nilai. §3 inventaris 38 fungsi pengubah state, peta 5 hak istimewa, 10 asumsi kepercayaan, trust boundary, pertanyaan penyerang per kontrak. §8 temuan F-01 s.d. F-07. | `31857946` (kode yang dianalisis) |
 | — | Fase 2 — Sapuan kelas kerentanan | ⬜ Menunggu | — |
