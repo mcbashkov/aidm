@@ -185,7 +185,7 @@ lib/
   chains/  supabase/  ai/  agent/  design/  mock/  token/  swap/  env.ts
 contracts/           ReportAttestation.sol · IDMX.sol · MissionRewards.sol (§9.4)
                      + artifacts hasil kompilasi
-supabase/migrations/ skema §10 (0001–0028)
+supabase/migrations/ skema §10 (0001–0029)
 tests/parser-cases.json  200 kalimat uji lintas 5 persona
 docs/                PERINTAH-AGEN-FINAL.md (sumber tunggal sisi token —
                      §0.1 tokenomics final) · RUNBOOK-ADMIN.md (operasi admin

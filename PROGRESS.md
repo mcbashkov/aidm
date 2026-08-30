@@ -4,7 +4,7 @@ Pelacak pekerjaan lintas sesi. **README** menjelaskan produk & cara menjalankan;
 berkas ini menjawab satu pertanyaan saja: *apa yang sudah beres, apa berikutnya,
 dan siapa yang mengerjakan.*
 
-Diperbarui: **2026-08-29** · cabang `main`
+Diperbarui: **2026-08-30** · cabang `main`
 
 > ⚠️ **Sisi token digantikan `docs/PERINTAH-AGEN-FINAL.md`.** Untuk apa pun yang
 > menyangkut IDMX/IDM Reborn/swap/kurs/tokenomics, dokumen itu sumber kebenaran
@@ -54,8 +54,8 @@ perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
 `test:canonical` 23/23 · `test:api` 123/123 · typecheck bersih · lint bersih ·
 build sukses **tanpa peringatan**.
 
-**Produksi 2026-08-29:** 12 pengguna · 117 transaksi · 13 klaim misi ·
-48 baris `credit_ledger` (arsip, beku) · 0 baris yatim.
+**Produksi 2026-08-30:** 12 pengguna · 118 transaksi · 13 klaim misi ·
+2 langganan (masa coba PO) · 48 baris `credit_ledger` (arsip, beku) · 0 yatim.
 
 ⚠️ **`test:api` masih menunggu satu run penuh.** Penyebab kerapuhannya sudah
 dicabut 2026-08-27 (keep-alive dimatikan di harness, §6), tapi belum ada satu
@@ -822,6 +822,43 @@ itu pun 32/48/180/192/512 sudah baik; hanya 16px yang tetap jadi bercak.
   boleh dijanjikan pembuat alat. Nilai lanjutannya ada di **B2B**: basis data
   rekam usaha terverifikasi untuk koperasi/BPR/fintech (PRD P5, Fase 3), bukan
   pada klaim kelayakan kredit per pengguna.
+
+### 7b. ~~P2-6 · Kebenaran angka, splash, guardrail Catat~~ — ✅ **SELESAI 2026-08-30**
+
+- [x] **"Sisa (laba kotor)" → "Sisa uang".** Rumus TIDAK berubah. Angkanya arus
+      kas — pemasukan dikurangi SELURUH pengeluaran termasuk prive dan
+      pembelian alat; laba kotor adalah pemasukan dikurangi HPP, dan HPP belum
+      ada. Kata "laba" kini **nol** di seluruh teks yang dirender, layar maupun
+      PDF yang dibawa pengguna ke pihak ketiga.
+- [x] **Delta persentase disembunyikan di bawah 14 hari tercatat**, diganti
+      selisih rupiah. "+1057% vs periode lalu" pada 7 hari data hanya mengukur
+      bahwa periode sebelumnya nyaris kosong; selisih rupiah tetap jujur berapa
+      pun sedikitnya data karena tidak dibagi apa pun.
+- [x] **Splash hitam** (rute `/` + `background_color` manifest). Ikon berlatar
+      #000, jadi cream di tengah rantai menghasilkan kedipan terang pada
+      peralihan ikon → splash. `theme_color` TETAP cream (bilah status selama
+      aplikasi terbuka), `/masuk` TETAP cream.
+- [x] **P1-5 guardrail Catat — deterministik, nol biaya LLM tambahan.**
+      Gerbang pra-LLM memakai ulang kosakata uang parser fallback: kalimat
+      tanpa jejak uang tidak pernah mencapai model. Skema parser dibertipe
+      (`tidak_dikenali` enum; `pertanyaan` DIHAPUS seluruhnya dari skema model).
+      Seluruh kalimat yang dilihat pengguna lahir di `lib/catat/pesan.ts`,
+      dipakai server DAN layar dari kode yang sama. Kalimat dipendekkan setelah
+      3× offtopic sehari (migrasi 0029) — hitungan itu tidak membatasi apa pun.
+- [x] **Regresi tertangkap & diperbaiki di jalan:** prompt baru sempat membuat
+      "tadi ada yang bayar" berhenti memicu pertanyaan nominal, karena
+      `tidak_jelas` bersaing dengan "buat entri bernominal null". Diperbaiki dua
+      lapis — prompt menegaskan urutannya, DAN `tidak_jelas` dengan nol entri
+      kini diteruskan ke parser fallback (yang menangkapnya dengan benar).
+      `bukan_uang` tidak diteruskan: itu keputusan tegas, bukan keraguan.
+- [x] **P4 · "Transaksi terakhir" terbukti segar.** Diuji di browser produksi:
+      catat lewat UI → navigasi klien ke Beranda → entri baru tampil paling
+      atas tanpa refresh manual. `occurred_at` ketiganya identik (dipatok 12:00
+      WIB), jadi `created_at DESC` yang memutuskan urutan — persis pemecah seri
+      yang dimaksud.
+
+**Bukti:** 17 pemeriksaan produksi lulus 0 gagal · `test:parser` 200/200 ·
+21 pemeriksaan gerbang · typecheck/lint/build bersih tanpa peringatan.
 
 ### 8. 🤖 M5 — premium di balik LANGGANAN
 
