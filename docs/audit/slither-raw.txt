@@ -1,0 +1,88 @@
+# Keluaran mentah Slither — pra-audit kontrak IDM
+# Tanggal   : 2026-08-30T22:36:44Z
+# Commit    : 31857946a18d997b61960ce9422484e82064a8a6
+# Slither   : 0.11.5
+# solc      : 0.8.26+commit.8a97fa7a.Linux.g++ (biner statis resmi ethereum/solidity)
+# Perintah  : slither contracts/ --solc <solc-0.8.26>
+# Cakupan   : 9 kontrak (6 kontrak + 3 interface), 101 detektor, 11 hasil
+
+'/tmp/claude-1000/-home-ammarbasyar-Desktop-aidm/fa8798ab-162e-47fb-9b2a-91e7a67d5651/scratchpad/solc-0.8.26 --version' running
+'/tmp/claude-1000/-home-ammarbasyar-Desktop-aidm/fa8798ab-162e-47fb-9b2a-91e7a67d5651/scratchpad/solc-0.8.26 contracts/MissionRewards.sol --combined-json abi,ast,bin,bin-runtime,srcmap,srcmap-runtime,userdoc,devdoc,hashes --allow-paths .,/home/ammarbasyar/Desktop/aidm/contracts' running
+'/tmp/claude-1000/-home-ammarbasyar-Desktop-aidm/fa8798ab-162e-47fb-9b2a-91e7a67d5651/scratchpad/solc-0.8.26 --version' running
+'/tmp/claude-1000/-home-ammarbasyar-Desktop-aidm/fa8798ab-162e-47fb-9b2a-91e7a67d5651/scratchpad/solc-0.8.26 contracts/IDMReborn.sol --combined-json abi,ast,bin,bin-runtime,srcmap,srcmap-runtime,userdoc,devdoc,hashes --allow-paths .,/home/ammarbasyar/Desktop/aidm/contracts' running
+'/tmp/claude-1000/-home-ammarbasyar-Desktop-aidm/fa8798ab-162e-47fb-9b2a-91e7a67d5651/scratchpad/solc-0.8.26 --version' running
+'/tmp/claude-1000/-home-ammarbasyar-Desktop-aidm/fa8798ab-162e-47fb-9b2a-91e7a67d5651/scratchpad/solc-0.8.26 contracts/IDMX.sol --combined-json abi,ast,bin,bin-runtime,srcmap,srcmap-runtime,userdoc,devdoc,hashes --allow-paths .,/home/ammarbasyar/Desktop/aidm/contracts' running
+'/tmp/claude-1000/-home-ammarbasyar-Desktop-aidm/fa8798ab-162e-47fb-9b2a-91e7a67d5651/scratchpad/solc-0.8.26 --version' running
+'/tmp/claude-1000/-home-ammarbasyar-Desktop-aidm/fa8798ab-162e-47fb-9b2a-91e7a67d5651/scratchpad/solc-0.8.26 contracts/SwapInitiator.sol --combined-json abi,ast,bin,bin-runtime,srcmap,srcmap-runtime,userdoc,devdoc,hashes --allow-paths .,/home/ammarbasyar/Desktop/aidm/contracts' running
+'/tmp/claude-1000/-home-ammarbasyar-Desktop-aidm/fa8798ab-162e-47fb-9b2a-91e7a67d5651/scratchpad/solc-0.8.26 --version' running
+'/tmp/claude-1000/-home-ammarbasyar-Desktop-aidm/fa8798ab-162e-47fb-9b2a-91e7a67d5651/scratchpad/solc-0.8.26 contracts/ReportAttestation.sol --combined-json abi,ast,bin,bin-runtime,srcmap,srcmap-runtime,userdoc,devdoc,hashes --allow-paths .,/home/ammarbasyar/Desktop/aidm/contracts' running
+'/tmp/claude-1000/-home-ammarbasyar-Desktop-aidm/fa8798ab-162e-47fb-9b2a-91e7a67d5651/scratchpad/solc-0.8.26 --version' running
+'/tmp/claude-1000/-home-ammarbasyar-Desktop-aidm/fa8798ab-162e-47fb-9b2a-91e7a67d5651/scratchpad/solc-0.8.26 contracts/SwapClaim.sol --combined-json abi,ast,bin,bin-runtime,srcmap,srcmap-runtime,userdoc,devdoc,hashes --allow-paths .,/home/ammarbasyar/Desktop/aidm/contracts' running
+INFO:Detectors:
+Detector: missing-zero-check
+MissionRewards.transferOwnership(address).to (contracts/MissionRewards.sol#182) lacks a zero-check on :
+		- pendingOwner = to (contracts/MissionRewards.sol#183)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-zero-address-validation
+INFO:Detectors:
+Detector: reentrancy-events
+Reentrancy in MissionRewards.claim(MissionRewards.Voucher,bytes) (contracts/MissionRewards.sol#234-260):
+	External calls:
+	- ! token.transfer(v.user,v.amount) (contracts/MissionRewards.sol#258)
+	Event emitted after the call(s):
+	- Claimed(v.user,v.missionId,v.amount,v.nonce,v.bucket) (contracts/MissionRewards.sol#259)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-4
+INFO:Detectors:
+Detector: timestamp
+MissionRewards.claim(MissionRewards.Voucher,bytes) (contracts/MissionRewards.sol#234-260) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp > v.deadline (contracts/MissionRewards.sol#238)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+INFO:Detectors:
+Detector: assembly
+MissionRewards._recoverSigner(bytes32,bytes) (contracts/MissionRewards.sol#262-286) uses assembly
+	- INLINE ASM (contracts/MissionRewards.sol#271-275)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#assembly-usage
+INFO:Detectors:
+Detector: missing-zero-check
+SwapInitiator.transferOwnership(address).to (contracts/SwapInitiator.sol#178) lacks a zero-check on :
+		- pendingOwner = to (contracts/SwapInitiator.sol#179)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-zero-address-validation
+INFO:Detectors:
+Detector: reentrancy-events
+Reentrancy in SwapInitiator.swap(uint256) (contracts/SwapInitiator.sol#214-252):
+	External calls:
+	- idmx.burnFrom(msg.sender,idmxAmount) (contracts/SwapInitiator.sol#250)
+	Event emitted after the call(s):
+	- SwapRequested(msg.sender,idmxAmount,nonce,block.timestamp) (contracts/SwapInitiator.sol#251)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-4
+INFO:Detectors:
+Detector: missing-zero-check
+ReportAttestation.transferOwnership(address).to (contracts/ReportAttestation.sol#119) lacks a zero-check on :
+		- pendingOwner = to (contracts/ReportAttestation.sol#120)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-zero-address-validation
+INFO:Detectors:
+Detector: missing-zero-check
+SwapClaim.transferOwnership(address).to (contracts/SwapClaim.sol#195) lacks a zero-check on :
+		- pendingOwner = to (contracts/SwapClaim.sol#196)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-zero-address-validation
+INFO:Detectors:
+Detector: reentrancy-events
+Reentrancy in SwapClaim.claim(SwapClaim.SwapVoucher,bytes) (contracts/SwapClaim.sol#226-260):
+	External calls:
+	- idm.burn(FEE_IDM) (contracts/SwapClaim.sol#252)
+	- ! idm.transfer(v.user,net) (contracts/SwapClaim.sol#258)
+	Event emitted after the call(s):
+	- SwapClaimed(v.user,v.idmxBurned,net,v.nonce) (contracts/SwapClaim.sol#259)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-4
+INFO:Detectors:
+Detector: timestamp
+SwapClaim.claim(SwapClaim.SwapVoucher,bytes) (contracts/SwapClaim.sol#226-260) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp > v.deadline (contracts/SwapClaim.sol#228)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+INFO:Detectors:
+Detector: assembly
+SwapClaim._recoverSigner(bytes32,bytes) (contracts/SwapClaim.sol#262-286) uses assembly
+	- INLINE ASM (contracts/SwapClaim.sol#271-275)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#assembly-usage
+INFO:Slither:contracts/ analyzed (9 contracts with 101 detectors), 11 result(s) found
