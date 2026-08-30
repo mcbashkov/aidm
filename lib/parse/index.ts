@@ -43,8 +43,14 @@ export async function parseCatat(
   const llm = await parseWithLlm(text, ctx);
   if (llm) {
     const entries = validateEntries(llm.entries, ctx.today);
+    // "tidak_jelas" berarti model TIDAK YAKIN — dan justru di situlah pendapat
+    // kedua berharga. Parser fallback gratis dan deterministik; ia menangkap
+    // "tadi ada yang bayar" sebagai draft + pertanyaan nominal, sementara
+    // model kadang memilih menyerah. Yang TIDAK boleh diteruskan ke fallback
+    // adalah "bukan_uang": itu keputusan tegas, bukan keraguan.
+    const menyerah = entries.length === 0 && llm.tidak_dikenali === "tidak_jelas";
     const adaHasil =
-      entries.length > 0 || llm.tidak_dikenali !== null;
+      (entries.length > 0 || llm.tidak_dikenali !== null) && !menyerah;
     // LLM menjawab tapi seluruh entrinya gugur validasi tanpa penjelasan —
     // jangan telan kosong; beri kesempatan ke fallback.
     if (adaHasil) {

@@ -75,7 +75,7 @@ function systemPrompt(ctx: LlmParseContext): string {
     "Kamu pencatat keuangan untuk pelaku usaha mikro Indonesia. Ubah kalimat sehari-hari menjadi entri transaksi.",
     "ATURAN:",
     "- Satu kalimat boleh menghasilkan beberapa entri. Pisahkan setiap peristiwa uang menjadi entri sendiri.",
-    "- DILARANG mengarang nominal. Bila nominal tidak disebut, isi amount: null — aplikasi yang akan menanyakannya.",
+    "- DILARANG mengarang nominal. Bila peristiwa uangnya jelas tapi NOMINALNYA tidak disebut, TETAP buat entri dengan amount: null — aplikasi yang akan menanyakan nominalnya. Contoh: \"tadi ada yang bayar\" → satu entri masuk, amount: null.",
     "- Nominal ≠ kuantitas: pada \"jual 3 nasi goreng 45rb\", 3 adalah jumlah porsi dan 45rb adalah uang (amount: 45000).",
     "- Kenali format angka Indonesia: 45rb, 45k, 45.000, Rp45.000, 1,5jt, 2 juta, seratus ribu. amount selalu integer rupiah penuh.",
     `- Kenali waktu relatif terhadap hari ini (${ctx.today}, zona WIB): "kemarin", "tadi pagi", "senin lalu". Default: hari ini. occurred_at (YYYY-MM-DD) tidak boleh melebihi hari ini.`,
@@ -91,7 +91,7 @@ function systemPrompt(ctx: LlmParseContext): string {
       .filter(Boolean)
       .join(" "),
     "- Bila kalimat TIDAK berhubungan dengan uang sama sekali (sapaan, pertanyaan umum, obrolan), kembalikan entries: [] dan tidak_dikenali: \"bukan_uang\".",
-    "- Bila kalimat terasa soal uang tapi kamu tidak cukup yakin membuat entri, kembalikan entries: [] dan tidak_dikenali: \"tidak_jelas\".",
+    "- tidak_dikenali: \"tidak_jelas\" HANYA bila kamu tidak bisa menentukan peristiwa uangnya sama sekali. Nominal yang hilang BUKAN alasan memakainya — itu kasus amount: null di atas.",
     "- Bila ada entri, tidak_dikenali harus null.",
     "- DILARANG menulis kalimat untuk pengguna. Kamu hanya mengisi field; seluruh kalimat yang dilihat pengguna ditulis aplikasi, bukan kamu.",
     "- catatan: potongan teks asli yang menjadi entri itu. confidence: 0..1.",
