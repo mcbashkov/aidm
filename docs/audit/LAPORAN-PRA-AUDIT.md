@@ -105,12 +105,12 @@ Semua nomor baris di seluruh dokumen ini merujuk ke commit tersebut.
 
 | Kontrak | Chain | Alamat (testnet) | Solidity | Baris (total / tanpa banner) | Verifikasi source | Dependensi |
 |---|---|---|---|---|---|---|
-| `IDMX.sol` | opBNB Testnet (5611) | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` | `0.8.26` (pinned) | 145 / 122 | ✅ bytecode cocok · explorer ⬜ | Tidak ada |
-| `MissionRewards.sol` | opBNB Testnet (5611) | `0xbc6f412024cee7e8117bd1ee35759d027fce11e5` | `0.8.26` (pinned) | 287 / 264 | ✅ bytecode cocok · explorer ⬜ | Tidak ada |
-| `ReportAttestation.sol` | opBNB Testnet (5611) | `0xa83c201c3759fa1a92bd17dbebb46b85029a84c4` | `0.8.26` (pinned) | 180 / 157 | ✅ bytecode cocok · explorer ⬜ | Tidak ada |
-| `SwapInitiator.sol` | opBNB Testnet (5611) | `0xa4f00039540dfdd040635a17090bf4e797168b63` | `0.8.26` (pinned) | 253 / 230 | ✅ bytecode cocok · explorer ⬜ | Tidak ada |
-| `IDMReborn.sol` | BSC Testnet (97) | `0x78c7e68142e7e1b564c0fd342954aa515a3d2f5b` | `0.8.26` (pinned) | 158 / 135 | ✅ bytecode cocok · explorer ⬜ | Tidak ada |
-| `SwapClaim.sol` | BSC Testnet (97) | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` | `0.8.26` (pinned) | 287 / 264 | ✅ bytecode cocok · explorer ⬜ | Tidak ada |
+| `IDMX.sol` | opBNB Testnet (5611) | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` | `0.8.26` (pinned) | 145 / 122 | ✅ terverifikasi | Tidak ada |
+| `MissionRewards.sol` | opBNB Testnet (5611) | `0xbc6f412024cee7e8117bd1ee35759d027fce11e5` | `0.8.26` (pinned) | 287 / 264 | ✅ terverifikasi | Tidak ada |
+| `ReportAttestation.sol` | opBNB Testnet (5611) | `0xa83c201c3759fa1a92bd17dbebb46b85029a84c4` | `0.8.26` (pinned) | 180 / 157 | ✅ terverifikasi | Tidak ada |
+| `SwapInitiator.sol` | opBNB Testnet (5611) | `0xa4f00039540dfdd040635a17090bf4e797168b63` | `0.8.26` (pinned) | 253 / 230 | ✅ terverifikasi | Tidak ada |
+| `IDMReborn.sol` | BSC Testnet (97) | `0x78c7e68142e7e1b564c0fd342954aa515a3d2f5b` | `0.8.26` (pinned) | 158 / 135 | ✅ terverifikasi | Tidak ada |
+| `SwapClaim.sol` | BSC Testnet (97) | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` | `0.8.26` (pinned) | 287 / 264 | ✅ terverifikasi | Tidak ada |
 | | | | | **1.310 / 1.172** | | |
 
 **"Tanpa banner"** = dikurangi 23 baris header ASCII-art + tautan kanal resmi
@@ -118,13 +118,8 @@ yang identik di keenam berkas (baris 1–23 setiap berkas).
 
 **Semua alamat di atas adalah testnet.** Belum ada deployment mainnet.
 
-**Verifikasi source di explorer masih ⬜.** Publikasi source ke
-opbnb-testnet.bscscan.com dan testnet.bscscan.com belum dilakukan. Namun
-kesetaraan kode sumber dengan bytecode on-chain **sudah dibuktikan secara
-independen** di §1.2 — bukti yang secara teknis lebih kuat daripada badge
-verifikasi explorer, karena tidak bergantung pada pihak ketiga mana pun.
-Verifikasi explorer tetap perlu dilakukan demi transparansi publik dan karena
-bursa mensyaratkannya.
+**Verifikasi source publik — ✅ selesai untuk keenam kontrak**, lewat dua
+penyedia berbeda karena kendala teknis di sisi opBNB (rincian §1.4).
 
 **Tabrakan alamat — TERJAWAB, bukan kesalahan konfigurasi.** `IDMX` (opBNB
 Testnet) dan `SwapClaim` (BSC Testnet) memang berbagi alamat yang sama persis
@@ -287,6 +282,59 @@ swap lintas chain yang dieksekusi** di testnet. Jalur yang memikul risiko
 tertinggi dalam sistem ini karena itu belum pernah dilalui transaksi nyata —
 konteks yang perlu diketahui auditor saat menilai kematangan operasional
 (Fase 4).
+
+### 1.4 Status verifikasi source publik
+
+Verifikasi dijalankan pada 31 Agustus 2026. Keenam kontrak terverifikasi,
+tetapi lewat **dua penyedia berbeda** — dan alasannya perlu dicatat karena
+auditor akan bertanya mengapa tidak seragam.
+
+| Kontrak | Chain | Penyedia | Hasil |
+|---|---|---|---|
+| `IDMReborn` | BSC Testnet (97) | Etherscan V2 → testnet.bscscan.com | ✅ Verified |
+| `SwapClaim` | BSC Testnet (97) | Etherscan V2 → testnet.bscscan.com | ✅ Verified |
+| `IDMX` | opBNB Testnet (5611) | Sourcify | ✅ `exact_match` |
+| `MissionRewards` | opBNB Testnet (5611) | Sourcify | ✅ `exact_match` |
+| `SwapInitiator` | opBNB Testnet (5611) | Sourcify | ✅ `exact_match` |
+| `ReportAttestation` | opBNB Testnet (5611) | Sourcify | 🟡 `match` (partial) |
+
+Kedua kontrak BSC tercatat dengan `CompilerVersion v0.8.26+commit.8a97fa7a`,
+`OptimizationUsed 1`, `Runs 200`, lisensi MIT — sesuai §1.1.
+
+**Kendala pada opBNB Testnet — Etherscan menolak verifikasi.** Keempat
+pengiriman ke `api.etherscan.io/v2/api?chainid=5611` ditolak dengan
+`General exception occured when attempting to insert record`. Diagnosis yang
+dilakukan:
+
+- Endpoint **baca** pada chain 5611 berfungsi normal (`getsourcecode`
+  mengembalikan `status: 1`), jadi API key dan dukungan chain tidak
+  bermasalah.
+- Chain 97 menerima pengiriman yang disusun dengan cara yang persis sama dan
+  berhasil — jadi format payload tidak bermasalah.
+- `forge verify-contract` (Foundry 1.7.1), klien yang sepenuhnya berbeda,
+  menghasilkan error yang identik — jadi bukan masalah klien.
+- Bytecode hasil kompilasi Foundry dicocokkan ulang dengan on-chain untuk
+  keempat kontrak dan **cocok** — jadi bukan masalah bahan.
+
+Kesimpulan: keterbatasan ada pada layanan verifikasi Etherscan untuk opBNB
+Testnet, bukan pada kontrak, bahan, maupun prosedur. Sourcify — yang mendukung
+chain 5611 — dipakai sebagai gantinya dan berhasil.
+
+**Implikasi untuk listing.** Sourcify adalah verifikasi yang dapat
+diverifikasi ulang siapa pun dan lazim diterima, tetapi sebagian bursa
+mensyaratkan badge "Verified" pada explorer blok itu sendiri. Karena mainnet
+akan memakai **opBNB Mainnet (204)** dan **BSC Mainnet (56)** — bukan chain
+testnet ini — kendala di atas belum tentu berulang. **TIDAK YAKIN** apakah
+`chainid 204` menerima verifikasi Etherscan; itu harus diuji saat deployment
+mainnet, dan sebaiknya diuji **sebelum** deployment agar tidak menjadi kejutan.
+
+**`ReportAttestation` hanya `match`, bukan `exact_match`.** Ini persis
+konsekuensi yang diperkirakan di §1.2: badan kodenya identik, tetapi hash
+metadata berbeda karena kontrak di-deploy dari teks sumber yang tidak pernah
+di-commit. Sourcify menyebut kondisi ini *partial match* — perilaku kontrak
+dijamin sama, tetapi teks sumber persisnya tidak dapat dibuktikan identik.
+Satu-satunya cara menaikkannya ke `exact_match` adalah menemukan kembali teks
+sumber asli, yang tampaknya sudah tidak ada.
 
 ---
 
@@ -1793,6 +1841,7 @@ akurasi timestamp (A-10), dan kebenaran alamat token saat deploy (A-6).
 
 | Tanggal | Fase | Yang ditambahkan | Commit |
 |---|---|---|---|
+| 2026-08-31 | Verifikasi source publik | §1.4 status verifikasi keenam kontrak. BSC Testnet lewat Etherscan V2; opBNB Testnet lewat Sourcify setelah Etherscan menolak (diagnosis lengkap dicatat). Kolom verifikasi §1 diperbarui. | `31857946` (kode yang dianalisis) |
 | 2026-08-31 | Verifikasi on-chain (pelengkap Fase 1) | §1.2 pembuktian kesetaraan bytecode on-chain ↔ kode sumber untuk keenam kontrak (termasuk masking `immutableReferences`, ekstraksi nilai immutable, dan verifikasi ulang `domainSeparator`). §1.3 konfigurasi on-chain terverifikasi. Menutup asumsi A-6 dan menjawab pertanyaan tabrakan alamat di §1. Temuan baru **F-08**. Ditambahkan `scripts/verify-contracts.mjs`. | `31857946` (kode yang dianalisis) |
 | 2026-08-31 | Bagian A — Slither | §4 lengkap (konfigurasi, tabel triase 11 temuan, penjelasan 4 kelas positif palsu, batas analisis otomatis). Lampiran §9.1 + berkas `slither-raw.txt` dan `slither-raw.json`. | `31857946` (kode yang dianalisis) |
 | 2026-08-31 | Fase 1 — Rekonstruksi & threat model | Kerangka dokumen §0–§9. §1 informasi kontrak + parameter deployment. §2 arsitektur, diagram alur nilai lintas chain, empat pintu keluar nilai. §3 inventaris 38 fungsi pengubah state, peta 5 hak istimewa, 10 asumsi kepercayaan, trust boundary, pertanyaan penyerang per kontrak. §8 temuan F-01 s.d. F-07. | `31857946` (kode yang dianalisis) |

@@ -12,6 +12,15 @@
  * kontrak dari explorer, lalu memotong bytecode creation dari input tx —
  * sisanya adalah argumen konstruktor ter-ABI-encode.
  *
+ * CATATAN (31 Agu 2026): verifikasi Etherscan BERHASIL untuk BSC Testnet (97)
+ * tetapi DITOLAK untuk opBNB Testnet (5611) dengan
+ * "General exception occured when attempting to insert record" — endpoint baca
+ * chain 5611 normal, dan forge verify-contract menghasilkan error yang sama,
+ * jadi kendalanya di sisi layanan Etherscan. Keempat kontrak opBNB akhirnya
+ * diverifikasi lewat Sourcify (mendukung 5611), lihat
+ * docs/audit/LAPORAN-PRA-AUDIT.md §1.4. Uji ulang chainid 204 sebelum deploy
+ * mainnet.
+ *
  * Pakai:
  *   ETHERSCAN_API_KEY=xxx node scripts/verify-contracts.mjs
  *   ETHERSCAN_API_KEY=xxx node scripts/verify-contracts.mjs SwapClaim
