@@ -12,6 +12,8 @@ import {
   Check,
 } from "lucide-react";
 import { panggil } from "@/lib/api/panggil";
+import { KUNCI_ME, useMe } from "@/components/providers/me-provider";
+import { useBatalkanKueri } from "@/components/providers/kueri-provider";
 import { isPrivyConfigured } from "@/lib/privy/config";
 
 type Gaya = "santai" | "netral" | "formal";
@@ -84,22 +86,26 @@ function BarisGaya({
   terbuka: boolean;
   onToggle: () => void;
 }) {
-  const [gaya, setGaya] = useState<Gaya | null>(null);
+  // Dibaca dari cache bersama, BUKAN permintaan ketiga ke `/api/me`. Halaman
+  // Akun dulu menembak endpoint yang sama tiga kali per muat — dari
+  // MeProvider, dari halaman ini, dan dari baris ini.
+  const me = useMe();
+  const batalkan = useBatalkanKueri();
+  const [pilihan, setPilihan] = useState<Gaya | null>(null);
   const [simpan, setSimpan] = useState(false);
-
-  useEffect(() => {
-    void panggil<{ user?: { gaya_bahasa?: Gaya } }>("/api/me").then((h) => {
-      if (h.ok) setGaya(h.data.user?.gaya_bahasa ?? "santai");
-    });
-  }, []);
+  const gaya: Gaya | null =
+    pilihan ?? ((me?.user?.gaya_bahasa as Gaya | undefined) ?? (me ? "santai" : null));
 
   async function pilih(nilai: Gaya) {
-    setGaya(nilai);
+    setPilihan(nilai);
     setSimpan(true);
     await panggil("/api/me", {
       method: "PATCH",
       body: JSON.stringify({ gaya_bahasa: nilai }),
     });
+    // Cache identitas kini basi — batalkan supaya layar lain (dan muat
+    // berikutnya) tidak menyajikan nilai lama sebagai kabar terbaru.
+    batalkan(KUNCI_ME);
     setSimpan(false);
   }
 

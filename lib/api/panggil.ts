@@ -23,6 +23,23 @@ export type ApiHasil<T> =
       offline: boolean;
     };
 
+/**
+ * Batas tunggu satu permintaan.
+ *
+ * `fetch` TIDAK punya timeout bawaan. Tanpa batas ini, satu permintaan yang
+ * menggantung membuat pemanggilnya menunggu selamanya — dan layar yang
+ * menandai "sedang memuat" dari `data === null` tidak punya jalan keluar sama
+ * sekali. Itu persis yang terjadi pada kartu Wallet: `/api/me` menggantung 21
+ * detik, `me` tetap null, dan "Menyiapkan…" bertahan tanpa akhir sementara
+ * saldo di baris sebelahnya sudah tampil.
+ *
+ * 12 detik dipilih dari data: `/api/me` di produksi menjawab 0,9–3,1 detik
+ * pada jalur hangat dan ~21 detik saat tersendat. Ambangnya harus jauh di atas
+ * yang pertama dan di bawah yang kedua — pengguna lebih baik diberi tahu dan
+ * diberi tombol daripada dibiarkan menatap shimmer.
+ */
+const BATAS_MS = 12_000;
+
 export async function panggil<T>(
   input: string,
   init?: RequestInit,
@@ -30,6 +47,9 @@ export async function panggil<T>(
   try {
     const res = await fetch(input, {
       ...init,
+      // Pemanggil boleh membawa sinyalnya sendiri (mis. pembatalan saat
+      // unmount); kalau tidak, batas di atas yang berlaku.
+      signal: init?.signal ?? AbortSignal.timeout(BATAS_MS),
       headers: { "Content-Type": "application/json", ...init?.headers },
     });
     const body = (await res.json().catch(() => ({}))) as T & {
@@ -49,7 +69,23 @@ export async function panggil<T>(
       };
     }
     return { ok: true, data: body };
-  } catch {
-    return { ok: false, status: 0, error: "offline", demo: false, offline: true };
+  } catch (err) {
+    // Putus sambungan dan tersendat BUKAN hal yang sama, dan kalimatnya di
+    // layar berbeda. `navigator.onLine` dibaca DI SINI, pada saat kegagalan —
+    // bukan saat render — supaya pesannya cocok dengan sebabnya.
+    const offline =
+      typeof navigator !== "undefined" && navigator.onLine === false;
+    const timeout = err instanceof Error && err.name === "TimeoutError";
+    return {
+      ok: false,
+      status: 0,
+      error: offline
+        ? "offline"
+        : timeout
+          ? "Server lama sekali menjawab. Coba lagi ya."
+          : "Sambungan bermasalah. Coba lagi ya.",
+      demo: false,
+      offline,
+    };
   }
 }

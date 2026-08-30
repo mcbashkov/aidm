@@ -87,6 +87,17 @@ export const metadata: Metadata = {
     title: brand.shortName,
   },
   formatDetection: { telephone: false },
+  /**
+   * `appleWebApp.capable` di atas menerbitkan `apple-mobile-web-app-capable`,
+   * yang sudah lama diperingatkan usang oleh Chrome. Penggantinya yang baku
+   * ditambahkan DI SAMPING-nya, bukan menggantikannya: Safari masih membaca
+   * yang versi Apple untuk mode standalone, dan yang usang di sini adalah
+   * peringatan Chrome — bukan pencabutan dukungan Apple. Menghapusnya untuk
+   * membersihkan konsol berarti menukar satu peringatan dengan satu regresi.
+   *
+   * Next.js Metadata API tidak punya field untuk yang baku, jadi lewat `other`.
+   */
+  other: { "mobile-web-app-capable": "yes" },
 };
 
 export const viewport: Viewport = {

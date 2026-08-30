@@ -10,11 +10,15 @@ import { TautanLegal } from "@/components/layout/tautan-legal";
 /** Shell aplikasi: top nav (tablet/desktop) + header & bottom nav (mobile). */
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
-    <MeProvider>
+    // Urutan ini WAJIB: KueriProvider di LUAR MeProvider, karena identitas kini
+    // ikut cache yang sama dengan data layar lain (`useKueri("me")`). Membalik
+    // urutannya membuat MeProvider memanggil hook di luar penyedianya dan
+    // melempar saat render.
+    <KueriProvider>
       {/* Cache pembacaan hidup DI SINI, di atas `children`, supaya ia bertahan
           saat berpindah tab — navigasi klien hanya mengganti isi `main`.
           Satu cache untuk seluruh tab; bukan satu mekanisme per layar. */}
-      <KueriProvider>
+      <MeProvider>
       <div className="min-h-dvh bg-bg">
         <TopNav right={<HeaderStats />} />
         <MobileTopBar />
@@ -31,7 +35,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </main>
         <BottomNav />
       </div>
-      </KueriProvider>
-    </MeProvider>
+      </MeProvider>
+    </KueriProvider>
   );
 }

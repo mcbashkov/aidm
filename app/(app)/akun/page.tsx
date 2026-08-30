@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Sparkles } from "lucide-react";
 import { WalletCard } from "@/components/wallet/wallet-card";
-import { useSaldoIdmx } from "@/components/providers/me-provider";
+import { useMeKeadaan, useSaldoIdmx } from "@/components/providers/me-provider";
 import { SwapSheet } from "@/components/wallet/swap-sheet";
 import { VoucherPanel } from "@/components/wallet/voucher-panel";
 import { SettingsList } from "@/components/account/settings-list";
@@ -17,19 +17,14 @@ import { chainDariId } from "@/lib/swap/chains-klien";
 import type { SwapConfig } from "@/lib/swap/tipe";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface Me {
-  authenticated: boolean;
-  user?: {
-    role?: string;
-    earner_type?: string;
-    nama_usaha?: string;
-    kota?: string;
-  } | null;
-  wallet?: { address?: string } | null;
-}
 
 export default function AkunPage() {
-  const [me, setMe] = useState<Me | null>(null);
+  // Identitas dari cache bersama (KueriProvider). TIGA keadaan, bukan dua:
+  // "belum terbaca" dan "gagal dibaca" adalah hal berbeda, dan layar ini dulu
+  // menyamakan keduanya lewat `me === null` — itu yang membuat kartu Wallet
+  // menampilkan "Menyiapkan…" tanpa akhir saat satu permintaan tersendat.
+  const meK = useMeKeadaan();
+  const me = meK.keadaan === "terbaca" ? meK.data : null;
   // Saldo datang dari jalurnya sendiri (/api/wallet/saldo) — kegagalan RPC
   // tidak boleh ikut mengosongkan nama usaha atau status langganan di layar ini.
   const saldo = useSaldoIdmx();
@@ -39,14 +34,13 @@ export default function AkunPage() {
   // sesuatu yang layak ditunggu, sekaligus menyegarkan saldo.
   const [pemicuMuat, setPemicuMuat] = useState(0);
 
-  const muatMe = useCallback(async () => {
-    const hasil = await panggil<Me>("/api/me");
-    setMe(hasil.ok ? hasil.data : { authenticated: false });
-  }, []);
-
+  // Setelah burn berhasil, identitas dibaca ulang lewat cache yang sama —
+  // bukan lewat permintaan kedua yang tidak diketahui layar lain.
+  const muatUlangMe = meK.keadaan === "memuat" ? null : meK.muatUlang;
   useEffect(() => {
-    void muatMe();
-  }, [muatMe, pemicuMuat]);
+    if (pemicuMuat > 0) muatUlangMe?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pemicuMuat]);
 
   useEffect(() => {
     void panggil<SwapConfig>("/api/swap/config").then((h) => {
@@ -59,7 +53,8 @@ export default function AkunPage() {
   // dan "Dompet belum siap" pada render pertama SETIAP kali halaman dibuka —
   // dua pernyataan tentang akun pengguna yang diucapkan sebelum satu byte pun
   // datang dari server, lalu diralat sendiri sedetik kemudian.
-  const memuat = me === null;
+  const memuat = meK.keadaan === "memuat";
+  const gagalBaca = meK.keadaan === "gagal";
   const kota = me?.user?.kota;
   const namaUsaha = me?.user?.nama_usaha;
   // v3.0: identitas pengguna dibaca dari earner_type (§7.1); `role` lama hanya
@@ -78,17 +73,22 @@ export default function AkunPage() {
   // bisa ia tindaklanjuti disebut lebih dulu.
   const swapAlasan = memuat
     ? "Menyiapkan…"
-    : !alamat
-      ? "Dompet belum siap."
-      : !swapConfig
-        ? "Fitur Tukar belum aktif di server ini."
-        : saldo.keadaan === "memuat"
-          ? "Membaca saldo…"
-          : saldo.keadaan === "gagal"
-            ? "Saldo tidak terbaca. Coba lagi."
-            : saldo.nilai === 0
-              ? "Belum ada IDMX untuk ditukar. Selesaikan misi dulu ya."
-              : null;
+    : gagalBaca
+      // BUKAN "Dompet belum siap." Dompetnya siap — alamatnya ada di database;
+      // yang gagal adalah pembacaan kita. Menyalahkan dompet pengguna untuk
+      // kegagalan kita adalah kegagalan yang menyamar, kelas P0-1 yang sama.
+      ? "Datamu belum terbaca. Coba lagi."
+      : !alamat
+        ? "Dompet belum siap."
+        : !swapConfig
+          ? "Fitur Tukar belum aktif di server ini."
+          : saldo.keadaan === "memuat"
+            ? "Membaca saldo…"
+            : saldo.keadaan === "gagal"
+              ? "Saldo tidak terbaca. Coba lagi."
+              : saldo.nilai === 0
+                ? "Belum ada IDMX untuk ditukar. Selesaikan misi dulu ya."
+                : null;
 
   const burnChain = chainDariId(swapConfig?.burnChainId);
   const explorerUrl =
@@ -112,6 +112,8 @@ export default function AkunPage() {
 
       <WalletCard
         memuat={memuat}
+        gagalBaca={gagalBaca}
+        onCobaLagi={muatUlangMe ?? undefined}
         address={alamat}
         saldo={saldo}
         swapAlasan={swapAlasan}

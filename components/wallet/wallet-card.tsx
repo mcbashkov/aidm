@@ -17,6 +17,12 @@ interface WalletCardProps {
   /** Profil belum terbaca dari server — jangan menyatakan apa pun tentang
    *  dompet pengguna sampai jawabannya datang. */
   memuat?: boolean;
+  /** Pembacaan profil GAGAL. Berbeda dari `memuat`, dan berbeda dari "tidak
+   *  punya dompet": alamatnya ada di database, kita yang tidak berhasil
+   *  membacanya. Shimmer selamanya untuk keadaan ini adalah kebohongan diam —
+   *  layar mengaku sedang bekerja padahal sudah menyerah. */
+  gagalBaca?: boolean;
+  onCobaLagi?: () => void;
   /** Tiga keadaan (lib/token/tipe.ts): memuat → shimmer, terbaca → angka,
    *  gagal → "—" + penjelasan. Menyamakan "belum dimuat" dengan "tidak bisa
    *  dibaca" pernah membuat pesan kegagalan terbaca padahal fetch-nya masih
@@ -44,6 +50,8 @@ interface WalletCardProps {
 export function WalletCard({
   address,
   memuat = false,
+  gagalBaca = false,
+  onCobaLagi,
   saldo,
   swapAlasan = null,
   onSwap,
@@ -82,6 +90,22 @@ export function WalletCard({
               // adalah klaim tentang dompet pengguna, dan ia tidak boleh
               // diucapkan sebelum alamatnya benar-benar terbaca.
               <Skeleton className="h-5 w-52 bg-white/15" />
+            ) : gagalBaca ? (
+              // Mengaku, lalu memberi jalan keluar. Yang dilarang di sini
+              // bukan menampilkan kegagalan — melainkan menyembunyikannya di
+              // balik animasi memuat yang tidak pernah berakhir.
+              <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-wallet-muted">
+                Alamat dompet belum terbaca.
+                {onCobaLagi ? (
+                  <button
+                    type="button"
+                    onClick={onCobaLagi}
+                    className="font-semibold text-gold underline-offset-2 hover:underline"
+                  >
+                    Coba lagi
+                  </button>
+                ) : null}
+              </span>
             ) : (
               <>
                 <button
