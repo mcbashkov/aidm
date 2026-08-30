@@ -121,7 +121,7 @@ keamanan baru.**
 
 | # | Apa | Kenapa |
 |---|---|---|
-| 1 | **Kunci Midtrans ke Vercel** | `MIDTRANS_SERVER_KEY` (sandbox). **JANGAN** set `MIDTRANS_IS_PRODUCTION`. Kunci PO berawalan `Mid-server-` **tanpa** `SB-` tapi secara empiris SANDBOX — diuji: sandbox 201 + token, produksi 401. Aturan prefix `SB-` tidak berlaku untuk akun ini. Mengisinya `true` = 401 di setiap pembayaran. |
+| 1 | **Kunci Midtrans di Vercel MASIH DITOLAK** (2026-08-31) | Kunci **sudah terpasang** — `/api/langganan/bayar` menjawab 502, bukan 501, jadi `isMidtransConfigured()` lolos. Tapi Midtrans membalas **401 "Access denied … check client or server key"**. Kunci di `.env.local` terbukti SEHAT: sandbox **201 + token**, produksi **401** (diuji ulang 2026-08-31). Dua kemungkinan, keduanya di dashboard Vercel: (a) `MIDTRANS_IS_PRODUCTION` terlanjur diisi `true` → kode menembak endpoint produksi dengan kunci sandbox; (b) kunci yang di-paste berbeda/ada spasi. **Cara membedakan:** bandingkan 14 karakter awal `MIDTRANS_SERVER_KEY` di Vercel dengan `Mid-server-gLR` (panjang 35), lalu pastikan `MIDTRANS_IS_PRODUCTION` **tidak ada sama sekali**. |
 | 2 | **Payment Notification URL** Midtrans | → `https://ai.idmtoken.com/api/langganan/webhook` |
 | 3 | **Temuan audit F-01 & F-08** (§ di bawah) | Keputusan tata kelola kunci, bukan kode. **Memblokir mainnet M6.** |
 
@@ -133,8 +133,8 @@ yang sama).
 
 | Severity | Jumlah | ID |
 |---|---:|---|
-| Critical | 1 | **F-01** — `owner` SwapClaim bisa menguras seluruh kolam dalam satu transaksi |
-| High | 4 | **F-02** kebocoran `swapSigner` · **F-03** kebocoran `voucherSigner` tanpa cap agregat · **F-04** `owner` MissionRewards bisa menarik seluruh float · **F-08** enam dari tujuh peran istimewa dipegang SATU kunci, termasuk kunci panas server |
+| Critical | 1 | **F-01** — `owner` SwapClaim bisa menguras seluruh kolam (150 jt IDM) dalam satu transaksi lewat `sweep`, hanya bermodal `onlyOwner` |
+| High | 4 | **F-02** kebocoran `swapSigner` · **F-03** kebocoran `voucherSigner` tanpa cap agregat · **F-04** `owner` MissionRewards bisa menarik seluruh float · **F-08** enam dari tujuh peran istimewa dipegang SATU alamat (`0x1842498b…fb2f3`), termasuk kunci panas server — **dinilai Critical bila konfigurasi ini terbawa ke mainnet** |
 | Medium | 2 | **F-05** cap "bulanan" `caps[1]` diakumulasi per HARI · **F-06** burn IDMX tanpa jalur pemulihan on-chain |
 | Info | 1 | F-07 SwapClaim tanpa circuit breaker |
 
