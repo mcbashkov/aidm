@@ -4,7 +4,7 @@ Pelacak pekerjaan lintas sesi. **README** menjelaskan produk & cara menjalankan;
 berkas ini menjawab satu pertanyaan saja: *apa yang sudah beres, apa berikutnya,
 dan siapa yang mengerjakan.*
 
-Diperbarui: **2026-08-30** · cabang `main`
+Diperbarui: **2026-08-31** · cabang `main`
 
 > ⚠️ **Sisi token digantikan `docs/PERINTAH-AGEN-FINAL.md`.** Untuk apa pun yang
 > menyangkut IDMX/IDM Reborn/swap/kurs/tokenomics, dokumen itu sumber kebenaran
@@ -859,6 +859,42 @@ itu pun 32/48/180/192/512 sudah baik; hanya 16px yang tetap jadi bercak.
 
 **Bukti:** 17 pemeriksaan produksi lulus 0 gagal · `test:parser` 200/200 ·
 21 pemeriksaan gerbang · typecheck/lint/build bersih tanpa peringatan.
+
+### 7c. ~~"Menyiapkan…" tanpa akhir & nama toko lambat~~ — ✅ **SELESAI 2026-08-31**
+
+Dua keluhan uji produksi PO, satu akar: layar menyimpulkan "sedang memuat"
+dari `data === null`, dan `null` juga berarti gagal.
+
+- [x] **`panggil()` kini punya timeout 12 detik.** `fetch` tidak punya batas
+      bawaan; satu permintaan menggantung berarti `me` tetap null selamanya dan
+      "Menyiapkan…" tidak punya pintu keluar. 12 detik dipilih dari data:
+      `/api/me` menjawab 0,9–3,1 dtk pada jalur hangat, ~21 dtk saat tersendat.
+      Timeout dan putus-sambungan kini dibedakan, karena kalimatnya berbeda.
+- [x] **Kartu Wallet punya keadaan GAGAL.** Sebelumnya kegagalan `/api/me`
+      menghasilkan "Dompet belum siap." — menyalahkan dompet pengguna untuk
+      kegagalan kita, padahal alamatnya ada di Postgres. Kini "Alamat dompet
+      belum terbaca." + tombol Coba lagi.
+- [x] **Identitas lewat `KueriProvider`.** Nama tersaji dari salinan terakhir
+      seketika. Sekaligus menutup yang belum masuk laporan PO: `/akun` menembak
+      `/api/me` **tiga kali** per muat (MeProvider · halaman Akun · daftar
+      Pengaturan) — log Vercel menunjukkannya berulang dalam detik yang sama.
+      Sekarang **satu**. Urutan provider dibalik: `KueriProvider` di LUAR
+      `MeProvider`.
+- [x] **`mobile-web-app-capable`** ditambahkan di samping `apple-*`, bukan
+      menggantikannya — Safari masih membacanya untuk mode standalone.
+
+**Yang TIDAK bisa dipastikan, dan dicatat apa adanya:** penyebab `/api/me`
+memakan ~21 detik. Reproduksi dua kali pada jalur dingin, gagal direproduksi
+beberapa menit kemudian (0,9–3,1 dtk). Memblokir `sw.js` tidak mengubah apa pun
+dan jumlah permintaan halaman identik (92). Tersangka paling cocok: jalur
+dingin serverless/pooler. **Sebabnya tidak menentukan perbaikannya** — yang
+mengubah satu permintaan lambat jadi layar mati permanen ada di sisi kita.
+
+**Bukti:** 11 pemeriksaan browser lulus 0 gagal, dijalankan di localhost DAN
+produksi. Kegagalan disimulasikan dengan memblokir `/api/me` di lapisan
+jaringan (CDP) — blokir tingkat halaman tidak menangkap permintaan yang lewat
+service worker, dan uji yang menyangka sudah memblokir padahal belum akan lulus
+karena alasan yang salah.
 
 ### 8. 🤖 M5 — premium di balik LANGGANAN
 

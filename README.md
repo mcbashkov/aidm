@@ -159,7 +159,8 @@ components/
   ui/                Button · Card · Skeleton · GagalMuat (keadaan gagal) ·
                      BelumTersinkron (salinan cache yang belum tersegarkan) · dll
   pwa/
-  providers/         MeProvider (identitas + saldo, dua jalur terpisah) ·
+  providers/         MeProvider (identitas lewat cache + saldo, dua jalur
+                     terpisah; `useMeKeadaan()` untuk tiga keadaan) ·
                      KueriProvider (cache pembacaan lintas tab)
 lib/
   parse/             index (orkestrasi) · llm (Haiku §17.1) · fallback (regex) · validate
@@ -167,7 +168,9 @@ lib/
   laporan/           periode (batas WIB) · server (agregasi) · kanonik (hash §17.2) ·
                      segel-server (relayer) · client · pdf (dokumen A4)
   offline/           antrean IndexedDB
-  api/               panggil (pembungkus fetch bersama: ok / demo / offline)
+  api/               panggil (pembungkus fetch bersama: ok / demo / offline;
+                     timeout 12 dtk — fetch tidak punya batas bawaan) ·
+                     keadaan (kontrak tiga keadaan)
   missions/          index (definisi & target) · server (progres diturunkan) ·
                      klaim-server (voucher EIP-712) · relayer (kirim & rekonsiliasi
                      on-chain) · galat (taksonomi galat klaim) · client
