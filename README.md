@@ -227,7 +227,8 @@ selalu sama dengan total ringkasan. **Membuka Laporan & mengunduh PDF selalu gra
 
 Isi PDF mengikuti kebutuhan penilai KUR: kop usaha, ringkasan, arus kas 12 bulan,
 rincian kategori, porsi terverifikasi, blok verifikasi, dan footer wajib. Angka yang
-ditampilkan adalah **laba kotor** — istilah "laba bersih" dilarang sampai HPP ada
+ditampilkan adalah **arus kas** dan diberi label **"Sisa uang"** — kata "laba"
+dilarang di layar maupun PDF sampai HPP ada
 (Fase 2). `pnpm test:api` membaca ulang isi PDF hasil (`pdftotext`) untuk memastikan
 kalimat baku §7.5 dan footer §7.3 benar-benar ada di berkas, bukan cuma di kode.
 

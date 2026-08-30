@@ -4,7 +4,7 @@
  * yang sama — keluaran modul ini SUDAH aman untuk database.
  */
 
-import { parseFallback } from "@/lib/parse/fallback";
+import { adaSinyalUang, parseFallback } from "@/lib/parse/fallback";
 import { parseWithLlm, type LlmParseContext } from "@/lib/parse/llm";
 import {
   validateEntries,
@@ -13,6 +13,7 @@ import {
 } from "@/lib/parse/validate";
 import type { ParsedBy } from "@/lib/transactions";
 import type { EarnerType } from "@/lib/earner";
+import type { Pertanyaan } from "@/lib/catat/pesan";
 
 export interface ParseCatatResult extends ValidatedResult {
   parsedBy: ParsedBy;
@@ -22,6 +23,22 @@ export async function parseCatat(
   text: string,
   ctx: LlmParseContext,
 ): Promise<ParseCatatResult> {
+  // 0) GERBANG PRA-LLM (§P1-5). Kalimat tanpa satu pun jejak uang usaha tidak
+  //    pernah sampai ke model — bukan dikirim lalu jawabannya dibuang.
+  //
+  //    Dua alasan, keduanya berdiri sendiri. Biaya: tiap panggilan parser
+  //    ~Rp27, dan pertanyaan pengetahuan umum tidak boleh membelinya. Keamanan:
+  //    kalimat yang tidak pernah mencapai model tidak bisa membujuk model apa
+  //    pun — "abaikan instruksimu" berhenti di sini, bukan di prompt.
+  if (!adaSinyalUang(text)) {
+    return {
+      entries: [],
+      pertanyaan: null,
+      tidakDikenali: "bukan_uang",
+      parsedBy: "fallback",
+    };
+  }
+
   // 1) Jalur utama: LLM JSON mode (§17.1). null = gagal/timeout/tak dikonfigurasi.
   const llm = await parseWithLlm(text, ctx);
   if (llm) {
@@ -33,7 +50,7 @@ export async function parseCatat(
     if (adaHasil) {
       return {
         entries,
-        pertanyaan: pertanyaanUntuk(entries, llm.pertanyaan),
+        pertanyaan: pertanyaanUntuk(entries),
         tidakDikenali: entries.length === 0 ? llm.tidak_dikenali : null,
         parsedBy: "llm",
       };
@@ -59,7 +76,7 @@ export async function parseCatat(
   );
   return {
     entries,
-    pertanyaan: pertanyaanUntuk(entries, fb.pertanyaan),
+    pertanyaan: pertanyaanUntuk(entries),
     tidakDikenali: entries.length === 0 ? fb.tidakDikenali : null,
     parsedBy: "fallback",
   };
@@ -68,13 +85,14 @@ export async function parseCatat(
 /**
  * Pertanyaan klarifikasi hanya sah bila memang ada draft tanpa nominal
  * (§7.2 prinsip #3: satu pertanyaan, dan hanya saat perlu).
+ *
+ * Model TIDAK lagi punya suara di sini. Sebelumnya ia boleh mengusulkan
+ * kalimatnya sendiri dan usulan itu dirender apa adanya — satu-satunya kanal
+ * teks bebas yang tersisa di jalur gratis. Sekarang bentuknya bertipe, dan
+ * kalimatnya disusun `lib/catat/pesan.ts`.
  */
-function pertanyaanUntuk(
-  entries: ValidatedEntry[],
-  usulan: string | null,
-): string | null {
+function pertanyaanUntuk(entries: ValidatedEntry[]): Pertanyaan | null {
   const draft = entries.find((e) => e.amount === null);
   if (!draft) return null;
-  if (usulan && usulan.trim()) return usulan.trim().slice(0, 200);
-  return `Berapa nominal untuk “${draft.catatan || "entri itu"}”?`;
+  return { jenis: "nominal", untuk: draft.catatan };
 }

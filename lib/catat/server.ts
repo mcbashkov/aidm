@@ -148,6 +148,25 @@ export async function naikkanRateMenit(
   return data;
 }
 
+/**
+ * Naikkan hitungan offtopic hari ini dan kembalikan nilainya. Dipakai HANYA
+ * untuk memilih panjang-pendek kalimat penolakan (lib/catat/pesan.ts) — bukan
+ * untuk membatasi apa pun. `null` = tidak terhitung, dan pemanggil
+ * memperlakukannya sebagai 0, yaitu versi kalimat yang paling ramah.
+ */
+export async function naikkanOfftopic(
+  supa: SupabaseClient,
+  userId: string,
+  tanggalWib: string,
+): Promise<number | null> {
+  const { data, error } = await supa.rpc("catat_offtopic_inc", {
+    p_user: userId,
+    p_tanggal: tanggalWib,
+  });
+  if (error || typeof data !== "number") return null;
+  return data;
+}
+
 export async function naikkanKuotaRequest(
   supa: SupabaseClient,
   userId: string,

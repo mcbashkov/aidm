@@ -28,8 +28,15 @@ export const brand = {
   name: "AIDM",
   shortName: "AIDM",
   tagline: "Catatan usaha dan laporan keuangan untuk UMKM Indonesia",
+  /** Bilah status SELAMA aplikasi terbuka — aplikasinya cream, jadi cream. */
   themeColor: colors.bg,
-  backgroundColor: colors.bg,
+  /**
+   * Latar splash yang digambar sistem operasi sebelum aplikasi hidup.
+   * HITAM, menyambung dengan ikon maskable (#000) dan dengan splash kita
+   * sendiri di rute `/`. Cream di sini menghasilkan kedipan terang tepat pada
+   * peralihan ikon → splash, lalu gelap lagi — dua kedipan untuk satu bukaan.
+   */
+  backgroundColor: "#000000",
   accent: colors.gold,
 } as const;
 

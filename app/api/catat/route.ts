@@ -10,6 +10,7 @@ import {
   entriDibuatHariIni,
   getKategoriMaps,
   naikkanKuotaRequest,
+  naikkanOfftopic,
   naikkanRateMenit,
   rowToTx,
   TX_COLUMNS,
@@ -121,10 +122,19 @@ export async function POST(req: Request) {
     });
 
     if (hasil.entries.length === 0) {
+      // Hitungan offtopic HANYA menentukan panjang-pendek kalimat penolakan
+      // (lib/catat/pesan.ts). Ia tidak membatasi, menangguhkan, atau menandai
+      // apa pun — mencoba mengobrol dengan AI adalah rasa ingin tahu yang
+      // wajar bagi orang yang baru pertama memakainya.
+      const offtopic =
+        hasil.tidakDikenali === "bukan_uang"
+          ? await naikkanOfftopic(supa, uid, today)
+          : null;
       return NextResponse.json({
         entries: [],
         pertanyaan: null,
         tidak_dikenali: hasil.tidakDikenali,
+        offtopic_hari_ini: offtopic ?? 0,
         parsed_by: hasil.parsedBy,
       });
     }

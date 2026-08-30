@@ -8,6 +8,7 @@ import { TransactionSheet } from "@/components/transaksi/transaction-sheet";
 import { useMe } from "@/components/providers/me-provider";
 import { catatChips, type EarnerType } from "@/lib/earner";
 import { parseFallback, bacaNominalJawaban } from "@/lib/parse/fallback";
+import { pesanPertanyaan, pesanTidakDikenali } from "@/lib/catat/pesan";
 import {
   kirimCatat,
   konfirmasiDraft,
@@ -344,10 +345,18 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
         });
       }
       if (hasil.pertanyaan) {
-        baru.push({ kind: "agent", id: nextId(), text: hasil.pertanyaan });
+        baru.push({
+          kind: "agent",
+          id: nextId(),
+          text: pesanPertanyaan(hasil.pertanyaan),
+        });
       }
       if (hasil.tidakDikenali) {
-        baru.push({ kind: "agent", id: nextId(), text: hasil.tidakDikenali });
+        baru.push({
+          kind: "agent",
+          id: nextId(),
+          text: pesanTidakDikenali(hasil.tidakDikenali),
+        });
       }
       return baru;
     },
@@ -408,9 +417,9 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
               {
                 kind: "agent",
                 id: nextId(),
-                text:
-                  res.data.pertanyaan ??
-                  "Aku masih belum menangkap angkanya — coba tulis nominalnya saja.",
+                text: res.data.pertanyaan
+                  ? pesanPertanyaan(res.data.pertanyaan)
+                  : "Aku masih belum menangkap angkanya — coba tulis nominalnya saja.",
               },
             ]);
             return;
@@ -431,6 +440,7 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
         const res = await kirimCatat(text, source);
         if (res.ok) {
           const { entries, pertanyaan, tidak_dikenali } = res.data;
+          const offtopic = res.data.offtopic_hari_ini ?? 0;
           const baru: Bubble[] = entries.map((tx) => ({
             kind: "entry" as const,
             id: nextId(),
@@ -440,10 +450,18 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
           const draftBaru = entries.find((t) => t.status === "draft");
           if (pertanyaan && draftBaru) {
             pendingDraftRef.current = draftBaru.id;
-            baru.push({ kind: "agent", id: nextId(), text: pertanyaan });
+            baru.push({
+              kind: "agent",
+              id: nextId(),
+              text: pesanPertanyaan(pertanyaan),
+            });
           }
           if (tidak_dikenali) {
-            baru.push({ kind: "agent", id: nextId(), text: tidak_dikenali });
+            baru.push({
+              kind: "agent",
+              id: nextId(),
+              text: pesanTidakDikenali(tidak_dikenali, offtopic),
+            });
           }
           setBubbles((prev) => [...prev, ...baru]);
           segarkanSetelahTulis();

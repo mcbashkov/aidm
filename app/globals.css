@@ -267,6 +267,21 @@ body {
 
 /* ── Splash ─────────────────────────────────────────────────────────────── */
 
+/**
+ * Latar splash HITAM, bukan cream — dan ini satu-satunya layar onboarding yang
+ * hitam. Alasannya urutan yang dilihat pengguna: ikon aplikasi berlatar hitam
+ * (`maskable-*`, disamakan dengan yang diisi iOS di balik alpha), lalu splash.
+ * Cream di tengah rantai itu menghasilkan kedipan terang tepat pada peralihan
+ * ikon → splash. Hitam membuat peralihannya tidak terlihat sama sekali.
+ *
+ * Layar `/masuk` TETAP cream. Di sanalah identitas merek tinggal, dan satu
+ * peralihan gelap → terang yang terjadi SEKALI, di tempat yang tepat, jauh
+ * lebih baik daripada dua kedipan di tempat yang salah.
+ *
+ * Tepinya #000 persis supaya menyambung tanpa jahitan dengan latar ikon dan
+ * dengan `background_color` manifest; bagian tengahnya sedikit diangkat supaya
+ * layarnya punya kedalaman, bukan hitam datar.
+ */
 .ob-splash {
   position: relative;
   display: flex;
@@ -279,9 +294,9 @@ body {
     calc(env(safe-area-inset-bottom) + 24px);
   background: radial-gradient(
     120% 85% at 50% 42%,
-    #fffdf8 0%,
-    var(--ob-cream) 52%,
-    #f1e8d6 100%
+    #171717 0%,
+    #0a0a0a 55%,
+    #000 100%
   );
   cursor: pointer;
 }
@@ -290,7 +305,9 @@ body {
   width: 60%;
   max-width: 236px;
   height: auto;
-  filter: drop-shadow(0 10px 26px rgba(185, 134, 12, 0.22));
+  /* Di atas cream ini bayangan; di atas hitam ia harus jadi PENDAR, kalau
+     tidak logonya duduk di ruang mati tanpa kedalaman apa pun. */
+  filter: drop-shadow(0 0 34px rgba(237, 180, 21, 0.28));
   opacity: 0;
   transform: scale(0.9);
   animation: ob-logo-in 1.5s cubic-bezier(0.16, 0.84, 0.3, 1) forwards;
@@ -317,7 +334,9 @@ body {
   font-size: 20px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: var(--ob-gold-deep);
+  /* Emas TERANG, bukan --ob-gold-deep: di atas hitam yang gelap itu jatuh ke
+     ~3,3:1 dan terbaca seperti cokelat kusam. Yang ini ~9,5:1. */
+  color: var(--ob-gold);
   /* Letter-spacing menambah ruang SESUDAH huruf terakhir; padding kiri
      sebesar nilai yang sama mengembalikan blok ke tengah optis. */
   padding-left: 0.3em;
@@ -329,6 +348,7 @@ body {
   font-size: 10.5px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
+  /* #8E8574 di atas hitam = ~5,4:1 — lolos AA untuk ukuran sekecil ini. */
   color: var(--ob-muted-2);
   padding-left: 0.2em;
 }

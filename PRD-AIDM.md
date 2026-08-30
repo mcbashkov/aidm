@@ -208,7 +208,7 @@ Pilar Web3 keempat yang **baru di v3.0**:
 
 **Isi layar (urutan dari atas):**
 1. **Pemilih periode** — Bulan ini (default) · Bulan lalu · 30 hari · Rentang khusus.
-2. **Kartu ringkasan** — Pemasukan · Pengeluaran · **Sisa (laba kotor)**, angka besar serif, perbandingan terhadap periode sebelumnya (naik/turun %).
+2. **Kartu ringkasan** — Pemasukan · Pengeluaran · **Sisa uang**, angka besar serif, perbandingan terhadap periode sebelumnya (naik/turun %).
 3. **Grafik arus kas** — batang harian atau garis mingguan (masuk vs keluar).
 4. **Rincian kategori** — 5 teratas per jenis, dengan nominal dan persentase.
 5. **Porsi terverifikasi** — bar/donut: % nilai transaksi lewat QRIS/transfer vs tunai, dengan satu kalimat penjelas ("Transaksi lewat QRIS lebih dipercaya lembaga keuangan").
@@ -228,7 +228,7 @@ Pilar Web3 keempat yang **baru di v3.0**:
 - Semua agregasi server-side; tidak mengirim seluruh transaksi ke klien untuk dihitung di browser.
 - Periode tanpa data → empty state yang mengajak mencatat, bukan grafik kosong.
 - Angka rupiah format Indonesia (titik ribuan), tanpa desimal.
-- Laba **kotor** di MVP (pemasukan − pengeluaran). Laba bersih/margin menunggu katalog harga modal (Fase 2) — jangan menampilkan istilah "laba bersih" sebelum HPP ada.
+- Yang ditampilkan MVP adalah **arus kas** (pemasukan − seluruh pengeluaran), diberi label **"Sisa uang"**. Kata "laba" dilarang di layar maupun PDF: laba kotor = pemasukan − HPP, dan HPP baru ada di Fase 2. Memberi nama akuntansi yang salah kepada angka yang benar lebih berbahaya daripada tidak menamainya — jangan menampilkan istilah "laba bersih" sebelum HPP ada.
 
 **AC.**
 - [ ] Ringkasan, grafik, kategori, dan porsi terverifikasi konsisten dengan data `transactions` untuk periode terpilih (uji dengan dataset seed).

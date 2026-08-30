@@ -17,6 +17,7 @@
 
 import type { EarnerType } from "@/lib/earner";
 import type { Jenis, PaymentMethod } from "@/lib/transactions";
+import type { KodeTidakDikenali, Pertanyaan } from "@/lib/catat/pesan";
 
 export interface ParsedEntry {
   jenis: Jenis;
@@ -30,8 +31,8 @@ export interface ParsedEntry {
 
 export interface ParseResult {
   entries: ParsedEntry[];
-  pertanyaan: string | null;
-  tidakDikenali: string | null;
+  pertanyaan: Pertanyaan | null;
+  tidakDikenali: KodeTidakDikenali | null;
 }
 
 /* ── Normalisasi ringan: typo umum & singkatan chat ──────────────────────── */
@@ -620,8 +621,8 @@ export function parseFallback(
     return {
       entries: [],
       pertanyaan: null,
-      tidakDikenali:
-        "Aku belum menangkap transaksi dari kalimat itu. Coba sebutkan nominalnya, misal “jual 3 nasi goreng 45rb”.",
+      // KODE, bukan kalimat. Kalimatnya lahir di lib/catat/pesan.ts.
+      tidakDikenali: adaSinyalUang(text) ? "tidak_jelas" : "bukan_uang",
     };
   }
 
@@ -630,8 +631,45 @@ export function parseFallback(
   return {
     entries,
     pertanyaan: tanpaNominal
-      ? `Berapa nominal untuk “${tanpaNominal.catatan}”?`
+      ? { jenis: "nominal", untuk: tanpaNominal.catatan }
       : null,
     tidakDikenali: null,
   };
+}
+
+
+/**
+ * Apakah kalimat ini SAMA SEKALI menyinggung uang usaha.
+ *
+ * Ini gerbang pra-LLM (§P1-5): kalau jawabannya tidak, model tidak dipanggil
+ * sama sekali — bukan dipanggil lalu jawabannya dibuang. Bedanya bukan
+ * kerapian melainkan biaya dan permukaan serangan: kalimat yang tidak pernah
+ * sampai ke model tidak bisa membujuk model apa pun.
+ *
+ * Sengaja LONGGAR ke arah "lolos". Ambangnya bukan "ada nominal" melainkan
+ * "terdengar seperti peristiwa uang", karena "tadi ada yang bayar" WAJIB tetap
+ * masuk dan memicu satu pertanyaan nominal. Yang tersaring adalah kalimat yang
+ * tidak punya satu pun jejak uang: sapaan, pertanyaan pengetahuan umum,
+ * percobaan mengobrol.
+ *
+ * Seluruh kosakatanya dipinjam dari parser fallback di berkas yang sama —
+ * tidak ada daftar kata kedua yang bisa menyimpang dari yang pertama.
+ */
+export function adaSinyalUang(teks: string): boolean {
+  const t = normalisasi(teks);
+  if (!t) return false;
+
+  if (kandidatUang(t).length > 0) return true;
+  if (angkaKata(t)) return true;
+
+  for (const k of [...KUAT_KELUAR, ...KUAT_MASUK, ...LEMAH_KELUAR, ...LEMAH_MASUK]) {
+    if (new RegExp(`\\b${k}\\b`).test(t)) return true;
+  }
+
+  return (
+    SUBJEK_PIHAK_LAIN.test(t) ||
+    ISI_COMPOUND.test(t) ||
+    PESAN_MAKAN.test(t) ||
+    NAIK_COMPOUND.test(t)
+  );
 }

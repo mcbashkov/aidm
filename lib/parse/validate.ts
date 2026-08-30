@@ -29,10 +29,12 @@ export interface ValidatedEntry {
   status: "confirmed" | "draft";
 }
 
+import type { KodeTidakDikenali, Pertanyaan } from "@/lib/catat/pesan";
+
 export interface ValidatedResult {
   entries: ValidatedEntry[];
-  pertanyaan: string | null;
-  tidakDikenali: string | null;
+  pertanyaan: Pertanyaan | null;
+  tidakDikenali: KodeTidakDikenali | null;
 }
 
 /** Batas kewarasan nominal — di atas ini hampir pasti halusinasi parser. */

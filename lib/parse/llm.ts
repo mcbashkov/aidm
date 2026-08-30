@@ -12,11 +12,11 @@ import { getAnthropic } from "@/lib/ai/anthropic";
 import { LIGHT_MODEL } from "@/lib/ai/models";
 import { KATEGORI_MASUK, KATEGORI_KELUAR } from "@/lib/transactions";
 import type { RawEntry } from "@/lib/parse/validate";
+import { kodeSah, type KodeTidakDikenali } from "@/lib/catat/pesan";
 
 export interface LlmParseRaw {
   entries: RawEntry[];
-  pertanyaan: string | null;
-  tidak_dikenali: string | null;
+  tidak_dikenali: KodeTidakDikenali | null;
 }
 
 export interface LlmParseContext {
@@ -31,7 +31,7 @@ const TIMEOUT_MS = 5_000;
 /** Skema §17.1 — persis, untuk JSON mode. */
 const PARSER_SCHEMA = {
   type: "object",
-  required: ["entries", "pertanyaan", "tidak_dikenali"],
+  required: ["entries", "tidak_dikenali"],
   additionalProperties: false,
   properties: {
     entries: {
@@ -55,8 +55,15 @@ const PARSER_SCHEMA = {
         },
       },
     },
-    pertanyaan: { type: ["string", "null"] },
-    tidak_dikenali: { type: ["string", "null"] },
+    // ENUM, bukan string bebas. Inilah yang membuat tab Catat tidak bisa
+    // dipakai sebagai chatbot: model tidak punya field mana pun untuk menulis
+    // kalimat yang akan dirender. Kalimatnya lahir di lib/catat/pesan.ts.
+    //
+    // `pertanyaan` SENGAJA DIHAPUS dari skema, bukan diketikkan. Server sudah
+    // tahu kapan harus bertanya (ada entri bernominal null) dan kalimatnya
+    // selalu satu bentuk — memberi model tempat menulisnya hanya membuka
+    // kembali kanal yang baru saja ditutup.
+    tidak_dikenali: { enum: [null, "bukan_uang", "tidak_jelas"] },
   },
 } as const;
 
@@ -68,7 +75,7 @@ function systemPrompt(ctx: LlmParseContext): string {
     "Kamu pencatat keuangan untuk pelaku usaha mikro Indonesia. Ubah kalimat sehari-hari menjadi entri transaksi.",
     "ATURAN:",
     "- Satu kalimat boleh menghasilkan beberapa entri. Pisahkan setiap peristiwa uang menjadi entri sendiri.",
-    "- DILARANG mengarang nominal. Bila nominal tidak disebut, isi amount: null dan isi `pertanyaan` dengan SATU pertanyaan singkat menanyakan nominal saja.",
+    "- DILARANG mengarang nominal. Bila nominal tidak disebut, isi amount: null — aplikasi yang akan menanyakannya.",
     "- Nominal ≠ kuantitas: pada \"jual 3 nasi goreng 45rb\", 3 adalah jumlah porsi dan 45rb adalah uang (amount: 45000).",
     "- Kenali format angka Indonesia: 45rb, 45k, 45.000, Rp45.000, 1,5jt, 2 juta, seratus ribu. amount selalu integer rupiah penuh.",
     `- Kenali waktu relatif terhadap hari ini (${ctx.today}, zona WIB): "kemarin", "tadi pagi", "senin lalu". Default: hari ini. occurred_at (YYYY-MM-DD) tidak boleh melebihi hari ini.`,
@@ -83,7 +90,10 @@ function systemPrompt(ctx: LlmParseContext): string {
     ]
       .filter(Boolean)
       .join(" "),
-    "- Bila kalimat tidak berhubungan dengan uang sama sekali, kembalikan entries: [] dan isi tidak_dikenali dengan penjelasan satu kalimat ramah.",
+    "- Bila kalimat TIDAK berhubungan dengan uang sama sekali (sapaan, pertanyaan umum, obrolan), kembalikan entries: [] dan tidak_dikenali: \"bukan_uang\".",
+    "- Bila kalimat terasa soal uang tapi kamu tidak cukup yakin membuat entri, kembalikan entries: [] dan tidak_dikenali: \"tidak_jelas\".",
+    "- Bila ada entri, tidak_dikenali harus null.",
+    "- DILARANG menulis kalimat untuk pengguna. Kamu hanya mengisi field; seluruh kalimat yang dilihat pengguna ditulis aplikasi, bukan kamu.",
     "- catatan: potongan teks asli yang menjadi entri itu. confidence: 0..1.",
     "- Jawab HANYA JSON. Tanpa markdown, tanpa penjelasan.",
   ].join("\n");
@@ -120,16 +130,14 @@ export async function parseWithLlm(
     );
     const block = res.content.find((b) => b.type === "text");
     if (!block || block.type !== "text") return null;
-    const parsed = JSON.parse(block.text) as LlmParseRaw;
+    const parsed = JSON.parse(block.text) as { entries?: unknown; tidak_dikenali?: unknown };
     if (!Array.isArray(parsed.entries)) return null;
     return {
-      entries: parsed.entries,
-      pertanyaan:
-        typeof parsed.pertanyaan === "string" ? parsed.pertanyaan : null,
-      tidak_dikenali:
-        typeof parsed.tidak_dikenali === "string"
-          ? parsed.tidak_dikenali
-          : null,
+      entries: parsed.entries as RawEntry[],
+      // Nilai di luar enum diperlakukan sebagai TIDAK ADA, bukan diteruskan.
+      // Skema JSON sudah menegakkannya di sisi model; ini lapis kedua, karena
+      // satu lapis yang gagal diam-diam adalah cara teks bebas kembali masuk.
+      tidak_dikenali: kodeSah(parsed.tidak_dikenali) ? parsed.tidak_dikenali : null,
     };
   } catch {
     // Timeout, jaringan, atau JSON rusak — biar fallback yang bekerja.

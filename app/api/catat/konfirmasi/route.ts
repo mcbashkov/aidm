@@ -70,10 +70,11 @@ export async function POST(req: Request) {
     const nominal = bacaNominalJawaban(jawaban);
     if (nominal === null || nominal <= 0 || nominal > AMOUNT_MAX) {
       // Bukan error — angka belum tertangkap; tanya ulang, jangan mengarang.
+      // BENTUK, bukan kalimat — kalimatnya disusun lib/catat/pesan.ts, sama
+      // dengan seluruh teks lain yang dilihat pengguna di jalur Catat.
       return NextResponse.json({
         ok: false,
-        pertanyaan:
-          "Aku masih belum menangkap angkanya. Tulis nominalnya saja ya, misal “45rb” atau “45.000”.",
+        pertanyaan: { jenis: "nominal_tidak_terbaca" },
       });
     }
 

@@ -6,9 +6,13 @@
  * PO 2026-08-15) — penerimaan berkas adalah wewenang penilai.
  *
  * Dua aturan yang TIDAK boleh dilanggar di berkas ini:
- *   1. Istilah "laba bersih" dilarang sebelum harga modal ada (§7.3) — yang
- *      dihitung baru laba KOTOR, dan penilai kredit akan memakai angkanya
- *      untuk keputusan nyata.
+ *   1. Kata "laba" DILARANG di berkas ini, dalam bentuk apa pun. Angka yang
+ *      dihitung adalah ARUS KAS — pemasukan dikurangi seluruh pengeluaran,
+ *      termasuk prive dan pembelian alat. Laba kotor adalah pemasukan dikurangi
+ *      harga pokok penjualan, dan HPP belum ada di aplikasi ini. Dokumen ini
+ *      dibawa pengguna ke pihak ketiga yang akan memakai angkanya untuk
+ *      keputusan nyata; memberinya nama akuntansi yang salah lebih berbahaya
+ *      daripada tidak memberinya nama sama sekali.
  *   2. Blok verifikasi wajib memuat kalimat baku bahwa segel BUKAN audit dan
  *      BUKAN penilaian kelayakan kredit (§7.5). Tanpa itu, dokumen ini bisa
  *      dibaca sebagai klaim yang tidak pernah kita buat.
@@ -227,7 +231,7 @@ export function LaporanPdf({ data }: { data: LaporanPdfData }) {
               <Text style={s.angkaBesar}>{formatRupiah(kini.keluar)}</Text>
             </View>
             <View style={s.selRingkasAkhir}>
-              <Text style={s.labelKecil}>Sisa (laba kotor)</Text>
+              <Text style={s.labelKecil}>Sisa uang</Text>
               <Text
                 style={[
                   s.angkaBesar,
@@ -255,8 +259,9 @@ export function LaporanPdf({ data }: { data: LaporanPdfData }) {
           </View>
 
           <Text style={s.catatanBaku}>
-            Sisa dihitung sebagai pemasukan dikurangi pengeluaran (laba kotor).
-            Harga pokok penjualan belum diperhitungkan.
+            Sisa uang dihitung sebagai pemasukan dikurangi seluruh pengeluaran
+            yang dicatat — termasuk prive dan pembelian alat. Angka ini adalah
+            arus kas; harga pokok penjualan belum diperhitungkan.
           </Text>
         </View>
 

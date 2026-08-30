@@ -4,15 +4,24 @@
  */
 
 import type { Transaction } from "@/lib/transactions";
+import type { KodeTidakDikenali, Pertanyaan } from "@/lib/catat/pesan";
 import { panggil, type ApiHasil } from "@/lib/api/panggil";
 import { bulanWib } from "@/lib/wib";
 
 export type { ApiHasil };
 
+/**
+ * Respons `/api/catat`. Tidak ada satu pun string bebas: `pertanyaan` dan
+ * `tidak_dikenali` adalah BENTUK BERTIPE, dan kalimatnya disusun layar dari
+ * `lib/catat/pesan.ts`. Dengan begitu tidak ada jalur di mana teks karangan
+ * model bisa sampai ke gelembung percakapan.
+ */
 export interface CatatResponse {
   entries: Transaction[];
-  pertanyaan: string | null;
-  tidak_dikenali: string | null;
+  pertanyaan: Pertanyaan | null;
+  tidak_dikenali: KodeTidakDikenali | null;
+  /** Berapa kali offtopic hari ini — menentukan panjang-pendek kalimatnya. */
+  offtopic_hari_ini?: number;
   parsed_by: "llm" | "fallback";
 }
 
@@ -45,7 +54,7 @@ export function kirimCatat(
 export function konfirmasiDraft(
   draftId: string,
   jawaban: string,
-): Promise<ApiHasil<{ ok: boolean; entry?: Transaction; pertanyaan?: string }>> {
+): Promise<ApiHasil<{ ok: boolean; entry?: Transaction; pertanyaan?: Pertanyaan }>> {
   return panggil("/api/catat/konfirmasi", {
     method: "POST",
     body: JSON.stringify({ draft_id: draftId, jawaban }),

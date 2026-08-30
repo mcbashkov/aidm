@@ -8,12 +8,40 @@ interface SummaryCardsProps {
   sebelumnya?: Ringkasan | null;
 }
 
-function Delta({ kini, lalu }: { kini: number; lalu?: number }) {
-  if (lalu === undefined || lalu === 0) return null;
-  const rasio = (kini - lalu) / Math.abs(lalu);
-  const naik = rasio > 0.005;
-  const turun = rasio < -0.005;
+/**
+ * Hari tercatat minimum sebelum persentase boleh ditampilkan.
+ *
+ * Terlihat di produksi: "+1057% vs periode lalu" pada 7 hari data. Angka itu
+ * benar secara aritmetika dan tidak berarti apa-apa secara akuntansi — ia
+ * hanya mengukur bahwa periode sebelumnya nyaris kosong. Yang dibaca pengguna
+ * bukan "datamu masih sedikit", melainkan "usahaku tumbuh sepuluh kali lipat",
+ * dan aplikasi pembukuan yang memasang angka semacam itu berhenti terlihat
+ * serius pada detik pertama.
+ *
+ * Di bawah ambang ini, SELISIH RUPIAH yang ditampilkan: ia tetap jujur berapa
+ * pun sedikitnya data, karena tidak dibagi apa pun.
+ */
+const HARI_MIN_PERSEN = 14;
+
+function Delta({
+  kini,
+  lalu,
+  hariAktif,
+}: {
+  kini: number;
+  lalu?: number;
+  hariAktif: number;
+}) {
+  if (lalu === undefined) return null;
+
+  const selisih = kini - lalu;
+  const naik = selisih > 0;
+  const turun = selisih < 0;
   const Icon = naik ? TrendingUp : turun ? TrendingDown : Minus;
+
+  // Persentase hanya bila datanya cukup panjang DAN pembaginya bukan nol.
+  const bolehPersen = hariAktif >= HARI_MIN_PERSEN && lalu !== 0;
+  const rasio = bolehPersen ? selisih / Math.abs(lalu) : 0;
 
   return (
     <span
@@ -23,17 +51,33 @@ function Delta({ kini, lalu }: { kini: number; lalu?: number }) {
       )}
     >
       <Icon className="h-3.5 w-3.5" aria-hidden />
-      {naik ? "+" : ""}
-      {Math.round(rasio * 100)}%
+      {bolehPersen ? (
+        <>
+          {naik ? "+" : ""}
+          {Math.round(rasio * 100)}%
+        </>
+      ) : (
+        <>
+          {naik ? "+" : turun ? "−" : ""}
+          {formatRupiahCompact(Math.abs(selisih))}
+        </>
+      )}
       <span className="font-normal text-ink-subtle">vs periode lalu</span>
     </span>
   );
 }
 
 /**
- * Kartu ringkasan periode (§7.3 #2). Sisa = laba KOTOR — istilah "laba bersih"
- * dilarang sebelum harga modal ada (Fase 2), karena angkanya akan salah dan
- * pengguna memakainya untuk keputusan nyata.
+ * Kartu ringkasan periode (§7.3 #2).
+ *
+ * "Sisa uang", BUKAN "laba" dalam bentuk apa pun. Angkanya adalah arus kas —
+ * pemasukan dikurangi SELURUH pengeluaran, termasuk prive dan pembelian alat.
+ * Laba kotor adalah pemasukan dikurangi harga pokok penjualan saja, dan HPP
+ * belum ada di aplikasi ini. Menyebutnya "laba kotor" memberi nama akuntansi
+ * yang salah kepada angka yang benar — dan pengguna memakainya untuk keputusan
+ * nyata, termasuk membawanya ke pihak ketiga.
+ *
+ * Rumusnya TIDAK berubah. Yang berubah hanya namanya.
  */
 export function SummaryCards({ kini, sebelumnya }: SummaryCardsProps) {
   const surplus = kini.sisa >= 0;
@@ -42,9 +86,7 @@ export function SummaryCards({ kini, sebelumnya }: SummaryCardsProps) {
     <div className="space-y-3">
       {/* Sisa — angka pahlawan, serif besar */}
       <div className="card p-5">
-        <p className="text-[13px] font-medium text-ink-subtle">
-          Sisa (laba kotor)
-        </p>
+        <p className="text-[13px] font-medium text-ink-subtle">Sisa uang</p>
         <p
           className={cn(
             "num-display mt-1 text-[38px] leading-none",
@@ -53,7 +95,7 @@ export function SummaryCards({ kini, sebelumnya }: SummaryCardsProps) {
         >
           {formatRupiah(kini.sisa)}
         </p>
-        <Delta kini={kini.sisa} lalu={sebelumnya?.sisa} />
+        <Delta kini={kini.sisa} lalu={sebelumnya?.sisa} hariAktif={kini.hariAktif} />
         <p className="mt-3 text-[12px] text-ink-muted">
           {kini.jmlTransaksi} transaksi · {kini.hariAktif} hari tercatat
         </p>
@@ -65,14 +107,22 @@ export function SummaryCards({ kini, sebelumnya }: SummaryCardsProps) {
           <p className="num-display mt-1 text-[22px] leading-tight text-success">
             {formatRupiahCompact(kini.masuk)}
           </p>
-          <Delta kini={kini.masuk} lalu={sebelumnya?.masuk} />
+          <Delta
+            kini={kini.masuk}
+            lalu={sebelumnya?.masuk}
+            hariAktif={kini.hariAktif}
+          />
         </div>
         <div className="card p-4">
           <p className="text-[12px] font-medium text-ink-subtle">Pengeluaran</p>
           <p className="num-display mt-1 text-[22px] leading-tight text-ink">
             {formatRupiahCompact(kini.keluar)}
           </p>
-          <Delta kini={kini.keluar} lalu={sebelumnya?.keluar} />
+          <Delta
+            kini={kini.keluar}
+            lalu={sebelumnya?.keluar}
+            hariAktif={kini.hariAktif}
+          />
         </div>
       </div>
     </div>
