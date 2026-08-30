@@ -41,21 +41,23 @@ perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
 
 | Milestone | Status | Bukti |
 |---|---|---|
-| M0 fondasi | ✅ selesai | migrasi 0001–0028, rute & onboarding v3.0 |
+| M0 fondasi | ✅ selesai | migrasi 0001–0029, rute & onboarding v3.0 |
 | M1 parser & tab Catat | ✅ selesai | `test:parser` 200/200 |
 | M2 suara & offline | ✅ selesai | uji lapangan Android 2026-08-14 (3 akun nyata) |
 | M3 Laporan & PDF | ✅ selesai | `test:api` mem-baca ulang isi PDF, bukan cuma header |
 | M4 segel + misi | ✅ **selesai** | klaim diuji PO di aplikasi 2026-08-26 (spinner → Diklaim + tautan opBNBScan); 11 klaim produksi semuanya `confirmed` |
 | M5 premium & langganan | 🟡 **hampir tuntas** | migrasi 0027+0028 live · alur langganan diuji ujung-ke-ujung di produksi **14/14** · halaman hukum publik · sisa: kunci Midtrans + bundel `/masuk` |
-| M6 mainnet & beta | ⬜ belum mulai | **tidak lagi terhalang** — §16 #5/#8/#11 sudah diputuskan |
+| M6 mainnet & beta | ⬜ belum mulai | tokenomics terbuka, tapi **audit pra-mainnet menemukan 1 Critical + 4 High** (semua Terbuka) — lihat Titik lanjut |
 | M7 Play & App Store | ⬜ belum mulai | — |
 
-**Gerbang otomatis terkini (2026-08-29):** `test:parser` 200/200 ·
+**Gerbang otomatis terkini (2026-08-31):** `test:parser` 200/200 ·
 `test:canonical` 23/23 · `test:api` 123/123 · typecheck bersih · lint bersih ·
-build sukses **tanpa peringatan**.
+build sukses **tanpa peringatan**. Uji browser produksi: 17/17 (P2-6 + guardrail)
+dan 11/11 (perbaikan "Menyiapkan…" + identitas ber-cache).
 
-**Produksi 2026-08-30:** 12 pengguna · 118 transaksi · 13 klaim misi ·
+**Produksi 2026-08-31:** 12 pengguna · 118 transaksi · 13 klaim misi ·
 2 langganan (masa coba PO) · 48 baris `credit_ledger` (arsip, beku) · 0 yatim.
+**Dikonfirmasi PO 2026-08-31: aplikasi terasa cepat setelah perbaikan.**
 
 ⚠️ **`test:api` masih menunggu satu run penuh.** Penyebab kerapuhannya sudah
 dicabut 2026-08-27 (keep-alive dimatikan di harness, §6), tapi belum ada satu
@@ -112,36 +114,50 @@ ada — karena itu ia sengaja TIDAK dipasang di Vercel.
 Ringkasan satu layar untuk sesi berikutnya. Rinciannya di bagian bernomor
 di bawah; ini hanya menjawab *"mulai dari mana"*.
 
-**Keputusan PO — SEMUA SUDAH TURUN (2026-08-28). Tidak ada yang terblokir.**
+**Keadaan: M5 tuntas kecuali kunci Midtrans. M6 terbuka tapi punya syarat
+keamanan baru.**
 
-| # | Keputusan | Isinya |
+### ⛔ Memblokir — butuh tangan PO
+
+| # | Apa | Kenapa |
 |---|---|---|
-| 1 | **Model monetisasi** | Kredit AI **dibatalkan**. Diganti **langganan Rp49.000/bulan**, masa coba 7 hari, pagar wajar 30 riset + 60 konten/bulan. Alasan PO: "kalau pembuatnya bingung, pedagang di Cianjur pasti lebih bingung." |
-| 2 | **Cakupan premium** | Generator Konten **dibangun**. Wizard Peluang **dicoret** — ia agen intelijen pasar, arah yang sudah dibuang dari identitas produk. |
-| 3 | **Admin** | Runbook SQL (`docs/RUNBOOK-ADMIN.md`), bukan panel. |
-| 4 | **Bundel `/masuk`** | Dikerjakan, dengan syarat keras: sesi hidup harus tetap dikenali tanpa menunggu SDK. |
-| 5 | **§16 #5/#8/#11 — tokenomics & kurs** | **SELESAI.** Kurs 50:1 one-way ratchet · alokasi 1 miliar IDM final. Angka kanonik: `docs/PERINTAH-AGEN-FINAL.md` §0.1. Diverifikasi on-chain: **nol perbedaan**. Fitur Tukar tidak lagi terhalang. |
-| 6 | `POST /api/wallet/backfill` | Dipertahankan + `cocokCronSecret` — ternyata **sudah** terpasang sejak awal. |
+| 1 | **Kunci Midtrans ke Vercel** | `MIDTRANS_SERVER_KEY` (sandbox). **JANGAN** set `MIDTRANS_IS_PRODUCTION`. Kunci PO berawalan `Mid-server-` **tanpa** `SB-` tapi secara empiris SANDBOX — diuji: sandbox 201 + token, produksi 401. Aturan prefix `SB-` tidak berlaku untuk akun ini. Mengisinya `true` = 401 di setiap pembayaran. |
+| 2 | **Payment Notification URL** Midtrans | → `https://ai.idmtoken.com/api/langganan/webhook` |
+| 3 | **Temuan audit F-01 & F-08** (§ di bawah) | Keputusan tata kelola kunci, bukan kode. **Memblokir mainnet M6.** |
 
-**Menunggu tangan PO:** uji batch 2026-08-27 (empat misi baru + halaman Akun) ·
-prompt instal PWA di Android (§7) · verifikasi source enam kontrak di explorer.
+### 🔐 Audit pra-mainnet — `docs/audit/LAPORAN-PRA-AUDIT.md`
 
-**Menunggu tangan PO — memblokir rilis pembayaran:**
+Dikerjakan di sesi terpisah. **8 temuan, semuanya masih Terbuka**, nol baris
+kode diubah (sengaja: auditor pihak ketiga harus menerima kode dalam keadaan
+yang sama).
 
-1. **Kunci Midtrans ke Vercel** — `MIDTRANS_SERVER_KEY` (sandbox). **JANGAN**
-   set `MIDTRANS_IS_PRODUCTION`. Kunci PO berawalan `Mid-server-` tanpa `SB-`
-   tapi secara empiris SANDBOX (diuji: sandbox 201 + token, produksi 401) —
-   aturan prefix `SB-` tidak berlaku untuk akun ini.
-2. **Payment Notification URL** di dashboard Midtrans →
-   `https://ai.idmtoken.com/api/langganan/webhook`
-3. Uji alur langganan sendiri (masa coba → Riset & Konten terbuka).
+| Severity | Jumlah | ID |
+|---|---:|---|
+| Critical | 1 | **F-01** — `owner` SwapClaim bisa menguras seluruh kolam dalam satu transaksi |
+| High | 4 | **F-02** kebocoran `swapSigner` · **F-03** kebocoran `voucherSigner` tanpa cap agregat · **F-04** `owner` MissionRewards bisa menarik seluruh float · **F-08** enam dari tujuh peran istimewa dipegang SATU kunci, termasuk kunci panas server |
+| Medium | 2 | **F-05** cap "bulanan" `caps[1]` diakumulasi per HARI · **F-06** burn IDMX tanpa jalur pemulihan on-chain |
+| Info | 1 | F-07 SwapClaim tanpa circuit breaker |
 
-**Bisa saya kerjakan tanpa menunggu siapa pun:**
+Nol dari delapan berasal dari Slither — semuanya dari pemetaan hak istimewa.
+Kodenya rapi; **risikonya operasional, bukan implementasi**. Fase 2–4 belum
+dijalankan, jumlahnya akan bertambah.
 
-1. **Bundel `/masuk` 829 KB** — satu-satunya sisa M5. Refaktornya ditunda atas
-   syarat keras PO (lihat §6); penggantinya sudah jalan.
-2. **M6 — mainnet & beta tertutup.** Tidak lagi terhalang: §16 #5/#8/#11 sudah
-   diputuskan dan tokenomics-nya terverifikasi cocok dengan on-chain.
+Yang sudah dibuktikan positif: keenam kontrak **bytecode-nya identik** dengan
+kode sumber (setelah slot immutable di-mask), `domainSeparator` cocok untuk
+chainId 5611 & 97 (replay lintas-chain terlindungi), konfigurasi on-chain tidak
+drift, kolam 150 juta IDM utuh.
+
+### ✅ Bisa dikerjakan tanpa menunggu siapa pun
+
+1. **Perbaikan temuan audit** — F-05 (cap bulanan salah ember) dan F-07 murni
+   kode. F-01/F-02/F-03/F-04/F-08 menunggu keputusan tata kelola kunci PO.
+2. **Bundel `/masuk` 829 KB** — sisa terakhir M5 (§6 menjelaskan kenapa
+   refaktornya ditunda dan apa penggantinya yang sudah jalan).
+3. **M6 — mainnet & beta tertutup**, setelah F-01/F-08 diputuskan.
+
+**Menunggu tangan PO (tidak memblokir):** uji batch 2026-08-27 (empat misi baru
++ halaman Akun) · prompt instal PWA di Android (§7) · verifikasi source enam
+kontrak di explorer.
 
 ---
 
