@@ -28,9 +28,13 @@ Diperbarui: **2026-08-31** · cabang `main`
 > sendiri di produksi 2026-08-21 23:16 UTC**, kursor menyusul kepala rantai.
 > ✅ **UI Tukar (§9) SELESAI 2026-08-22** — lembar burn opBNB + panel voucher klaim
 > BSC, chain dirakit server (`/api/swap/config`) supaya klien tidak jatuh ke
-> mainnet. ⬜ Sisa: `scripts/ratchet-check.mjs` (§5), dust top-up opBNB, dan
-> **verifikasi source keenam kontrak di explorer** (§10 — banner PO baru tampil
-> setelah terverifikasi; sekaligus gladi resik sebelum mainnet).
+> mainnet. ✅ **Verifikasi source keenam kontrak SELESAI 2026-08-31** (§10) — BSC
+> Testnet lewat Etherscan, opBNB Testnet lewat Sourcify. Badge explorer opBNB
+> **tidak bisa didapat**: jalur tulis Etherscan untuk chain 5611 rusak untuk
+> setiap kontrak (dibuktikan dengan kontrak pihak ketiga), sementara opBNB
+> **Mainnet (204) terbukti normal** — jadi tidak menghambat rilis. Rincian:
+> `contracts/ALAMAT-DAN-CATATAN.md` §8. ⬜ Sisa: `scripts/ratchet-check.mjs`
+> (§5) dan dust top-up opBNB.
 
 **Legenda pemilik:** 🧑 = butuh tangan Anda (kunci, dompet, keputusan bisnis,
 perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
@@ -80,20 +84,33 @@ DIPAKAI kode hanya satu bentuk: `${origin}/masuk`.
 11 klaim misi semuanya `confirmed` dengan `tx_hash` · **0 klaim menggantung** ·
 82 transaksi.
 
-**On-chain — SEMUA ter-deploy 2026-08-21 (belum diverifikasi source):**
+**On-chain — SEMUA ter-deploy 2026-08-21, source terverifikasi 2026-08-31.**
+Rujukan lengkap (tx pembuatan, argumen konstruktor, setelan kompilasi, peran
+kunci, aturan operasional): **`contracts/ALAMAT-DAN-CATATAN.md`**
 
-| Kontrak | Jaringan | Alamat |
-|---|---|---|
-| ReportAttestation | opBNB testnet 5611 | `0xa83c201c3759fa1a92bd17dbebb46b85029a84c4` |
-| IDMX | opBNB testnet 5611 | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` |
-| MissionRewards | opBNB testnet 5611 | `0xbc6f412024cee7e8117bd1ee35759d027fce11e5` |
-| SwapInitiator | opBNB testnet 5611 | `0xa4f00039540dfdd040635a17090bf4e797168b63` |
-| IDMReborn | BSC testnet 97 | `0x78c7e68142e7e1b564c0fd342954aa515a3d2f5b` |
-| SwapClaim | BSC testnet 97 | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` |
+| Kontrak | Jaringan | Alamat | Verifikasi |
+|---|---|---|---|
+| ReportAttestation | opBNB testnet 5611 | `0xa83c201c3759fa1a92bd17dbebb46b85029a84c4` | Sourcify `match` |
+| IDMX | opBNB testnet 5611 | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` | Sourcify `exact_match` |
+| MissionRewards | opBNB testnet 5611 | `0xbc6f412024cee7e8117bd1ee35759d027fce11e5` | Sourcify `exact_match` |
+| SwapInitiator | opBNB testnet 5611 | `0xa4f00039540dfdd040635a17090bf4e797168b63` | Sourcify `exact_match` |
+| IDMReborn | BSC testnet 97 | `0x78c7e68142e7e1b564c0fd342954aa515a3d2f5b` | ✅ BscScan |
+| SwapClaim | BSC testnet 97 | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` | ✅ BscScan |
+
+Keempat kontrak opBNB **tidak berbadge di explorer** — Sourcify layanan
+terpisah dan BscScan tidak menariknya. Bukan kesalahan konfigurasi kita; lihat
+`contracts/ALAMAT-DAN-CATATAN.md` §8.
 
 Alamat IDMX dan SwapClaim **memang identik** — deployer & nonce yang sama di dua
-chain berbeda menghasilkan alamat yang sama. Bukan salah tempel; sudah
-diverifikasi ke rantainya (`SwapClaim.idm()` menunjuk IDMReborn dengan benar).
+chain berbeda menghasilkan alamat yang sama. Bukan salah tempel: `eth_getCode`
+mengonfirmasi kode yang **berbeda** di masing-masing chain (1.629 B vs 3.659 B).
+
+**Kesetaraan bytecode ↔ kode sumber dibuktikan langsung** untuk keenamnya
+(kompilasi ulang + `eth_getCode`, slot `immutable` di-mask). Nilai `immutable`
+yang diekstrak membuktikan `MissionRewards.token` dan `SwapInitiator.idmx`
+menunjuk IDMX, dan `SwapClaim.idm` menunjuk IDMReborn. `domainSeparator`
+dihitung ulang dan cocok untuk chainId 5611 dan 97 — replay lintas chain
+tertutup.
 
 Keadaan terverifikasi on-chain: IDMX 50 miliar · MissionRewards terdanai 100 juta
 IDMX · IDMReborn 1 miliar (treasury 850 juta, SwapClaim 150 juta) · SwapClaim

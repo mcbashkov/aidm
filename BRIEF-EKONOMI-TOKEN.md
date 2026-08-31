@@ -105,6 +105,23 @@ penilai kredit, bukan sesuatu yang bisa dijanjikan pembuat alat.
 
 Batas: **250 IDMX per pengguna per hari** (misi bulanan punya jatah terpisah).
 
+> ⚠️ **Koreksi 2026-08-31 — yang ditegakkan kontrak berbeda dari kalimat di
+> atas.** Kedua ember cap (`caps[0]` harian 250 IDMX dan `caps[1]` "bulanan"
+> 450 IDMX) diakumulasi dengan kunci yang sama, yaitu **per hari**
+> (`claimedOnDay[user][bucket][day]`, `MissionRewards.sol:92` dan `:244-246`).
+> Jadi plafon on-chain per alamat sebenarnya **700 IDMX per hari**, bukan 250,
+> dan ember "bulanan" ikut reset tiap hari.
+>
+> Selama backend hanya menandatangani voucher ember 1 sekali sebulan, plafon
+> yang longgar itu tidak pernah tersentuh — dampaknya nol pada operasi normal.
+> Yang terdampak adalah justru skenario yang menjadi alasan cap ini ada:
+> backend bermasalah atau kunci penandatangan bocor.
+>
+> **Belum diputuskan** mana yang benar — niatnya memang bulanan (berarti kode
+> kurang) atau memang dua ember harian terpisah (berarti kalimat di atas yang
+> perlu diperbaiki). Temuan **F-05 (Medium)** di
+> `docs/audit/LAPORAN-PRA-AUDIT.md`; keputusannya milik PO.
+
 **Pengaman anti-kecurangan yang sudah berjalan:** hanya transaksi valid unik yang
 dihitung (nominal > 0, bukan duplikat persis dalam 60 detik); menghapus transaksi
 **otomatis menurunkan progres misi**; batas 200 entri/hari/akun.
@@ -135,9 +152,10 @@ float yang tidak terlalu tipis. Rincian, vesting, dan tata kelola treasury:
 pengguna, tidak pernah memburuk, dan itu ditegakkan kontrak (`setRate` menolak
 nilai yang lebih buruk), bukan kebijakan.
 
-Sudah **terverifikasi on-chain** 2026-08-28: `rateIdmxPerIdm = 50`, kolam
-`SwapClaim` berisi 150.000.000 IDM. Nol perbedaan antara keputusan dan yang
-ter-deploy.
+Sudah **terverifikasi on-chain** 2026-08-28, dikonfirmasi ulang 2026-08-31:
+`rateIdmxPerIdm = 50`, kolam `SwapClaim` berisi 150.000.000 IDM, dan
+`maxIdmxPerVoucher` 2.000 IDMX. Nol perbedaan antara keputusan dan yang
+ter-deploy. Rujukan parameter lengkap: `contracts/ALAMAT-DAN-CATATAN.md` §5.
 
 ---
 
@@ -242,8 +260,12 @@ Pengguna rajin menghasilkan **735 IDMX/minggu** (105/hari).
 Plus usulan **minimum tukar 100 IDMX** agar tidak ada transaksi receh yang biaya
 gasnya lebih mahal daripada isinya.
 
-Catatan: sisi *perolehan* sudah dibatasi (maksimum 250 IDMX/hari/akun), jadi cap
-tukar ini adalah lapis kedua, bukan satu-satunya pertahanan.
+Catatan: sisi *perolehan* sudah dibatasi (maksimum 250 IDMX/hari/akun — lihat
+koreksi F-05 di §reward: plafon on-chain sebenarnya 700/hari/alamat), jadi cap
+tukar ini adalah lapis kedua, bukan satu-satunya pertahanan. Perlu dicatat
+bahwa **kedua lapis dikunci per alamat, bukan agregat**, sehingga tidak
+membatasi penyerang yang memakai banyak alamat — itu temuan F-03 di laporan
+pra-audit, dan anti-Sybil sepenuhnya bergantung pada backend.
 
 ---
 

@@ -536,6 +536,16 @@ function claim(SwapVoucher calldata v, bytes calldata sig) external {
 Skrip mencetak semua alamat + env; salin ke `.env.local` dan Vercel. Verifikasi
 source di opBNBScan/BscScan testnet (banner ikut tampil — bagian dari niat PO).
 
+> **Dikoreksi 2026-08-31 setelah dijalankan.** Verifikasi Etherscan **tidak
+> bisa** untuk opBNB Testnet (5611): setiap pengiriman ditolak
+> `General exception occured when attempting to insert record`, termasuk untuk
+> kontrak pihak ketiga — jalur tulisnya rusak di sisi Etherscan, bukan di sisi
+> kita. Keempat kontrak opBNB akhirnya diverifikasi lewat **Sourcify**, yang
+> tidak memberi badge explorer. BSC Testnet lolos normal lewat Etherscan.
+> **opBNB Mainnet (204) sudah diuji sampai tahap kompilasi dan bekerja normal**,
+> jadi ini kendala khusus testnet. Prosedur, bukti, dan langkah manual lewat
+> form web: `contracts/ALAMAT-DAN-CATATAN.md` §8.
+
 ### Env tambahan (lengkapi `.env.local.example` yang ada)
 
 **Ikuti pola deteksi "string tidak kosong" di file itu: biarkan field baru
@@ -598,6 +608,11 @@ Unit (foundry/hardhat, ikuti pola repo):
 - **Verifikasi peran deploy di BscScan testnet:** Contract Creator IDMReborn =
   alamat wallet lama; `balanceOf(treasury) == 1e27` tepat setelah deploy (sebelum
   transfer ke SwapClaim); IDMReborn tidak punya fungsi owner/mint/pause sama sekali.
+  ✅ **Terkonfirmasi 2026-08-31:** Contract Creator IDMReborn =
+  `0x1f835d8233abb432a295b2e9b414dee46afc2d5d` (berbeda dari deployer
+  operasional `0x1842498b…b2f3`), treasury konstruktor =
+  `0xf573081596d39d45e20e570e9a23e17a709b70a6`, `totalSupply` 1e27 utuh, dan
+  pembacaan baris-per-baris memastikan tidak ada owner/mint/pause.
 - `test:api` diperluas untuk jalur penolakan endpoint voucher-swap (pola sama
   dengan misi: jalur sukses on-chain manual, penolakan otomatis).
 
