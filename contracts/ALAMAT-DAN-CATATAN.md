@@ -237,20 +237,59 @@ Wajib cocok persis untuk verifikasi ulang. Seragam untuk keenam kontrak.
 
 ## 8. Status verifikasi source
 
-| Kontrak | Chain | Penyedia | Hasil |
+| Kontrak | Chain | Badge di explorer | Sourcify |
 |---|---|---|---|
-| `IDMReborn` | 97 | Etherscan → testnet.bscscan.com | ✅ Verified |
-| `SwapClaim` | 97 | Etherscan → testnet.bscscan.com | ✅ Verified |
-| `IDMX` | 5611 | Sourcify | ✅ `exact_match` |
-| `MissionRewards` | 5611 | Sourcify | ✅ `exact_match` |
-| `SwapInitiator` | 5611 | Sourcify | ✅ `exact_match` |
-| `ReportAttestation` | 5611 | Sourcify | 🟡 `match` (partial) |
+| `IDMReborn` | 97 | ✅ Verified di testnet.bscscan.com | — |
+| `SwapClaim` | 97 | ✅ Verified di testnet.bscscan.com | — |
+| `IDMX` | 5611 | ❌ **belum** | ✅ `exact_match` |
+| `MissionRewards` | 5611 | ❌ **belum** | ✅ `exact_match` |
+| `SwapInitiator` | 5611 | ❌ **belum** | ✅ `exact_match` |
+| `ReportAttestation` | 5611 | ❌ **belum** | 🟡 `match` (partial) |
 
-**Kenapa tidak seragam.** Etherscan menolak keempat pengiriman chain 5611
-dengan `General exception occured when attempting to insert record`, padahal
-endpoint bacanya normal dan chain 97 menerima payload yang disusun identik.
-`forge verify-contract` menghasilkan error yang sama, jadi kendalanya di
-layanan Etherscan untuk chain itu. Sourcify dipakai sebagai gantinya.
+> ⚠️ **Keempat kontrak opBNB masih tampil "not verified" di
+> opbnb-testnet.bscscan.com.** Sourcify adalah layanan verifikasi yang
+> terpisah; explorer tidak mengambil datanya dari sana. Verifikasi Sourcify
+> tetap sah dan dapat diperiksa siapa pun di
+> `https://repo.sourcify.dev/5611/<alamat>`, tetapi badge di explorer harus
+> diurus sendiri — lihat langkah manual di bawah.
+
+**Kenapa API gagal.** Etherscan menolak setiap pengiriman chain 5611 dengan
+`General exception occured when attempting to insert record`. Yang sudah
+disingkirkan sebagai penyebab:
+
+| Dugaan | Hasil uji |
+|---|---|
+| API key / dukungan chain | ❌ bukan — `getsourcecode` dan `txlist` di 5611 normal |
+| Kuota habis | ❌ bukan — 99.997 dari 100.000 kredit harian tersisa |
+| Chain berbayar | ❌ bukan — modul `account` di 5611 jalan dengan key gratis |
+| Format payload | ❌ bukan — `standard-json-input` **dan** `single-file` sama-sama ditolak |
+| Klien | ❌ bukan — `forge verify-contract` 1.7.1 error identik |
+| Bahan (bytecode) | ❌ bukan — build Foundry dicocokkan dengan on-chain, cocok |
+| Endpoint V1 lama | ❌ sudah dimatikan, dipaksa ke V2 |
+
+Kesimpulan: endpoint **tulis** (`verifysourcecode`) bermasalah di sisi
+Etherscan khusus untuk opBNB Testnet. Endpoint bacanya sehat.
+
+### Langkah manual untuk badge explorer opBNB
+
+Form web-nya berfungsi normal di browser (403 hanya muncul untuk `curl`,
+karena proteksi anti-bot). Untuk tiap kontrak:
+
+1. Buka `https://opbnb-testnet.bscscan.com/verifyContract?a=<alamat>`
+2. **Compiler Type:** Solidity (Single file) — keenam berkas tanpa `import`
+3. **Compiler Version:** `v0.8.26+commit.8a97fa7a`
+4. **License:** MIT
+5. Tempel isi berkas `.sol` yang bersangkutan apa adanya
+6. **Optimization:** Yes · **Runs:** 200
+7. **EVM Version:** `cancun`
+8. **Constructor Arguments ABI-encoded:** salin dari §3 — **buang awalan `0x`**
+   dan sambung jadi satu baris tanpa spasi
+9. `ReportAttestation` tidak punya argumen selain satu alamat; `IDMX`,
+   `MissionRewards`, `SwapInitiator` wajib diisi
+
+Kalau form juga menolak, tunggu beberapa hari dan coba API lagi — gejalanya
+konsisten dengan gangguan sementara di sisi Etherscan, bukan sesuatu yang bisa
+kita perbaiki dari sini.
 
 `ReportAttestation` hanya partial match karena di-deploy dari teks sumber yang
 tidak pernah di-commit — badan kodenya identik, hanya hash metadata yang beda.

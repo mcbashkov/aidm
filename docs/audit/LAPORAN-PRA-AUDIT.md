@@ -289,14 +289,20 @@ Verifikasi dijalankan pada 31 Agustus 2026. Keenam kontrak terverifikasi,
 tetapi lewat **dua penyedia berbeda** — dan alasannya perlu dicatat karena
 auditor akan bertanya mengapa tidak seragam.
 
-| Kontrak | Chain | Penyedia | Hasil |
+| Kontrak | Chain | Badge explorer | Sourcify |
 |---|---|---|---|
-| `IDMReborn` | BSC Testnet (97) | Etherscan V2 → testnet.bscscan.com | ✅ Verified |
-| `SwapClaim` | BSC Testnet (97) | Etherscan V2 → testnet.bscscan.com | ✅ Verified |
-| `IDMX` | opBNB Testnet (5611) | Sourcify | ✅ `exact_match` |
-| `MissionRewards` | opBNB Testnet (5611) | Sourcify | ✅ `exact_match` |
-| `SwapInitiator` | opBNB Testnet (5611) | Sourcify | ✅ `exact_match` |
-| `ReportAttestation` | opBNB Testnet (5611) | Sourcify | 🟡 `match` (partial) |
+| `IDMReborn` | BSC Testnet (97) | ✅ Verified | — |
+| `SwapClaim` | BSC Testnet (97) | ✅ Verified | — |
+| `IDMX` | opBNB Testnet (5611) | ❌ belum | ✅ `exact_match` |
+| `MissionRewards` | opBNB Testnet (5611) | ❌ belum | ✅ `exact_match` |
+| `SwapInitiator` | opBNB Testnet (5611) | ❌ belum | ✅ `exact_match` |
+| `ReportAttestation` | opBNB Testnet (5611) | ❌ belum | 🟡 `match` (partial) |
+
+**Keempat kontrak opBNB masih tampil "not verified" di explorer.** Sourcify
+adalah layanan terpisah dan explorer tidak mengambil datanya dari sana;
+verifikasinya sah dan dapat diperiksa di `repo.sourcify.dev/5611/<alamat>`,
+tetapi badge di opbnb-testnet.bscscan.com belum ada. Langkah manual untuk
+mengurusnya dicatat di `contracts/ALAMAT-DAN-CATATAN.md` §8.
 
 Kedua kontrak BSC tercatat dengan `CompilerVersion v0.8.26+commit.8a97fa7a`,
 `OptimizationUsed 1`, `Runs 200`, lisensi MIT — sesuai §1.1.
