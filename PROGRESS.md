@@ -166,15 +166,19 @@ drift, kolam 150 juta IDM utuh.
 
 ### ✅ Bisa dikerjakan tanpa menunggu siapa pun
 
-1. **Perbaikan temuan audit** — F-05 (cap bulanan salah ember) dan F-07 murni
-   kode. F-01/F-02/F-03/F-04/F-08 menunggu keputusan tata kelola kunci PO.
+1. **F-07** (SwapClaim tanpa circuit breaker) — murni kode.
 2. **Bundel `/masuk` 829 KB** — sisa terakhir M5 (§6 menjelaskan kenapa
    refaktornya ditunda dan apa penggantinya yang sudah jalan).
 3. **M6 — mainnet & beta tertutup**, setelah F-01/F-08 diputuskan.
 
+**F-05 DIPINDAH ke daftar memblokir (lihat tabel di atas).** Perbaikannya
+bukan `setCap` — kuncinya ada di dalam `claim()` (`claimedOnDay[user][bucket][day]`
+memakai `day` yang sama untuk kedua ember), jadi butuh **redeploy**. Menunggu PO
+memutuskan niatnya: dua ember harian (kalimat brief yang diperbaiki) atau
+memang bulanan (kodenya yang kurang).
+
 **Menunggu tangan PO (tidak memblokir):** uji batch 2026-08-27 (empat misi baru
-+ halaman Akun) · prompt instal PWA di Android (§7) · verifikasi source enam
-kontrak di explorer.
++ halaman Akun) · prompt instal PWA di Android (§7).
 
 ---
 
