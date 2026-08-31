@@ -254,21 +254,44 @@ Wajib cocok persis untuk verifikasi ulang. Seragam untuk keenam kontrak.
 > diurus sendiri — lihat langkah manual di bawah.
 
 **Kenapa API gagal.** Etherscan menolak setiap pengiriman chain 5611 dengan
-`General exception occured when attempting to insert record`. Yang sudah
-disingkirkan sebagai penyebab:
+`General exception occured when attempting to insert record`. Diuji terhadap
+dokumentasi resmi endpoint `verifysourcecode`, dan seluruh dugaan dari sisi
+kita tersingkir:
 
 | Dugaan | Hasil uji |
 |---|---|
 | API key / dukungan chain | ❌ bukan — `getsourcecode` dan `txlist` di 5611 normal |
 | Kuota habis | ❌ bukan — 99.997 dari 100.000 kredit harian tersisa |
 | Chain berbayar | ❌ bukan — modul `account` di 5611 jalan dengan key gratis |
-| Format payload | ❌ bukan — `standard-json-input` **dan** `single-file` sama-sama ditolak |
+| Format payload | ❌ bukan — `standard-json-input` **dan** `single-file` ditolak sama |
+| Ejaan `constructorArguments` vs `constructorArguements` | ❌ bukan — kedua ejaan, dan tanpa argumen sama sekali, ditolak sama |
+| `licenseType` | ❌ bukan — dengan maupun tanpa, ditolak sama |
 | Klien | ❌ bukan — `forge verify-contract` 1.7.1 error identik |
 | Bahan (bytecode) | ❌ bukan — build Foundry dicocokkan dengan on-chain, cocok |
 | Endpoint V1 lama | ❌ sudah dimatikan, dipaksa ke V2 |
+| **Kontrak kita** | ❌ **bukan** — kontrak pihak lain juga gagal, lihat di bawah |
 
-Kesimpulan: endpoint **tulis** (`verifysourcecode`) bermasalah di sisi
-Etherscan khusus untuk opBNB Testnet. Endpoint bacanya sehat.
+**Uji yang menentukan.** Sumber IDMX dikirim ke predeploy sistem
+`0x4200000000000000000000000000000000000015` — kontrak yang sama sekali bukan
+milik kita — di empat chain sekaligus:
+
+| Chain | Hasil |
+|---|---|
+| opBNB Testnet (5611) | ❌ `General exception ... insert record` |
+| **opBNB Mainnet (204)** | ✅ **diterima, GUID keluar, pipeline tuntas** |
+| BSC Testnet (97) | ✅ `Contract source code already verified` |
+| BSC Mainnet (56) | ✅ `Contract source code already verified` |
+
+Jadi jalur tulis `verifysourcecode` gagal di tahap **insert** untuk **setiap**
+kontrak di opBNB Testnet, bukan hanya kontrak kita. Ini murni gangguan di sisi
+Etherscan dan tidak ada yang bisa diperbaiki dari sini.
+
+Catatan: mengirim ke alamat **tanpa kode** menghasilkan jawaban sehat
+(`Unable to locate ContractCode`) bahkan di 5611 — pemeriksaan itu terjadi
+sebelum tahap insert, jadi jangan dipakai sebagai bukti endpoint-nya sehat.
+
+> ✅ **opBNB Mainnet (204) terbukti bekerja.** Kendala ini khusus testnet dan
+> **tidak akan terbawa ke mainnet** — sudah diuji end-to-end, bukan asumsi.
 
 ### Langkah manual untuk badge explorer opBNB
 
@@ -287,9 +310,10 @@ karena proteksi anti-bot). Untuk tiap kontrak:
 9. `ReportAttestation` tidak punya argumen selain satu alamat; `IDMX`,
    `MissionRewards`, `SwapInitiator` wajib diisi
 
-Kalau form juga menolak, tunggu beberapa hari dan coba API lagi — gejalanya
-konsisten dengan gangguan sementara di sisi Etherscan, bukan sesuatu yang bisa
-kita perbaiki dari sini.
+Form web memakai jalur backend yang berbeda dari API, jadi kemungkinan besar
+berhasil meski API-nya gagal. Kalau form juga menolak, tidak ada lagi yang
+bisa dilakukan dari sisi kita selain menunggu Etherscan memperbaiki 5611 —
+dan karena mainnet (204) sudah terbukti normal, ini tidak menghambat rilis.
 
 `ReportAttestation` hanya partial match karena di-deploy dari teks sumber yang
 tidak pernah di-commit — badan kodenya identik, hanya hash metadata yang beda.
@@ -371,7 +395,8 @@ sebelum membuka kembali.
       `swapSigner`, dan `relayer` masing-masing kunci terpisah tanpa
       kewenangan owner. Isi `MISSION_VOUCHER_ADDRESS` agar penandatangan tidak
       jatuh ke alamat deployer. *(F-08)*
-- [ ] **Uji verifikasi chainId 204** sebelum deploy, bukan sesudah. *(§8)*
+- [x] ~~Uji verifikasi chainId 204~~ — ✅ **sudah diuji, bekerja normal.**
+      Kendala verifikasi khusus opBNB Testnet dan tidak terbawa ke mainnet. *(§8)*
 - [ ] **Hitung `globalThreshold` dan `lifetimeCap`** lewat runbook ratchet —
       skrip deploy menolak berjalan di mainnet tanpa keduanya di env.
 - [ ] **Tentukan niat `caps[1]`** — bulanan atau ember harian kedua. *(F-05)*

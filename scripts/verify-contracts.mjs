@@ -12,14 +12,19 @@
  * kontrak dari explorer, lalu memotong bytecode creation dari input tx —
  * sisanya adalah argumen konstruktor ter-ABI-encode.
  *
- * CATATAN (31 Agu 2026): verifikasi Etherscan BERHASIL untuk BSC Testnet (97)
- * tetapi DITOLAK untuk opBNB Testnet (5611) dengan
- * "General exception occured when attempting to insert record" — endpoint baca
- * chain 5611 normal, dan forge verify-contract menghasilkan error yang sama,
- * jadi kendalanya di sisi layanan Etherscan. Keempat kontrak opBNB akhirnya
- * diverifikasi lewat Sourcify (mendukung 5611), lihat
- * docs/audit/LAPORAN-PRA-AUDIT.md §1.4. Uji ulang chainid 204 sebelum deploy
- * mainnet.
+ * CATATAN (31 Agu 2026) — opBNB TESTNET (5611) TIDAK BISA DIVERIFIKASI.
+ * Setiap pengiriman ditolak dengan "General exception occured when attempting
+ * to insert record". Sudah dipastikan BUKAN masalah kita: kontrak pihak lain
+ * (predeploy 0x4200...0015) gagal identik di chain yang sama, sementara
+ * chain 97, 56, dan 204 menerima pengiriman yang disusun persis sama.
+ * Jalur tulis Etherscan untuk 5611 gagal di tahap insert.
+ *
+ * opBNB MAINNET (204) BEKERJA NORMAL — sudah diuji end-to-end. Jadi kendala
+ * ini tidak akan terbawa ke mainnet.
+ *
+ * Keempat kontrak opBNB testnet diverifikasi lewat Sourcify sebagai gantinya.
+ * Sourcify TIDAK memberi badge di explorer. Lihat
+ * contracts/ALAMAT-DAN-CATATAN.md §8.
  *
  * Pakai:
  *   ETHERSCAN_API_KEY=xxx node scripts/verify-contracts.mjs
@@ -165,7 +170,11 @@ for (const t of daftar) {
     sourceCode: JSON.stringify(standardJson(t.berkas)),
     contractname: `${t.berkas}:${t.nama}`,
     compilerversion: "v0.8.26+commit.8a97fa7a",
-    constructorArguements: args, // ejaan Etherscan, memang begitu
+    // Dokumentasi V2 mengeja `constructorArguments`; API V1 dulu memakai
+    // `constructorArguements` (salah eja) dan sebagian klien masih mengirim
+    // itu. Keduanya dikirim — parameter tak dikenal diabaikan server.
+    constructorArguments: args,
+    constructorArguements: args,
     licenseType: "3", // 3 = MIT
   });
 

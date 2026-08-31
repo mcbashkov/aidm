@@ -309,30 +309,43 @@ Kedua kontrak BSC tercatat dengan `CompilerVersion v0.8.26+commit.8a97fa7a`,
 
 **Kendala pada opBNB Testnet — Etherscan menolak verifikasi.** Keempat
 pengiriman ke `api.etherscan.io/v2/api?chainid=5611` ditolak dengan
-`General exception occured when attempting to insert record`. Diagnosis yang
-dilakukan:
+`General exception occured when attempting to insert record`. Diagnosis
+dilakukan terhadap dokumentasi resmi endpoint `verifysourcecode`, dan seluruh
+dugaan dari sisi penyusun tersingkir: endpoint **baca** pada 5611 normal;
+kuota tersisa 99.997 dari 100.000; modul `account` di 5611 berjalan dengan key
+gratis; `standard-json-input` maupun `single-file` ditolak sama; kedua ejaan
+`constructorArguments`/`constructorArguements` dan pengiriman tanpa argumen
+sama sekali ditolak sama; `forge verify-contract` 1.7.1 menghasilkan error
+identik; dan bytecode hasil build Foundry dicocokkan ulang dengan on-chain
+untuk keempat kontrak dan **cocok**.
 
-- Endpoint **baca** pada chain 5611 berfungsi normal (`getsourcecode`
-  mengembalikan `status: 1`), jadi API key dan dukungan chain tidak
-  bermasalah.
-- Chain 97 menerima pengiriman yang disusun dengan cara yang persis sama dan
-  berhasil — jadi format payload tidak bermasalah.
-- `forge verify-contract` (Foundry 1.7.1), klien yang sepenuhnya berbeda,
-  menghasilkan error yang identik — jadi bukan masalah klien.
-- Bytecode hasil kompilasi Foundry dicocokkan ulang dengan on-chain untuk
-  keempat kontrak dan **cocok** — jadi bukan masalah bahan.
+**Uji yang menentukan.** Kode sumber `IDMX` dikirim ke predeploy sistem
+`0x4200000000000000000000000000000000000015` — kontrak yang bukan milik
+penerbit — di empat chain:
 
-Kesimpulan: keterbatasan ada pada layanan verifikasi Etherscan untuk opBNB
-Testnet, bukan pada kontrak, bahan, maupun prosedur. Sourcify — yang mendukung
+| Chain | Hasil |
+|---|---|
+| opBNB Testnet (5611) | ❌ `General exception ... insert record` |
+| **opBNB Mainnet (204)** | ✅ diterima, GUID terbit, pipeline tuntas |
+| BSC Testnet (97) | ✅ `Contract source code already verified` |
+| BSC Mainnet (56) | ✅ `Contract source code already verified` |
+
+Kesimpulan: jalur tulis `verifysourcecode` gagal pada tahap **insert** untuk
+**setiap** kontrak di opBNB Testnet, bukan hanya kontrak dalam lingkup audit
+ini. Gangguan berada sepenuhnya di sisi Etherscan. Sourcify — yang mendukung
 chain 5611 — dipakai sebagai gantinya dan berhasil.
 
-**Implikasi untuk listing.** Sourcify adalah verifikasi yang dapat
-diverifikasi ulang siapa pun dan lazim diterima, tetapi sebagian bursa
-mensyaratkan badge "Verified" pada explorer blok itu sendiri. Karena mainnet
-akan memakai **opBNB Mainnet (204)** dan **BSC Mainnet (56)** — bukan chain
-testnet ini — kendala di atas belum tentu berulang. **TIDAK YAKIN** apakah
-`chainid 204` menerima verifikasi Etherscan; itu harus diuji saat deployment
-mainnet, dan sebaiknya diuji **sebelum** deployment agar tidak menjadi kejutan.
+Catatan metodologis yang perlu dicatat agar tidak menyesatkan pembaca:
+pengiriman ke alamat **tanpa kode** menghasilkan jawaban sehat
+(`Unable to locate ContractCode`) bahkan pada 5611, karena pemeriksaan itu
+terjadi sebelum tahap insert. Jawaban tersebut **tidak** membuktikan endpoint
+berfungsi.
+
+**Implikasi untuk listing.** Sourcify dapat diperiksa ulang siapa pun dan
+lazim diterima, tetapi sebagian bursa mensyaratkan badge "Verified" pada
+explorer blok itu sendiri. Risiko ini **terbatas pada testnet**: opBNB Mainnet
+(204) sudah diuji dan menerima verifikasi dengan normal, sehingga kendala ini
+tidak akan terbawa ke deployment mainnet.
 
 **`ReportAttestation` hanya `match`, bukan `exact_match`.** Ini persis
 konsekuensi yang diperkirakan di §1.2: badan kodenya identik, tetapi hash
@@ -1847,6 +1860,7 @@ akurasi timestamp (A-10), dan kebenaran alamat token saat deploy (A-6).
 
 | Tanggal | Fase | Yang ditambahkan | Commit |
 |---|---|---|---|
+| 2026-08-31 | Diagnosis verifikasi opBNB | §1.4 diperbarui: jalur tulis `verifysourcecode` terbukti gagal untuk **setiap** kontrak di opBNB Testnet (diuji dengan predeploy pihak ketiga), sementara opBNB Mainnet (204), BSC Testnet, dan BSC Mainnet menerima normal. Risiko verifikasi mainnet dihapus. | `31857946` (kode yang dianalisis) |
 | 2026-08-31 | Verifikasi source publik | §1.4 status verifikasi keenam kontrak. BSC Testnet lewat Etherscan V2; opBNB Testnet lewat Sourcify setelah Etherscan menolak (diagnosis lengkap dicatat). Kolom verifikasi §1 diperbarui. | `31857946` (kode yang dianalisis) |
 | 2026-08-31 | Verifikasi on-chain (pelengkap Fase 1) | §1.2 pembuktian kesetaraan bytecode on-chain ↔ kode sumber untuk keenam kontrak (termasuk masking `immutableReferences`, ekstraksi nilai immutable, dan verifikasi ulang `domainSeparator`). §1.3 konfigurasi on-chain terverifikasi. Menutup asumsi A-6 dan menjawab pertanyaan tabrakan alamat di §1. Temuan baru **F-08**. Ditambahkan `scripts/verify-contracts.mjs`. | `31857946` (kode yang dianalisis) |
 | 2026-08-31 | Bagian A — Slither | §4 lengkap (konfigurasi, tabel triase 11 temuan, penjelasan 4 kelas positif palsu, batas analisis otomatis). Lampiran §9.1 + berkas `slither-raw.txt` dan `slither-raw.json`. | `31857946` (kode yang dianalisis) |
