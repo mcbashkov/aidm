@@ -341,11 +341,21 @@ pengiriman ke alamat **tanpa kode** menghasilkan jawaban sehat
 terjadi sebelum tahap insert. Jawaban tersebut **tidak** membuktikan endpoint
 berfungsi.
 
+**Pipeline mainnet diuji sampai tahap kompilasi.** Karena predeploy pada uji
+di atas sudah terverifikasi, uji diulang pada kontrak opBNB Mainnet yang belum
+terverifikasi (`0x01f9eb28…be0c`) dengan sumber yang sengaja tidak cocok.
+Hasilnya: pengiriman diterima, job masuk antrean, sumber dikompilasi dengan
+`v0.8.26+commit.8a97fa7a`, dan berakhir pada
+`Fail - Unable to verify. Compiled contract deployment bytecode does NOT match`
+— yaitu kegagalan pencocokan, bukan kegagalan sistem. Seluruh rantai pada
+chain 204 karena itu terbukti berfungsi.
+
 **Implikasi untuk listing.** Sourcify dapat diperiksa ulang siapa pun dan
 lazim diterima, tetapi sebagian bursa mensyaratkan badge "Verified" pada
 explorer blok itu sendiri. Risiko ini **terbatas pada testnet**: opBNB Mainnet
-(204) sudah diuji dan menerima verifikasi dengan normal, sehingga kendala ini
-tidak akan terbawa ke deployment mainnet.
+(204) terbukti menjalankan verifikasi sampai tuntas, dan kode sumber beserta
+setelan kompilasi yang sama sudah pernah lolos verifikasi Etherscan pada BSC
+Testnet. Tidak ada komponen yang belum teruji untuk deployment mainnet.
 
 **`ReportAttestation` hanya `match`, bukan `exact_match`.** Ini persis
 konsekuensi yang diperkirakan di §1.2: badan kodenya identik, tetapi hash

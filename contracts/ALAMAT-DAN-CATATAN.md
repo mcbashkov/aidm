@@ -290,8 +290,32 @@ Catatan: mengirim ke alamat **tanpa kode** menghasilkan jawaban sehat
 (`Unable to locate ContractCode`) bahkan di 5611 — pemeriksaan itu terjadi
 sebelum tahap insert, jadi jangan dipakai sebagai bukti endpoint-nya sehat.
 
-> ✅ **opBNB Mainnet (204) terbukti bekerja.** Kendala ini khusus testnet dan
-> **tidak akan terbawa ke mainnet** — sudah diuji end-to-end, bukan asumsi.
+**Uji lanjutan: pipeline mainnet berjalan penuh.** Predeploy pada uji di atas
+ternyata sudah terverifikasi, sehingga prosesnya berhenti di "Already
+Verified" tanpa benar-benar mengompilasi. Uji diulang pada kontrak opBNB
+Mainnet yang **belum** terverifikasi (`0x01f9eb28…be0c`, milik pihak lain),
+dengan sumber `IDMX` yang jelas tidak akan cocok:
+
+```
+kirim   → status 1, GUID 8mqyz7uram6kinsxynw2rswihfdg27bkdlkldmvuqb6xidyidf
+status  → Pending in queue
+status  → Fail - Unable to verify. Compiled contract deployment bytecode
+          does NOT match the transaction deployment bytecode.
+```
+
+Ini membuktikan seluruh rantai pada chain 204 berfungsi: insert diterima,
+job masuk antrean, sumber **benar-benar dikompilasi** dengan
+`v0.8.26+commit.8a97fa7a`, lalu bytecode dibandingkan. Satu-satunya yang gagal
+adalah pencocokannya — persis hasil yang benar ketika sumber yang dikirim
+memang bukan milik kontrak itu.
+
+Digabung dengan fakta bahwa kode sumber dan setelan kompilasi kita **sudah
+pernah lolos verifikasi Etherscan** pada BSC Testnet (`IDMReborn`,
+`SwapClaim`), tidak ada lagi komponen yang belum teruji untuk mainnet.
+
+> ✅ **opBNB Mainnet (204) terbukti bekerja penuh.** Kendala ini khusus testnet
+> dan tidak akan terbawa ke mainnet — diuji sampai tahap kompilasi, bukan
+> asumsi.
 
 ### Langkah manual untuk badge explorer opBNB
 
