@@ -54,7 +54,8 @@ perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
 | M6 mainnet & beta | ⬜ belum mulai | tokenomics terbuka, tapi **audit pra-mainnet menemukan 1 Critical + 4 High** (semua Terbuka) — lihat Titik lanjut |
 | M7 Play & App Store | ⬜ belum mulai | — |
 
-**Gerbang otomatis terkini (2026-08-31):** `test:parser` 200/200 ·
+**Gerbang otomatis terkini (2026-09-07):** `test:parser` 200/200 ·
+`test:misi` **30/30 (baru)** · `test:swap` 36/36 ·
 `test:canonical` 23/23 · `test:api` 123/123 · typecheck bersih · lint bersih ·
 build sukses **tanpa peringatan**. Uji browser produksi: 17/17 (P2-6 + guardrail)
 dan 11/11 (perbaikan "Menyiapkan…" + identitas ber-cache).
@@ -183,8 +184,8 @@ drift, kolam 150 juta IDM utuh.
 sisanya. Dua yang pertama SELESAI. **Jangan sentuh jalur Midtrans** — PO sedang
 menunggu Business review dan melanjutkan di sandbox.
 
-1. **F-05** — perbaiki `claim()` + redeploy testnet. Berikutnya.
-2. **F-07** (SwapClaim tanpa circuit breaker) — murni kode.
+1. ~~**F-05** + plafon global~~ ✅ **SELESAI** (§7f) — sisa: balik env Vercel.
+2. **F-07** (SwapClaim tanpa circuit breaker) — murni kode. **Berikutnya.**
 3. **Satu run penuh `test:api`** — angka 123/123 yang sah terakhir tercatat
    2026-08-22, sebelum batch UI, batch langganan, dan batch dompet.
 4. **Bundel `/masuk` 829 KB** — sisa terakhir M5 (§6 menjelaskan kenapa
@@ -1065,6 +1066,62 @@ laporan.
       di klaster galat Vercel, dan itu tetap bergantung pada notifikasi Vercel
       yang aktif. Alarm yang benar-benar mengejar Anda butuh kredensial Anda —
       keputusan PO, ditunda sadar sampai versi ini terbukti jalan.
+
+### 7f. ~~F-05 + plafon global — satu redeploy~~ ✅ **SELESAI 2026-09-07** (menunggu env)
+
+Keputusan PO: **niatnya memang bulanan, kodenya yang kurang.** Ember bulanan
+ada untuk reward besar (segel +150, profil +50); kalau reset harian, orang bisa
+mengklaim reward "bulanan" tiap hari — itu bukan cap. Akibatnya plafon darurat
+sesungguhnya **700/hari, bukan 250**, dan cap on-chain justru hanya berguna
+ketika backend gagal atau kunci bocor — tepat saat selisih 450 itu nyata.
+
+- [x] **Ember 1 diakumulasi per bulan kalender UTC+7** (`monthUtc7`, konversi
+      civil-from-days standar). Mapping `claimedOnDay` diganti nama jadi
+      `claimedInPeriod` — nama lamanya sudah menjadi pernyataan yang salah.
+      **Bulan kalender, bukan 30 hari bergulir**: kunci periode backend adalah
+      `YYYY-MM` WIB, dan jendela yang melenceng akan menolak klaim yang backend
+      anggap sah — pengguna melihat penolakan tanpa sebab.
+- [x] **Plafon global harian 500.000 IDMX** (opsi C). ≈7× maksimum SAH harian
+      (100 user × (250+450) = 70.000), di dalam rentang 4–8× yang ditetapkan
+      PO. `dailyGlobalCap = 0` **ditolak** konstruktor dan setter: nol berarti
+      semua klaim mati, dan itu disengaja — plafon yang diam-diam berhenti
+      melindungi saat salah setel adalah mode kegagalan yang bersembunyi paling
+      lama.
+- [x] **Mode penolakan layanan dibuat BERSUARA.** Ongkos plafon global adalah
+      penyalahguna bisa menolak reward semua orang sampai besok. Relayer kini
+      `console.error` saat sisa plafon turun di bawah seperlima — kalau mode
+      ini senyap, kita mengulangi persis kelas kegagalan §7d.
+- [x] **`pnpm test:misi`** (baru) — anvil, **30 lulus 0 gagal**. Termasuk batas
+      kalender WIB (17:00Z tanggal 31 = pergantian bulan, bukan 00:00Z) dan
+      tahun kabisat 2028.
+- [x] **Uji regresinya diverifikasi lewat MUTASI.** Cacat F-05 dikembalikan
+      satu baris; uji yang bersangkutan **gagal 3 dari 3**, lalu kontrak
+      dipulihkan. Uji regresi yang tidak pernah gagal tidak membuktikan apa
+      pun — ia hanya membuat kita merasa terlindungi.
+- [x] **`--idmx=0x…` di `deploy:rewards`.** Skrip semula SELALU men-deploy IDMX
+      baru; menjalankannya untuk memperbaiki kontrak reward akan menghasilkan
+      **dua IDMX beredar bersamaan** — kesalahan yang jauh lebih mahal daripada
+      bug yang diperbaiki, dan tidak bisa dibatalkan.
+- [x] **Ter-deploy & terverifikasi on-chain:**
+      `0x3fffdca557fb235fbc3d2516cb0e94910e8a520d`, terdanai 100 juta IDMX,
+      `token` menunjuk IDMX yang SAMA, `periodOf(1)` → 2026-09 WIB. Rincian:
+      `contracts/ALAMAT-DAN-CATATAN.md` §8b.
+- [x] **Konsekuensi tata kelola dicatat di laporan audit** (§0.3.1), sesuai
+      syarat PO: `setDailyGlobalCap` adalah kapabilitas istimewa **ketujuh** dan
+      memperburuk F-08, jadi ia **wajib** masuk multisig sejak multisig itu
+      dirancang. Plafon yang bisa ditinggikan sendiri oleh satu kunci panas
+      tidak membatasi apa pun terhadap kunci itu.
+
+- [ ] **🧑 Balik `NEXT_PUBLIC_MISSION_REWARDS_ADDRESS` di Vercel** ke
+      `0x3fffdca557fb235fbc3d2516cb0e94910e8a520d`. Kontrak lama tetap melayani
+      sampai saat itu — tidak ada yang mendesak.
+
+      ⚠️ **HANYA ketika nol `mission_claims` berstatus non-terminal**
+      (`queued`/`sending`/`submitted`/`signed`). Rekonsiliasi relayer membaca
+      `nonceUsed` dari kontrak yang ditunjuk env; baris yang sudah dibayar
+      kontrak LAMA akan dijawab `false` oleh yang BARU, dikembalikan ke
+      antrean, lalu **dibayar dua kali**. Baris `confirmed` aman.
+      **Diperiksa 2026-09-07: 13 baris, semuanya `confirmed`, nol non-terminal.**
 
 ### 8. 🤖 M5 — premium di balik LANGGANAN
 

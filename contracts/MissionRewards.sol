@@ -52,8 +52,27 @@ interface IERC20 {
  * higher-value reward does not consume the allowance meant for everyday
  * rewards: bucket 0 is the daily allowance, bucket 1 is the monthly one.
  *
- * All day boundaries follow Western Indonesia Time (UTC+7), the timezone of
- * the application's users.
+ * Each bucket accumulates over ITS OWN period: bucket 0 resets every day,
+ * bucket 1 every calendar month. Audit finding F-05 was that both accumulated
+ * per day, which meant the "monthly" cap reset every night and a monthly
+ * reward could be claimed daily — a ceiling that never held. The calendar
+ * month is deliberate rather than a rolling 30 days: the backend's period key
+ * is `YYYY-MM` in WIB, and a contract window that did not line up with it
+ * would reject legitimate claims at the seam.
+ *
+ * On top of the per-user buckets there is a GLOBAL daily ceiling across all
+ * users. It is not a Sybil defence and must not be mistaken for one — this
+ * contract cannot tell a thousand addresses held by a thousand people from a
+ * thousand held by one, because that is a question about identity and identity
+ * lives in the backend. What the ceiling does is bound the blast radius: if
+ * `voucherSigner` ever leaks, the loss is capped at one day's ceiling instead
+ * of the entire pool. The accepted cost is a denial-of-service mode — someone
+ * who exhausts the global ceiling denies everyone else their rewards until the
+ * next day — which is the better of the two failures at this scale, and is
+ * documented as a conscious trade rather than an oversight.
+ *
+ * All day and month boundaries follow Western Indonesia Time (UTC+7), the
+ * timezone of the application's users.
  */
 contract MissionRewards {
     struct Voucher {
@@ -86,10 +105,25 @@ contract MissionRewards {
     /// Per-bucket cap, denominated in the token's smallest unit.
     uint256[2] public caps;
 
+    /**
+     * Ceiling on everything paid out in one UTC+7 day, across all users and
+     * both buckets.
+     *
+     * A value of zero blocks every claim. That is deliberate and is NOT a
+     * "disabled" switch: a ceiling that silently stops protecting when
+     * misconfigured is the failure mode that hides longest, whereas a ceiling
+     * that stops all payouts is noticed within minutes and fixed. The
+     * constructor therefore requires a non-zero value.
+     */
+    uint256 public dailyGlobalCap;
+
     /// user => nonce => already redeemed
     mapping(address => mapping(uint256 => bool)) public nonceUsed;
-    /// user => bucket => UTC+7 day => amount already claimed that day
-    mapping(address => mapping(uint8 => mapping(uint256 => uint256))) public claimedOnDay;
+    /// user => bucket => period index (day for bucket 0, month for bucket 1)
+    /// => amount already claimed in that period
+    mapping(address => mapping(uint8 => mapping(uint256 => uint256))) public claimedInPeriod;
+    /// UTC+7 day => amount paid out to everyone that day
+    mapping(uint256 => uint256) public claimedGlobalOnDay;
 
     event Claimed(
         address indexed user,
@@ -100,6 +134,7 @@ contract MissionRewards {
     );
     event SignerChanged(address indexed signer);
     event CapChanged(uint8 indexed bucket, uint256 cap);
+    event DailyGlobalCapChanged(uint256 cap);
     event PausedSet(bool paused);
     event OwnershipTransferStarted(address indexed to);
     event OwnershipTransferred(address indexed from, address indexed to);
@@ -113,6 +148,7 @@ contract MissionRewards {
     error InvalidSignature();
     error UnknownBucket();
     error CapExceeded();
+    error GlobalCapExceeded();
     error ZeroAmount();
     error TransferFailed();
 
@@ -125,16 +161,21 @@ contract MissionRewards {
         address token_,
         address voucherSigner_,
         uint256 dailyCap,
-        uint256 monthlyCap
+        uint256 monthlyCap,
+        uint256 dailyGlobalCap_
     ) {
         if (token_ == address(0) || voucherSigner_ == address(0)) {
             revert ZeroAddress();
         }
+        // Zero would brick every claim. Refusing it here means the mistake is
+        // caught at deployment instead of by the first user to press Claim.
+        if (dailyGlobalCap_ == 0) revert ZeroAmount();
         owner = msg.sender;
         token = IERC20(token_);
         voucherSigner = voucherSigner_;
         caps[0] = dailyCap;
         caps[1] = monthlyCap;
+        dailyGlobalCap = dailyGlobalCap_;
 
         domainSeparator = keccak256(
             abi.encode(
@@ -151,6 +192,7 @@ contract MissionRewards {
         emit SignerChanged(voucherSigner_);
         emit CapChanged(0, dailyCap);
         emit CapChanged(1, monthlyCap);
+        emit DailyGlobalCapChanged(dailyGlobalCap_);
     }
 
     /* ── Administration ──────────────────────────────────────────────────── */
@@ -165,6 +207,23 @@ contract MissionRewards {
         if (bucket > 1) revert UnknownBucket();
         caps[bucket] = cap;
         emit CapChanged(bucket, cap);
+    }
+
+    /**
+     * Raises or lowers the global daily ceiling.
+     *
+     * GOVERNANCE — recorded here because it is a consequence accepted with
+     * open eyes, not a side effect. This function adds a seventh privileged
+     * capability to a contract that audit finding F-08 already flags for
+     * concentrating six of them in a single address. It must therefore be
+     * placed under the same multisig as `owner` from the moment that multisig
+     * is designed, not migrated to it afterwards: a ceiling whose height one
+     * hot key can change on its own bounds nothing against that key.
+     */
+    function setDailyGlobalCap(uint256 cap) external onlyOwner {
+        if (cap == 0) revert ZeroAmount();
+        dailyGlobalCap = cap;
+        emit DailyGlobalCapChanged(cap);
     }
 
     function setPaused(bool paused_) external onlyOwner {
@@ -197,6 +256,47 @@ contract MissionRewards {
         return (timestamp + UTC7_OFFSET) / 1 days;
     }
 
+    /**
+     * Calendar month index in UTC+7, as `year * 12 + (month - 1)`.
+     *
+     * A rolling 30-day window would have been three lines shorter and wrong in
+     * a way that only shows up at the seam: the backend keys monthly missions
+     * by `YYYY-MM` in WIB, so a contract window drifting against the calendar
+     * would start rejecting claims the backend considers perfectly valid, and
+     * the user would see a refusal with no explanation behind it.
+     *
+     * This is the standard civil-from-days conversion (Howard Hinnant's), with
+     * the era arithmetic kept unsigned because timestamps here are always
+     * after 1970.
+     */
+    function monthUtc7(uint256 timestamp) public pure returns (uint256) {
+        uint256 z = (timestamp + UTC7_OFFSET) / 1 days + 719468;
+        uint256 era = z / 146097;
+        uint256 doe = z - era * 146097;
+        uint256 yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+        uint256 y = yoe + era * 400;
+        uint256 doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+        uint256 mp = (5 * doy + 2) / 153;
+        uint256 m = mp < 10 ? mp + 3 : mp - 9;
+        if (m <= 2) y += 1;
+        return y * 12 + (m - 1);
+    }
+
+    /// The period a bucket accumulates over: day for bucket 0, calendar month
+    /// for bucket 1. Single source of truth — `claim()` and
+    /// `remainingAllowance()` must never be able to disagree about which
+    /// window a user is in, because that disagreement is invisible until
+    /// someone is refused a reward the UI told them they had.
+    function periodOf(uint8 bucket, uint256 timestamp) public pure returns (uint256) {
+        return bucket == 0 ? dayUtc7(timestamp) : monthUtc7(timestamp);
+    }
+
+    /// Remaining global allowance for the current UTC+7 day, across all users.
+    function remainingGlobalAllowance() external view returns (uint256) {
+        uint256 used = claimedGlobalOnDay[dayUtc7(block.timestamp)];
+        return used >= dailyGlobalCap ? 0 : dailyGlobalCap - used;
+    }
+
     function hashVoucher(Voucher calldata v) public view returns (bytes32) {
         return keccak256(
             abi.encodePacked(
@@ -221,7 +321,7 @@ contract MissionRewards {
     /// UTC+7 day.
     function remainingAllowance(address user, uint8 bucket) external view returns (uint256) {
         if (bucket > 1) return 0;
-        uint256 used = claimedOnDay[user][bucket][dayUtc7(block.timestamp)];
+        uint256 used = claimedInPeriod[user][bucket][periodOf(bucket, block.timestamp)];
         return used >= caps[bucket] ? 0 : caps[bucket] - used;
     }
 
@@ -241,15 +341,25 @@ contract MissionRewards {
             revert InvalidSignature();
         }
 
-        uint256 day = dayUtc7(block.timestamp);
-        uint256 used = claimedOnDay[v.user][v.bucket][day];
+        // Bucket 0 accumulates per day, bucket 1 per calendar month (F-05).
+        uint256 period = periodOf(v.bucket, block.timestamp);
+        uint256 used = claimedInPeriod[v.user][v.bucket][period];
         if (used + v.amount > caps[v.bucket]) revert CapExceeded();
 
-        // Effects before interaction: the nonce and the accumulator are
+        // The global ceiling is checked AFTER the per-user cap so that a user
+        // who is over their own allowance is told exactly that, rather than
+        // being handed a system-wide error that describes someone else's
+        // behaviour.
+        uint256 day = dayUtc7(block.timestamp);
+        uint256 usedGlobal = claimedGlobalOnDay[day];
+        if (usedGlobal + v.amount > dailyGlobalCap) revert GlobalCapExceeded();
+
+        // Effects before interaction: the nonce and both accumulators are
         // written first, so the token transfer below cannot be used to
         // re-enter this function before the state reflects the payout.
         nonceUsed[v.user][v.nonce] = true;
-        claimedOnDay[v.user][v.bucket][day] = used + v.amount;
+        claimedInPeriod[v.user][v.bucket][period] = used + v.amount;
+        claimedGlobalOnDay[day] = usedGlobal + v.amount;
 
         // The nonce is already burned above, so a transfer that failed by
         // returning false (instead of reverting) would silently consume the

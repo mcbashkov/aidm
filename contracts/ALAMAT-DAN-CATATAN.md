@@ -24,7 +24,8 @@ lihat §9 untuk cara memverifikasi ulang sendiri.
 | Kontrak | Alamat | Peran |
 |---|---|---|
 | `IDMX` | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` | Token reward in-app, 50 miliar, tanpa mint |
-| `MissionRewards` | `0xbc6f412024cee7e8117bd1ee35759d027fce11e5` | Membayar reward misi atas voucher EIP-712 |
+| `MissionRewards` ⚠️ **LAMA** | `0xbc6f412024cee7e8117bd1ee35759d027fce11e5` | Masih dipakai produksi sampai env Vercel dibalik. Mengandung cacat F-05. |
+| `MissionRewards` ✅ **BARU** | `0x3fffdca557fb235fbc3d2516cb0e94910e8a520d` | Perbaikan F-05 + plafon global. Ter-deploy 2026-09-07, terdanai 100 juta IDMX, **belum dipakai** |
 | `SwapInitiator` | `0xa4f00039540dfdd040635a17090bf4e797168b63` | Satu-satunya pintu keluar IDMX (burn) |
 | `ReportAttestation` | `0xa83c201c3759fa1a92bd17dbebb46b85029a84c4` | Segel hash laporan; tidak memegang token |
 
@@ -90,7 +91,7 @@ supply   50000000000000000000000000000        (50 miliar × 1e18)
   0000000000000000000000000000000000000000a18f07d736b90be550000000
 ```
 
-### `MissionRewards` — `constructor(address token_, address voucherSigner_, uint256 dailyCap, uint256 monthlyCap)`
+### `MissionRewards` — `constructor(address token_, address voucherSigner_, uint256 dailyCap, uint256 monthlyCap, uint256 dailyGlobalCap_)`
 ```
 token_         0xccf9551396cb559e5c2caa1006485d051b7cf09a   (IDMX)
 voucherSigner_ 0x1842498b06c146b5360d4b8d863a04a7c33fb2f3
@@ -181,7 +182,8 @@ Dibaca on-chain; semuanya masih sama dengan nilai deploy (tidak ada drift).
 | Parameter | Kontrak | Nilai |
 |---|---|---|
 | `caps[0]` — ember harian | `MissionRewards` | 250 IDMX |
-| `caps[1]` — ember "bulanan" | `MissionRewards` | 450 IDMX |
+| `caps[1]` — ember bulanan | `MissionRewards` | 450 IDMX |
+| `dailyGlobalCap` | `MissionRewards` **baru** | 500.000 IDMX/hari, seluruh pengguna |
 | `MIN_SWAP` | `SwapInitiator` | 500 IDMX (konstanta) |
 | `weeklyCap` | `SwapInitiator` | 2.000 IDMX / dompet / minggu WIB |
 | `globalThreshold` | `SwapInitiator` | 100.000 IDMX (breaker auto-pause) |
@@ -353,6 +355,53 @@ tidak pernah di-commit — badan kodenya identik, hanya hash metadata yang beda.
 node scripts/verify-contracts.mjs              # keenam kontrak
 node scripts/verify-contracts.mjs SwapClaim    # satu saja
 ```
+
+---
+
+## 8b. Redeploy MissionRewards 2026-09-07 — F-05 + plafon global
+
+**Alamat baru: `0x3fffdca557fb235fbc3d2516cb0e94910e8a520d`** (opBNB Testnet
+5611). Tx pembuatan
+`0xf7763773ff17bf259b2ec38b1768c108be311adb8371e825d3ba7df3b9d16fae`.
+
+Dibaca ulang dari rantai setelah deploy — bukan diasumsikan dari skrip:
+
+| | |
+|---|---|
+| `token` | `0xCCF9…F09A` — **IDMX yang sama**, bukan token baru |
+| `owner` / `voucherSigner` | `0x1842498B…FB2F3` (tidak berubah) |
+| `caps[0]` / `caps[1]` | 250 / 450 IDMX |
+| `dailyGlobalCap` | 500.000 IDMX |
+| kolam | 100.000.000 IDMX |
+| `periodOf(0)` = `dayUtc7` | 20703 ✓ |
+| `periodOf(1)` = `monthUtc7` | 24320 → **2026-09** WIB ✓ |
+
+IDMX **tidak** di-deploy ulang. `pnpm deploy:rewards` semula selalu mencetak
+token baru; flag `--idmx=0x…` ditambahkan supaya redeploy kontrak reward tidak
+menghasilkan dua IDMX beredar bersamaan — kesalahan yang jauh lebih mahal
+daripada bug yang sedang diperbaiki, dan tidak bisa dibatalkan.
+
+### ⚠️ Cara membalik env — dan satu bahaya yang harus dihindari
+
+Ganti `NEXT_PUBLIC_MISSION_REWARDS_ADDRESS` di Vercel ke alamat baru. Kontrak
+lama tetap melayani sampai saat itu, jadi tidak ada tergesa-gesa.
+
+**Balik env HANYA ketika nol baris `mission_claims` berstatus non-terminal**
+(`queued` · `sending` · `submitted` · `signed`). Alasannya bukan kehati-hatian
+umum, melainkan jalur kode yang spesifik: rekonsiliasi relayer memutuskan
+apakah sebuah klaim sudah dibayar dengan membaca `nonceUsed` **dari kontrak
+yang ditunjuk env**. Baris yang sudah dibayar kontrak LAMA akan dijawab
+`false` oleh kontrak BARU, dikembalikan ke antrean, lalu **dibayar kedua
+kalinya**. Baris `confirmed` aman — ia tidak pernah dikunjungi ulang.
+
+Diperiksa 2026-09-07: 13 baris, **semuanya `confirmed`**, nol non-terminal.
+Aman dibalik kapan saja selama tidak ada klaim sedang berjalan.
+
+Sesudah env dibalik, sisa float di kontrak lama (±99.999.340 IDMX) bisa
+ditarik ke treasury lewat `sweep(treasury, saldo)` — tindakan `owner`, tidak
+mendesak, dan sengaja TIDAK dilakukan otomatis: mengosongkan kontrak yang
+mungkin masih melayani permintaan di tengah jalan adalah cara membuat klaim
+gagal tanpa sebab yang bisa dipahami pengguna.
 
 ---
 

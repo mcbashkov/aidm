@@ -86,6 +86,8 @@ export interface HasilTickMisi {
   dikembalikanKeAntrean: number;
   /** Sisa IDMX di kontrak reward saat kolamnya menipis; `null` selama sehat. */
   kolamMenipis: string | null;
+  /** Sisa plafon global harian saat menipis; `null` selama sehat. */
+  plafonGlobalMenipis: string | null;
 }
 
 const KOSONG: HasilTickMisi = {
@@ -96,6 +98,7 @@ const KOSONG: HasilTickMisi = {
   dipulihkan: 0,
   dikembalikanKeAntrean: 0,
   kolamMenipis: null,
+  plafonGlobalMenipis: null,
 };
 
 /**
@@ -112,6 +115,26 @@ const AMBANG_KOLAM_IDMX = 1_000_000n;
 const IDMX_ABI = parseAbi([
   "function balanceOf(address owner) view returns (uint256)",
 ]);
+
+const REWARDS_ABI = parseAbi([
+  "function remainingGlobalAllowance() view returns (uint256)",
+  "function dailyGlobalCap() view returns (uint256)",
+]);
+
+/**
+ * Ambang peringatan plafon GLOBAL harian.
+ *
+ * Plafon global membatasi radius ledakan bila `voucherSigner` bocor, dan
+ * ongkosnya satu mode kegagalan baru: siapa pun yang menghabiskannya menolak
+ * reward SEMUA orang sampai besok. Mode itu tidak boleh senyap — kalau ia
+ * senyap, kita mengulangi persis kelas kegagalan yang memakan sepuluh hari di
+ * jalur dompet: sistem yang berhenti bekerja tanpa satu pun yang berteriak.
+ *
+ * Seperlima adalah ambang yang masih menyisakan waktu bertindak: pada ukuran
+ * beta, sisa 100.000 IDMX masih lebih besar daripada seluruh permintaan sah
+ * satu hari, jadi peringatannya tiba sebelum ada pengguna yang ditolak.
+ */
+const AMBANG_PLAFON_GLOBAL_BAGIAN = 5n;
 
 const EVENT_CLAIMED = parseAbiItem(
   "event Claimed(address indexed user, uint256 indexed missionId, uint256 amount, uint256 nonce, uint8 bucket)",
@@ -388,6 +411,36 @@ export async function jalankanTickMisi(
           // Gagal membaca saldo bukan alasan menggagalkan tick.
           console.error("[misi-relayer] gagal membaca kolam reward:", err);
         }
+      }
+
+      // Plafon global — sama seperti kolam, hanya relevan setelah ada yang
+      // benar-benar terkirim. Dibaca dari rantai, bukan dihitung dari DB:
+      // yang menentukan klaim berikutnya ditolak atau tidak adalah angka di
+      // kontrak, dan menyalinnya ke sisi kita hanya menciptakan dua kebenaran.
+      try {
+        const [sisaGlobal, plafon] = (await Promise.all([
+          publik.readContract({
+            address: kontrak,
+            abi: REWARDS_ABI,
+            functionName: "remainingGlobalAllowance",
+          }),
+          publik.readContract({
+            address: kontrak,
+            abi: REWARDS_ABI,
+            functionName: "dailyGlobalCap",
+          }),
+        ])) as [bigint, bigint];
+        if (plafon > 0n && sisaGlobal < plafon / AMBANG_PLAFON_GLOBAL_BAGIAN) {
+          hasil.plafonGlobalMenipis = formatEther(sisaGlobal);
+          console.error(
+            `[misi-relayer] PLAFON GLOBAL HARIAN MENIPIS: sisa ${hasil.plafonGlobalMenipis} dari ${formatEther(plafon)} IDMX. Bila habis, klaim SETIAP pengguna ditolak sampai besok — periksa apakah ini lonjakan sah atau penyalahgunaan sebelum menaikkan plafon.`,
+          );
+        }
+      } catch (err) {
+        // Kontrak lama belum punya fungsi ini; itu bukan alasan menggagalkan
+        // tick, dan bukan pula alasan diam — dicatat supaya ketahuan kalau
+        // deployment-nya tertinggal.
+        console.error("[misi-relayer] gagal membaca plafon global:", err);
       }
     }
 

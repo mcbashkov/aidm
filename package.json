@@ -15,6 +15,7 @@
     "test:api": "node scripts/api-test.mjs",
     "test:canonical": "node scripts/canonical-test.mjs",
     "test:swap": "node scripts/swap-contracts-test.mjs",
+    "test:misi": "node scripts/mission-rewards-test.mjs",
     "deploy:attestation": "node scripts/deploy-attestation.mjs",
     "deploy:rewards": "node scripts/deploy-rewards.mjs",
     "deploy:idm-bsc": "node scripts/deploy-idm-bsc.mjs",

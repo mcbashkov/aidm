@@ -4,14 +4,23 @@
  *   pnpm deploy:rewards                # testnet (default M4)
  *   pnpm deploy:rewards --mainnet      # mainnet (setelah audit ringan!)
  *   pnpm deploy:rewards --dry-run      # kompilasi saja, tanpa kirim
+ *   pnpm deploy:rewards --idmx=0x…     # PAKAI ULANG IDMX yang sudah ada,
+ *                                      # hanya MissionRewards yang di-deploy
  *
  * Butuh di .env.local:
  *   DEPLOYER_PRIVATE_KEY          — deployer (pegang tBNB/BNB untuk gas).
  *   MISSION_VOUCHER_ADDRESS       — opsional; alamat penandatangan voucher.
  *                                   Default = alamat deployer.
  *
+ * `--idmx=` ada karena redeploy MissionRewards (mis. perbaikan F-05) TIDAK
+ * boleh mencetak token kedua. Tanpa flag ini skrip selalu men-deploy IDMX
+ * baru, dan menjalankannya untuk sekadar memperbaiki kontrak reward akan
+ * menghasilkan dua IDMX yang beredar bersamaan — kesalahan yang jauh lebih
+ * mahal daripada bug yang sedang diperbaiki, dan tidak bisa dibatalkan.
+ *
  * Urutan yang dilakukan skrip:
  *   1. Deploy IDMX — SELURUH pasokan dicetak ke deployer (treasury).
+ *      DILEWATI bila `--idmx=` diberikan.
  *   2. Deploy MissionRewards — menunjuk IDMX + penandatangan + kedua cap.
  *   3. Transfer dana awal IDMX ke MissionRewards supaya klaim pertama bisa
  *      langsung dibayar. Tanpa langkah ini kontrak berdiri tapi setiap klaim
@@ -40,6 +49,12 @@ try {
 
 const keMainnet = process.argv.includes("--mainnet");
 const dryRun = process.argv.includes("--dry-run");
+const argIdmx = process.argv.find((a) => a.startsWith("--idmx="));
+const idmxLama = argIdmx ? argIdmx.slice("--idmx=".length).trim() : null;
+if (idmxLama && !/^0x[0-9a-fA-F]{40}$/.test(idmxLama)) {
+  console.error(`✗ --idmx bukan alamat yang sah: ${idmxLama}`);
+  process.exit(1);
+}
 
 /* ── Parameter ekonomi (§8.1 / §7.6) ─────────────────────────────────────── */
 // Angka FINAL dari docs/PERINTAH-AGEN-FINAL.md §0 — jangan ditebak ulang.
@@ -52,6 +67,31 @@ const CAP_HARIAN = 250n; // ember 0 — misi harian & mingguan
 // Ember 1 naik 150 → 450: segel bulanan (150) + runtun 30 hari (300) kini
 // berbagi ember yang sama, dan keduanya bisa diklaim di bulan yang sama.
 const CAP_BULANAN = 450n; // ember 1 — misi bulanan, jatah terpisah
+
+/**
+ * Plafon GLOBAL harian — seluruh pengguna, kedua ember (F-03 / usulan opsi C).
+ *
+ * Bukan pertahanan Sybil, dan tidak boleh disebut begitu: kontrak tidak bisa
+ * membedakan seribu alamat milik seribu orang dari seribu milik satu orang.
+ * Gunanya membatasi radius ledakan — bila `voucherSigner` bocor, kerugiannya
+ * berhenti di satu hari, bukan seluruh kolam.
+ *
+ * Ukurannya diturunkan dari maksimum SAH, bukan dari rata-rata: 100 user beta
+ * × (250 harian + 450 bulanan) = 70.000 IDMX pada hari terburuk yang masih
+ * jujur — yaitu bila semua orang mengklaim jatah bulanannya di hari yang sama.
+ * 500.000 ≈ 7× angka itu, di dalam rentang 4–8× yang ditetapkan PO. Longgar
+ * supaya pengguna sah tidak pernah menyentuhnya (mode penolakan layanan hanya
+ * bisa dipicu penyalahguna), ketat supaya kunci yang bocor menguras 0,5% kolam
+ * per hari alih-alih seluruhnya.
+ *
+ * WAJIB disetel ulang sebelum skala naik dari 100 user. Yang menaikkannya
+ * adalah `setDailyGlobalCap`, dan peran itu HARUS berada di bawah multisig
+ * yang sama dengan `owner` sejak multisig itu dirancang — plafon yang bisa
+ * ditinggikan sendiri oleh satu kunci panas tidak membatasi apa pun terhadap
+ * kunci itu. Dicatat di docs/audit/LAPORAN-PRA-AUDIT.md sebagai konsekuensi
+ * yang diterima sadar.
+ */
+const CAP_GLOBAL_HARIAN = 500_000n;
 const WEI = 10n ** 18n;
 
 /* ── 1. Kompilasi ────────────────────────────────────────────────────────── */
@@ -168,20 +208,51 @@ async function deploy(nama, c, args) {
   return receipt.contractAddress;
 }
 
-const alamatIdmx = await deploy("IDMX", idmx, [
-  account.address,
-  PASOKAN_IDMX * WEI,
-]);
+let alamatIdmx;
+if (idmxLama) {
+  // Dipastikan benar-benar ada kodenya sebelum dipakai. Alamat salah ketik
+  // akan melewati semua langkah berikutnya tanpa keluhan, lalu mendanai
+  // MissionRewards dengan token yang tidak ada — dan kegagalannya baru
+  // terlihat saat pengguna pertama menekan Klaim.
+  const kode = await publik.getBytecode({ address: idmxLama });
+  if (!kode || kode === "0x") {
+    console.error(`✗ Tidak ada kontrak di ${idmxLama} pada ${chain.name}.`);
+    process.exit(1);
+  }
+  alamatIdmx = idmxLama;
+  console.log(`  ✓ IDMX dipakai ulang: ${alamatIdmx} (tidak deploy token baru)`);
+} else {
+  alamatIdmx = await deploy("IDMX", idmx, [account.address, PASOKAN_IDMX * WEI]);
+}
 const alamatRewards = await deploy("MissionRewards", rewards, [
   alamatIdmx,
   signer,
   CAP_HARIAN * WEI,
   CAP_BULANAN * WEI,
+  CAP_GLOBAL_HARIAN * WEI,
 ]);
 
 /* ── 3. Danai kontrak reward ─────────────────────────────────────────────── */
 
 console.log(`→ Mendanai MissionRewards dengan ${DANA_AWAL_IDMX} IDMX…`);
+if (idmxLama) {
+  const saldoTreasury = await publik.readContract({
+    address: alamatIdmx,
+    abi: idmx.abi,
+    functionName: "balanceOf",
+    args: [account.address],
+  });
+  if (saldoTreasury < DANA_AWAL_IDMX * WEI) {
+    console.error(
+      `✗ Saldo IDMX treasury ${saldoTreasury} < ${DANA_AWAL_IDMX * WEI} yang dibutuhkan.`,
+    );
+    console.error(
+      "  Kontrak reward LAMA masih memegang dananya — sweep dulu ke treasury,",
+    );
+    console.error("  atau turunkan DANA_AWAL_IDMX untuk deployment ini.");
+    process.exit(1);
+  }
+}
 const txDana = await wallet.writeContract({
   address: alamatIdmx,
   abi: idmx.abi,
@@ -202,7 +273,11 @@ const explorer = chain.blockExplorers?.default.url ?? "";
 console.log(`explorer IDMX   : ${explorer}/address/${alamatIdmx}`);
 console.log(`explorer Rewards: ${explorer}/address/${alamatRewards}\n`);
 console.log("Salin ke .env.local & environment Vercel:");
-console.log(`  NEXT_PUBLIC_IDMX_ADDRESS=${alamatIdmx}`);
+console.log(
+  idmxLama
+    ? `  NEXT_PUBLIC_IDMX_ADDRESS=${alamatIdmx}  (TIDAK BERUBAH — dipakai ulang)`
+    : `  NEXT_PUBLIC_IDMX_ADDRESS=${alamatIdmx}`,
+);
 console.log(`  NEXT_PUBLIC_MISSION_REWARDS_ADDRESS=${alamatRewards}`);
 console.log(`  AIDM_REWARD_CHAIN=${keMainnet ? "opbnb" : "opbnb-testnet"}`);
 console.log(

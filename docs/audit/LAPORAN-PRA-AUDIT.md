@@ -37,7 +37,7 @@ Status sampai akhir Fase 1 + analisis otomatis.
 |---|---|---|
 | Critical | 1 | F-01 |
 | High | 4 | F-02, F-03, F-04, F-08 |
-| Medium | 2 | F-05, F-06 |
+| Medium | 2 | F-05 *(diperbaiki 2026-09-07, lihat §0.3)*, F-06 |
 | Low | 0 | — |
 | Informational | 1 | F-07 |
 | **Total** | **8** | |
@@ -55,9 +55,77 @@ Fase 2 (sapuan kelas kerentanan), Fase 3 (invarian ekonomi), dan Fase 4
 
 ### 0.3 Status perbaikan
 
-Semua temuan berstatus **Terbuka**. Belum ada baris kode yang diubah — fase
-ini sengaja baca-saja, agar auditor pihak ketiga menerima kode dalam keadaan
-yang sama seperti yang dianalisis di sini.
+**Diperbarui 2026-09-07.** Fase 1 sengaja baca-saja agar auditor pihak ketiga
+menerima kode dalam keadaan yang sama seperti yang dianalisis di sini. Sejak
+itu PO memutuskan satu temuan diperbaiki lebih dulu, dan keputusannya dicatat
+di sini supaya auditor menerima kode berikut alasan perubahannya.
+
+| ID | Status | Catatan |
+|---|---|---|
+| F-05 | 🟢 **DIPERBAIKI** (belum di-redeploy) | Niatnya memang **bulanan**; kodenya yang kurang. Keputusan PO 2026-09-07. |
+| F-03 | 🟡 **DIMITIGASI SEBAGIAN** | Plafon global harian ditambahkan — membatasi radius, bukan menutup temuan. Lihat §0.3.1. |
+| Lainnya | **Terbuka** | F-01, F-02, F-04, F-06, F-07, F-08 tidak disentuh. |
+
+**F-05 — apa yang berubah.** `claimedOnDay[user][bucket][day]` memakai indeks
+HARI untuk kedua ember, sehingga cap "bulanan" reset tiap malam dan reward
+bulanan bisa diklaim setiap hari. Ember 1 kini diakumulasi per **bulan
+kalender UTC+7** (`monthUtc7`, konversi civil-from-days standar); mapping-nya
+diganti nama menjadi `claimedInPeriod` karena namanya yang lama sudah menjadi
+pernyataan yang salah. Bulan kalender dipilih, bukan jendela 30 hari bergulir,
+karena kunci periode di backend adalah `YYYY-MM` WIB — jendela yang melenceng
+dari kalender akan menolak klaim yang backend anggap sah, dan pengguna melihat
+penolakan tanpa sebab.
+
+Konsekuensi angka yang membuat ini layak didahulukan: dengan cacatnya, plafon
+darurat sesungguhnya **700 IDMX/hari per alamat**, bukan 250 seperti tertulis
+di dokumen — dan cap on-chain justru hanya berguna ketika backend gagal atau
+kunci bocor, yaitu tepat saat selisih 450 itu nyata.
+
+Diuji `pnpm test:misi` (anvil, 30 pemeriksaan). Uji F-05 diverifikasi lewat
+**mutasi**: cacatnya dikembalikan satu baris, dan uji yang bersangkutan gagal
+3 dari 3 — uji regresi yang tidak pernah gagal tidak membuktikan apa pun.
+
+### 0.3.1 Plafon global harian — konsekuensi tata kelola yang DITERIMA SADAR
+
+Ditambahkan bersama perbaikan F-05, atas keputusan PO 2026-09-07, sebagai
+mitigasi parsial F-03.
+
+**Apa yang TIDAK diklaim.** Ini bukan pertahanan Sybil. Kontrak tidak bisa
+membedakan seribu alamat milik seribu orang dari seribu milik satu orang —
+itu pertanyaan identitas, dan identitas hidup di backend. Cap per alamat tetap
+sepenuhnya bergantung pada backend (asumsi A-4, §3.3), dan temuan F-03 **tetap
+terbuka**. Yang berubah hanya besar kerugian bila `voucherSigner` bocor:
+terbatas pada satu hari plafon global, bukan seluruh float.
+
+**Ongkos yang diterima:** mode penolakan layanan baru. Siapa pun yang
+menghabiskan plafon global menolak reward SEMUA pengguna sampai hari
+berikutnya. Pada ukuran beta pertukaran ini menguntungkan — plafon 500.000
+IDMX ≈ 7× maksimum sah harian (100 user × (250 + 450) = 70.000), sehingga
+pengguna sah secara praktis tidak bisa memicunya. Agar mode ini tidak senyap,
+relayer memperingatkan lewat `console.error` saat sisa plafon turun di bawah
+seperlima.
+
+**KONSEKUENSI TATA KELOLA — inti bagian ini.** `setDailyGlobalCap` menambah
+**kapabilitas istimewa ketujuh** pada kontrak yang temuan **F-08** sudah
+tandai karena memusatkan enam di antaranya pada satu alamat. Ini bukan efek
+samping yang terlewat; ia diterima dengan mata terbuka, dengan syarat yang
+ditetapkan PO saat menyetujuinya:
+
+> Peran `setDailyGlobalCap` **wajib** berada di bawah multisig yang sama dengan
+> `owner` **sejak multisig itu dirancang**, bukan dimigrasikan ke sana
+> belakangan.
+
+Alasannya bukan kerapian: plafon yang tingginya bisa diubah sendiri oleh satu
+kunci panas **tidak membatasi apa pun terhadap kunci itu**. Penyerang yang
+memegang `owner` tinggal menaikkan plafon sebelum menguras. Jadi mitigasi F-03
+ini hanya bernilai sejauh syarat di atas dipenuhi; tanpa itu ia menambah
+permukaan serang tanpa menambah perlindungan. **Setiap rencana multisig yang
+tidak menyebut `setDailyGlobalCap` harus dianggap belum selesai.**
+
+`ZeroAmount` ditolak baik di konstruktor maupun setter: nol berarti seluruh
+klaim mati, dan itu disengaja. Plafon yang diam-diam berhenti melindungi saat
+salah setel adalah mode kegagalan yang bersembunyi paling lama; plafon yang
+menghentikan semua pembayaran ketahuan dalam hitungan menit.
 
 ### 0.4 Metodologi & alat
 
@@ -1207,7 +1275,9 @@ dibatasi dengan jujur. Slither **secara struktural tidak dapat** melihat:
 - **Asumsi kepercayaan off-chain.** Seluruh §3.3 tidak terlihat oleh alat
   statik apa pun.
 - **Logika bisnis.** Apakah ember `caps[1]` seharusnya bulanan atau harian
-  (F-05) adalah pertanyaan niat, bukan pertanyaan kode.
+  (F-05) adalah pertanyaan niat, bukan pertanyaan kode. **Niatnya dijawab PO
+  2026-09-07: bulanan** — dan begitu niatnya diketahui, ia menjadi pertanyaan
+  kode, lalu diperbaiki (§0.3).
 
 Karena itu, ketiadaan temuan Slither **tidak boleh dikutip** sebagai bukti
 keamanan kontrak.
