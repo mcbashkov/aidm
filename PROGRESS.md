@@ -4,7 +4,7 @@ Pelacak pekerjaan lintas sesi. **README** menjelaskan produk & cara menjalankan;
 berkas ini menjawab satu pertanyaan saja: *apa yang sudah beres, apa berikutnya,
 dan siapa yang mengerjakan.*
 
-Diperbarui: **2026-09-07** · cabang `main`
+Diperbarui: **2026-09-08** · cabang `main`
 
 > ⚠️ **Sisi token digantikan `docs/PERINTAH-AGEN-FINAL.md`.** Untuk apa pun yang
 > menyangkut IDMX/IDM Reborn/swap/kurs/tokenomics, dokumen itu sumber kebenaran
@@ -186,6 +186,7 @@ menunggu Business review dan melanjutkan di sandbox.
 
 1. ~~**F-05** + plafon global~~ ✅ **SELESAI** (§7f) — sisa: balik env Vercel.
 2. **F-07** (SwapClaim tanpa circuit breaker) — murni kode. **Berikutnya.**
+   *(hapus akun §7g & "Mode demo" §7h sudah selesai 2026-09-08)*
 3. **Satu run penuh `test:api`** — angka 123/123 yang sah terakhir tercatat
    2026-08-22, sebelum batch UI, batch langganan, dan batch dompet.
 4. **Bundel `/masuk` 829 KB** — sisa terakhir M5 (§6 menjelaskan kenapa
@@ -1122,6 +1123,109 @@ ketika backend gagal atau kunci bocor — tepat saat selisih 450 itu nyata.
       kontrak LAMA akan dijawab `false` oleh yang BARU, dikembalikan ke
       antrean, lalu **dibayar dua kali**. Baris `confirmed` aman.
       **Diperiksa 2026-09-07: 13 baris, semuanya `confirmed`, nol non-terminal.**
+
+### 7g. ~~Hapus akun tidak menghapus akun~~ ✅ **SELESAI 2026-09-08**
+
+Ditemukan PO saat uji akun baru. Dialog menjanjikan penghapusan permanen;
+kenyataannya akun lahir kembali satu detik kemudian berikut alamat dompet yang
+sama. **Masalah kepatuhan UU PDP**, bukan sekadar bug — janji penghapusan yang
+tidak dipenuhi, di menu yang bersebelahan dengan "Kebijakan privasi".
+
+**Akar penyebabnya BUKAN cascade.** Cascade-nya lengkap — 18 tabel, diaudit
+dari foreign key sungguhan, bukan dari komentar. Yang tidak pernah disentuh
+adalah identitas Privy. Sesi Privy di browser tetap hidup sesudah DELETE,
+`/masuk` menyinkronkannya ulang diam-diam, dan server membuat ulang akun dari
+DID yang masih sah.
+
+Dibuktikan dua arah: log produksi menunjukkan **tiga** `DELETE /api/akun`
+masing-masing disusul `POST /api/auth/session` dalam ≤2 detik; dan umur baris
+membuktikan datanya memang musnah — DID Privy dibuat 23:03:05 sedangkan baris
+`users` yang hidup dibuat 23:05:20, **dua menit lebih muda**. Yang PO lihat
+adalah baris baru, bukan baris lama yang bertahan.
+
+Sinkronisasi diam-diam itu **fitur yang sengaja dipertahankan** (§6): sesi
+Privy hidup + cookie AIDM kedaluwarsa harus pulih tanpa login ulang. Syarat itu
+tidak membedakan cookie kedaluwarsa dari akun yang baru dihapus.
+
+- [x] **`privy.deleteUser(did)` — dan inilah pembeda STRUKTURALnya.** Sesi yang
+      cookie-nya sekadar kedaluwarsa masih memegang DID sah, jadi sinkronisasi
+      normalnya utuh; akun yang dihapus tidak punya DID lagi, sehingga
+      kebangkitannya mustahil menurut konstruksi — bukan menurut timing. Tanpa
+      tombstone, tanpa pengenal yang harus disimpan (yang justru akan jadi
+      pelanggaran PDP baru).
+- [x] **Urutan disengaja: Privy dulu, baris lokal kemudian.** Dua sistem tidak
+      bisa jadi satu transaksi, jadi yang bisa dipilih hanya inkonsistensi mana
+      yang lebih ringan. Privy gagal → nol yang dihapus, dilaporkan gagal.
+      Kebalikannya menghasilkan keadaan PALING buruk: pengguna melihat "akun
+      terhapus" sementara identitas & dompetnya hidup — satu-satunya kegagalan
+      yang BERBOHONG kepadanya.
+- [x] **`deleteUser` diuji terisolasi lebih dulu** dengan identitas buangan:
+      `importUser` + wallet → `deleteUser` → `getUserById` menjawab 404.
+      Kredensial kita memang berwenang menghapus — itu tidak diasumsikan.
+- [x] **`logout()` Privy di klien sebelum DELETE.** Lapis yang paling cepat
+      bekerja; server tetap penjaga sesungguhnya.
+- [x] **Migrasi 0030 — `subscription_orders` CASCADE → SET NULL.** UU PDP dan
+      kewajiban pembukuan UU KUP saling tarik; jalan keluarnya memisahkan
+      CATATAN dari ORANGNYA. Yang tersisa hanya nominal, tanggal, status, dan
+      `aidm-<uuid v4 acak>` — **diperiksa, bukan diasumsikan**: seandainya
+      order id diturunkan dari `user_id`, migrasi ini akan menyisakan pengenal
+      yang masih menunjuk orang. `subscriptions` tetap cascade: itu hak akses,
+      bukan catatan keuangan.
+- [x] **Kasus baru yang ditimbulkan migrasi itu ikut ditutup:** pembayaran yang
+      lunas SETELAH akun dihapus. Status tetap naik ke `paid` (uangnya nyata),
+      langganan tidak diperpanjang, dan `console.error` meminta pengembalian
+      dana oleh manusia. Tanpa penjaga ini `perpanjangLangganan()` menerima
+      `user_id` null.
+- [x] **Saldo IDMX — diperingatkan, TIDAK ditolak** (keputusan PO: menolak
+      penghapusan karena ada saldo berarti menyandera hak PDP dengan token).
+      Peringatan tidak bisa dilewati saat saldo > 0 — checkbox terpisah dari
+      frasa HAPUS — menyebut ANGKANYA, menawarkan "Ekspor wallet dulu", dan
+      mengatakan yang sebenarnya: **IDMX-nya tidak lenyap**, dompetnya tetap
+      milik pengguna bila kuncinya disimpan. Saldo yang GAGAL dibaca sengaja
+      tidak memicu peringatan: menahan hak seseorang atas dasar angka yang tak
+      pernah kita lihat adalah menebak ke arah yang merugikan dia.
+- [x] **Dialog dijujurkan.** Menyebut yang benar-benar hilang (transaksi,
+      laporan, profil, dompet, akun), lalu dua hal yang tidak bisa dijanjikan
+      hilang: sidik jari laporan tersegel permanen di blockchain —
+      **disampaikan sebagai FITUR**, karena segel yang bisa dihapus belakangan
+      tidak akan pernah bisa membuktikan apa pun — dan catatan pembayaran
+      ter-anonimkan sesuai kewajiban pajak.
+- [x] **`/akun-dihapus`** — halaman konfirmasi, rute PUBLIK (cookie sudah
+      hilang saat dibuka; `/akun-dihapus` tidak tertangkap `PROTECTED` karena
+      pencocokannya `${p}/`, bukan awalan longgar). Sebelumnya pengguna
+      dilempar ke `/masuk`, layar yang sama persis seperti sebelum ia punya
+      akun: tindakan paling tidak bisa dibatalkan di aplikasi ini berakhir
+      tanpa satu kata konfirmasi.
+- [x] **`privyTidakDitemukan()` diangkat** ke `lib/privy/identitas.ts` — satu
+      definisi, dipakai pengisian dompet susulan DAN penghapusan akun.
+
+**Uji ujung-ke-ujung terhadap PRODUKSI, 10/10** dengan identitas Privy nyata
+sekali pakai: users hilang · wallets hilang · transaksi hilang · catatan
+pembayaran BERTAHAN dengan `user_id` NULL dan nominal utuh · identitas Privy
+menjawab 404. Data uji dibersihkan; produksi sesudahnya 18 user, 18 wallet,
+0 tanpa wallet.
+
+### 7h. ~~"Mode demo" pada profil kosong~~ ✅ **SELESAI 2026-09-08**
+
+Label itu melayani DUA keadaan berbeda — profil kosong dan gagal baca — lalu
+mengucapkan kalimat yang hanya benar untuk keadaan KETIGA (server tanpa
+kredensial) pada keduanya. P2-5 menutup kasus *memuat* dan meninggalkan kasus
+*profil kosong*, yang justru dilihat setiap pendaftar baru: kalimat pertama
+yang ia baca tentang akunnya sendiri adalah pernyataan bahwa akunnya tidak
+nyata.
+
+- [x] Profil kosong → **"Profil belum lengkap"**.
+- [x] Gagal baca → tanpa label; kartu dompet sudah mengatakannya sekali
+      berikut tombol Coba lagi.
+- [x] **Skeleton hanya untuk memuat.** Sebelumnya setiap label kosong digambar
+      sebagai skeleton, jadi gagal-baca tampil sebagai shimmer berkedip
+      selamanya — kelas bug "Menyiapkan…" tanpa akhir yang sudah dicabut §7c.
+
+"Mode demo" tetap hidup di layar yang memang mode demo (Riset, Catat, Riwayat).
+
+**Ekspor wallet: BUKAN bug** — diperiksa PO, berfungsi normal. Modal milik
+Privy, iframe terisolasi, kunci privat tidak pernah melewati kode kita. Jangan
+disentuh.
 
 ### 8. 🤖 M5 — premium di balik LANGGANAN
 
