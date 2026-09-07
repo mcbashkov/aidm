@@ -100,6 +100,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, catatan: "sudah diproses" });
     }
 
+    // `user_id` NULL = pemiliknya menghapus akunnya sementara pembayaran ini
+    // masih berjalan (migrasi 0030 sengaja menyimpan barisnya sebagai catatan
+    // keuangan anonim). Uangnya nyata dan sudah masuk, jadi statusnya TETAP
+    // dinaikkan ke `paid` di atas — yang tidak bisa dilakukan hanyalah
+    // memperpanjang langganan milik orang yang sudah tidak ada.
+    //
+    // Dicatat sebagai galat, bukan diam-diam dilewati: ini uang yang diterima
+    // tanpa layanan yang bisa diberikan, dan satu-satunya penyelesaian yang
+    // benar adalah pengembalian dana oleh manusia.
+    if (!pesanan.user_id) {
+      console.error(
+        `[langganan] PEMBAYARAN MASUK UNTUK AKUN YANG SUDAH DIHAPUS (order=${orderId}, Rp${pesanan.harga_idr}). Layanan tidak bisa diberikan — proses pengembalian dana lewat dashboard Midtrans.`,
+      );
+      return NextResponse.json({ ok: true, catatan: "akun sudah dihapus" });
+    }
+
     const berakhir = await perpanjangLangganan(
       supa,
       pesanan.user_id,

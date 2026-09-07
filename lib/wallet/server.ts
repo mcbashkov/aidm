@@ -46,6 +46,7 @@ import {
   ALAMAT_EVM,
   alamatDariAkun,
   buatDompetPrivy,
+  privyTidakDitemukan,
   type AkunPrivy,
 } from "@/lib/privy/identitas";
 
@@ -81,15 +82,6 @@ const NEGATIF_TTL_MS = 10_000;
  *  instance serverless yang bisa hilang kapan saja. */
 type StatusJeda = Exclude<HasilWallet["status"], "ada">;
 const jedaPrivy = new Map<string, { sampai: number; status: StatusJeda }>();
-
-/** Privy menjawab "tidak ada user seperti itu" — jawaban pasti, bukan galat. */
-function tidakDitemukan(err: unknown): boolean {
-  if (!err || typeof err !== "object") return false;
-  const status = (err as { status?: unknown }).status;
-  if (status === 404) return true;
-  const pesan = err instanceof Error ? err.message : "";
-  return /not\s*found|404/i.test(pesan);
-}
 
 /**
  * Baca alamat dompet user. Bila barisnya belum ada, tanya Privy sekali lalu
@@ -133,7 +125,7 @@ export async function alamatWalletUser(
     // "Privy tidak mengenal DID ini" bukan gangguan Privy — jawabannya pasti,
     // dan artinya memang tidak ada dompet. Menjawabnya 503 "coba lagi" akan
     // menyuruh orang menunggu sesuatu yang tidak akan datang.
-    if (tidakDitemukan(err)) {
+    if (privyTidakDitemukan(err)) {
       console.warn(`[wallet] DID tidak dikenal Privy (uid=${uid})`);
       jedaPrivy.set(uid, {
         sampai: Date.now() + NEGATIF_TTL_MS,

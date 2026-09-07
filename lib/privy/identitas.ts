@@ -19,6 +19,23 @@ import type { PrivyClient } from "@privy-io/server-auth";
 
 export const ALAMAT_EVM = /^0x[0-9a-fA-F]{40}$/;
 
+/**
+ * Privy menjawab "tidak ada user seperti itu" — jawaban PASTI, bukan gangguan.
+ *
+ * Perbedaan itu menentukan perilaku di tiga tempat sekaligus, dan karena itu ia
+ * tinggal di sini alih-alih disalin: pengisian dompet susulan memakainya untuk
+ * membedakan "belum siap" dari "Privy sedang tidak bisa ditanya", dan
+ * penghapusan akun memakainya untuk memperlakukan identitas yang memang sudah
+ * lenyap sebagai keberhasilan. Dua salinan aturan ini akan menyimpang, dan
+ * menyimpangnya tidak terlihat sampai seseorang terjebak.
+ */
+export function privyTidakDitemukan(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  if ((err as { status?: unknown }).status === 404) return true;
+  const pesan = err instanceof Error ? err.message : "";
+  return /not\s*found|404/i.test(pesan);
+}
+
 /** Bentuk minimal akun Privy yang kita butuhkan — bukan seluruh tipe SDK. */
 export interface AkunPrivy {
   email?: { address?: string } | null;
