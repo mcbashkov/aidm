@@ -59,13 +59,24 @@ export default function AkunPage() {
   const namaUsaha = me?.user?.nama_usaha;
   // v3.0: identitas pengguna dibaca dari earner_type (§7.1); `role` lama hanya
   // dipakai sebagai cadangan untuk akun yang dibuat sebelum pivot.
-  const peranLabel = memuat
+  // "Mode demo" DICABUT dari sini (2026-09-08). Label itu melayani dua keadaan
+  // yang sama sekali berbeda — pengguna sungguhan yang profilnya belum diisi,
+  // dan pembacaan yang gagal — lalu mengucapkan kalimat yang hanya benar untuk
+  // keadaan ketiga (server tanpa kredensial) pada keduanya. P2-5 menutup kasus
+  // MEMUAT tapi meninggalkan kasus PROFIL KOSONG, dan kasus itulah yang dilihat
+  // setiap akun baru: kalimat pertama yang dibaca pengguna tentang akunnya
+  // sendiri adalah pernyataan bahwa akunnya tidak nyata.
+  //
+  // Gagal baca sengaja TIDAK punya label di sini. Kartu dompet di bawah sudah
+  // mengatakannya sekali berikut tombol Coba lagi; mengulanginya di header
+  // berarti satu kegagalan diumumkan dua kali dengan kalimat berbeda.
+  const peranLabel = memuat || gagalBaca
     ? null
     : me?.user?.earner_type
       ? earnerLabel(me.user.earner_type)
       : me?.user?.role
         ? "Pemilik usaha"
-        : "Mode demo";
+        : "Profil belum lengkap";
 
   const alamat = me?.wallet?.address ?? null;
 
@@ -100,14 +111,19 @@ export default function AkunPage() {
     <div className="space-y-section">
       <header>
         <h1>{namaUsaha || "Akun"}</h1>
-        {peranLabel ? (
+        {/* Skeleton hanya untuk MEMUAT. Sebelumnya setiap `peranLabel` kosong
+            digambar sebagai skeleton, sehingga pembacaan yang gagal tampil
+            sebagai shimmer yang berkedip selamanya — "memuat" yang tidak
+            pernah selesai, kelas bug yang sama dengan "Menyiapkan…" tanpa
+            akhir yang sudah dicabut di §7c. */}
+        {memuat ? (
+          <Skeleton className="mt-1.5 h-4 w-40" />
+        ) : peranLabel ? (
           <p className="mt-1 text-[13px] text-ink-subtle">
             {peranLabel}
             {kota ? ` · ${kota}` : ""}
           </p>
-        ) : (
-          <Skeleton className="mt-1.5 h-4 w-40" />
-        )}
+        ) : null}
       </header>
 
       <WalletCard
