@@ -23,6 +23,21 @@
  * penjaga itu ada karena `POST /api/auth/session` bertubi-tubi pernah
  * membekukan tab. Masalahnya bukan penjaga itu, melainkan tidak adanya jalur
  * susulan — dan jalur itulah yang ditambahkan di sini.
+ *
+ * ── PEMBARUAN 2026-09-07 ────────────────────────────────────────────────────
+ * Diagnosis 2026-08-26 di atas ternyata hanya separuh cerita, dan separuh yang
+ * salah itu memakan sepuluh hari. Kalimat "Privy membuat embedded wallet
+ * secara asinkron" mengandaikan dompetnya PASTI jadi, cepat atau lambat. Sejak
+ * modal Privy diganti UI kita (2026-08-28), tidak ada lagi apa pun yang
+ * membuatnya — tujuh pengguna berturut-turut mendaftar tanpa dompet, dan
+ * berkas ini dengan patuh menjawab "belum siap" untuk sesuatu yang tidak akan
+ * pernah siap.
+ *
+ * Berkas ini tidak rusak; asumsinya yang rusak. Pengisian susulan hanya bisa
+ * menyalin alamat yang SUDAH ADA di Privy ke Postgres. Karena itu sekarang ia
+ * juga MEMBUAT dompetnya bila memang belum ada, lewat `buatDompetPrivy()` —
+ * fungsi yang sama yang dipanggil `POST /api/auth/session`, supaya tidak
+ * pernah ada dua definisi tentang bagaimana sebuah dompet lahir.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -30,6 +45,7 @@ import { getPrivyServerClient } from "@/lib/privy/server";
 import {
   ALAMAT_EVM,
   alamatDariAkun,
+  buatDompetPrivy,
   type AkunPrivy,
 } from "@/lib/privy/identitas";
 
@@ -44,16 +60,27 @@ export type HasilWallet =
   | { status: "galat-privy" };
 
 /**
- * Ingatan singkat untuk user yang Privy-nya BELUM punya dompet.
+ * Ingatan singkat untuk user yang panggilan Privy-nya baru saja buntu.
  *
- * `/api/wallet/saldo` dipanggil pada setiap navigasi; tanpa ini, user yang
- * memang belum punya dompet akan memicu satu panggilan Privy per permintaan.
- * TTL-nya sengaja pendek: jendela yang sedang dilayani adalah detik-detik
- * pertama sebuah akun, dan pengguna yang menunggu dompetnya jadi lalu menekan
- * Klaim lagi tidak boleh dijawab dari ingatan basi.
+ * `/api/wallet/saldo` dipanggil pada setiap navigasi; tanpa ini, satu user
+ * yang bermasalah memicu satu panggilan Privy per permintaan. TTL-nya sengaja
+ * pendek: jendela yang sedang dilayani adalah detik-detik pertama sebuah akun,
+ * dan pengguna yang menekan Klaim lagi tidak boleh dijawab dari ingatan basi.
+ *
+ * Statusnya IKUT disimpan, bukan cuma waktunya. Sejak pembuatan dompet pindah
+ * ke server, "Privy tidak mengenal DID ini" dan "pembuatan dompet gagal"
+ * adalah dua keadaan yang berbeda jauh — yang pertama pasti dan permanen, yang
+ * kedua sementara dan layak dicoba lagi. Satu peta yang hanya menyimpan waktu
+ * akan meratakan keduanya jadi satu jawaban, dan meratakan dua sebab menjadi
+ * satu gejala persis kesalahan yang membuat kelas bug ini luput sepuluh hari.
  */
 const NEGATIF_TTL_MS = 10_000;
-const belumSiap = new Map<string, number>();
+
+/** Hanya keadaan TANPA alamat yang boleh diingat — "ada" sengaja tidak muat di
+ *  sini, karena alamat yang sudah ada tinggal di Postgres, bukan di memori satu
+ *  instance serverless yang bisa hilang kapan saja. */
+type StatusJeda = Exclude<HasilWallet["status"], "ada">;
+const jedaPrivy = new Map<string, { sampai: number; status: StatusJeda }>();
 
 /** Privy menjawab "tidak ada user seperti itu" — jawaban pasti, bukan galat. */
 function tidakDitemukan(err: unknown): boolean {
@@ -92,8 +119,8 @@ export async function alamatWalletUser(
   // galat: cookie sesi lama memang bisa tidak membawanya.
   if (!did) return { status: "belum-siap" };
 
-  const ingat = belumSiap.get(uid);
-  if (ingat && ingat > Date.now()) return { status: "belum-siap" };
+  const ingat = jedaPrivy.get(uid);
+  if (ingat && ingat.sampai > Date.now()) return { status: ingat.status };
 
   const privy = getPrivyServerClient();
   if (!privy) return { status: "belum-siap" };
@@ -108,7 +135,10 @@ export async function alamatWalletUser(
     // menyuruh orang menunggu sesuatu yang tidak akan datang.
     if (tidakDitemukan(err)) {
       console.warn(`[wallet] DID tidak dikenal Privy (uid=${uid})`);
-      belumSiap.set(uid, Date.now() + NEGATIF_TTL_MS);
+      jedaPrivy.set(uid, {
+        sampai: Date.now() + NEGATIF_TTL_MS,
+        status: "belum-siap",
+      });
       return { status: "belum-siap" };
     }
     // Sisanya: Privy tidak bisa DITANYA — bukan "user ini belum punya dompet".
@@ -116,9 +146,29 @@ export async function alamatWalletUser(
     return { status: "galat-privy" };
   }
 
+  // Privy menjawab, dan memang belum ada dompet. Sampai 2026-09-07 kondisi ini
+  // berakhir di sini: `belum-siap`, HTTP 200, `{ idmx: 0 }`, tanpa satu baris
+  // log — dan karena tidak ada apa pun di hulu yang membuat dompet, ia bukan
+  // keadaan sementara melainkan permanen. Sekarang keadaan ini yang MEMICU
+  // pembuatannya, memakai fungsi yang sama dengan `POST /api/auth/session`.
   if (!alamat) {
-    belumSiap.set(uid, Date.now() + NEGATIF_TTL_MS);
-    return { status: "belum-siap" };
+    const hasil = await buatDompetPrivy(privy, did);
+    if (hasil.status === "ada") {
+      alamat = hasil.alamat;
+    } else {
+      console.error(
+        `[wallet] PEMBUATAN DOMPET GAGAL (uid=${uid}): ${hasil.sebab}`,
+      );
+      // `galat-privy`, BUKAN `belum-siap`. Bedanya sampai ke layar: yang
+      // pertama membuat `/api/wallet/saldo` menjawab `idmx: null` ("belum
+      // tahu"), yang kedua menjawab `idmx: 0` — angka nol yang pasti tentang
+      // uang yang sebenarnya tidak pernah kita periksa.
+      jedaPrivy.set(uid, {
+        sampai: Date.now() + NEGATIF_TTL_MS,
+        status: "galat-privy",
+      });
+      return { status: "galat-privy" };
+    }
   }
 
   // ON CONFLICT (user_id): dua permintaan bersamaan dari user yang sama
@@ -156,6 +206,6 @@ export async function alamatWalletUser(
     return { status: "galat-privy" };
   }
 
-  belumSiap.delete(uid);
+  jedaPrivy.delete(uid);
   return { status: "ada", alamat, diisiSusulan: true };
 }

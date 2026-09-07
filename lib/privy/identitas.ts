@@ -101,3 +101,71 @@ export async function bacaIdentitas(
     return null;
   }
 }
+
+/**
+ * Hasil pemastian dompet. `gagal` sengaja dibedakan dari "belum ada": yang
+ * pertama berarti kita TIDAK TAHU dan harus berkata begitu, yang kedua adalah
+ * keadaan yang tidak boleh lagi bertahan sedetik pun setelah fungsi ini
+ * dipanggil.
+ */
+export type HasilBuatDompet =
+  | { status: "ada"; alamat: `0x${string}`; dibuat: boolean }
+  | { status: "gagal"; sebab: string };
+
+/**
+ * Pastikan seorang pengguna punya embedded wallet — buat bila belum ada.
+ *
+ * KENAPA INI DI SERVER, dan kenapa ia tidak boleh dipindahkan ke komponen.
+ *
+ * Sampai 2026-08-28 tidak ada satu pun baris kode kita yang membuat dompet.
+ * Yang membuatnya adalah MODAL Privy, lewat `embeddedWallets.createOnLogin`
+ * di `lib/privy/provider.tsx` — dan `createOnLogin` dieksekusi oleh layar
+ * modal itu sendiri, bukan oleh SDK secara umum. Ketika modal diganti UI
+ * Indonesia kita (P1-4, commit `1156194`), pembuatan dompet ikut hilang
+ * bersamanya. Tidak ada yang menyadarinya selama sepuluh hari: tujuh pengguna
+ * berturut-turut mendaftar tanpa dompet, dan setiap permintaan tetap dijawab
+ * `200`.
+ *
+ * Pelajarannya bukan "modalnya jangan diganti". Pelajarannya: sebuah invarian
+ * produk — §7.1 "punya akun = punya wallet" — tidak boleh ditegakkan oleh
+ * komponen tampilan, karena komponen tampilan boleh diganti kapan saja oleh
+ * orang yang tidak tahu ada invarian menumpang di sana. Di server ia berada
+ * pada jalur yang HARUS dilewati setiap sesi, dan menghapusnya menuntut
+ * seseorang menghapus baris yang menyebut dompet secara eksplisit.
+ *
+ * Mode aplikasi ini `user-controlled-server-wallets-only` dan
+ * `requireUserOwnedRecoveryOnCreate` mati, jadi pembuatannya satu panggilan
+ * API tanpa UI apa pun — tidak ada layar berbahasa Inggris yang muncul, dan
+ * syarat P1-4 tetap utuh.
+ */
+export async function buatDompetPrivy(
+  privy: PrivyClient,
+  did: string,
+): Promise<HasilBuatDompet> {
+  try {
+    const akun = (await privy.createWallets({
+      userId: did,
+      createEthereumWallet: true,
+    })) as AkunPrivy;
+    const alamat = alamatDariAkun(akun);
+    if (alamat) return { status: "ada", alamat, dibuat: true };
+    // Privy menjawab sukses tapi tidak ada alamat yang bisa dibaca. Jangan
+    // menebak: ini persis kelas kegagalan yang baru saja kita bayar mahal.
+    return { status: "gagal", sebab: "createWallets sukses tanpa alamat" };
+  } catch (err) {
+    // Dua permintaan bersamaan dari satu pengguna sama-sama melihat "belum ada"
+    // dan sama-sama memanggil ini; yang kalah menerima galat "sudah punya
+    // dompet". Itu bukan kegagalan — dompetnya justru ADA sekarang. Satu-
+    // satunya cara membedakannya dari kegagalan sungguhan adalah bertanya
+    // ulang, bukan mencocokkan teks pesan galat yang bisa berubah diam-diam.
+    try {
+      const akun = (await privy.getUserById(did)) as AkunPrivy;
+      const alamat = alamatDariAkun(akun);
+      if (alamat) return { status: "ada", alamat, dibuat: false };
+    } catch {
+      // Jatuh ke laporan gagal di bawah — sebab aslinya yang dilaporkan.
+    }
+    const sebab = err instanceof Error ? err.message : String(err);
+    return { status: "gagal", sebab };
+  }
+}

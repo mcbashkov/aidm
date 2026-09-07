@@ -4,6 +4,7 @@ import { isRelayerConfigured, jalankanTick } from "@/lib/swap/relayer-server";
 import { jalankanTickMisi } from "@/lib/missions/relayer";
 import { isKlaimConfigured } from "@/lib/missions/klaim-server";
 import { cocokCronSecret, TIDAK_DITEMUKAN } from "@/lib/api/cron";
+import { auditInvarianDompet } from "@/lib/pemantauan/invarian-dompet";
 
 export const runtime = "nodejs";
 // Satu tick memindai log lintas ribuan blok lalu menandatangani; anggaran
@@ -88,6 +89,15 @@ async function tick(req: Request) {
       keluar.misiGagal = true;
     }
   }
+
+  // Audit invarian §7.1 — menumpang cron ini, membatasi diri sekali per jam.
+  // Sengaja di LUAR kedua cabang `isRelayerConfigured` / `isKlaimConfigured`:
+  // invarian "punya akun = punya wallet" tidak ada urusannya dengan apakah
+  // relayer swap sedang jalan, dan alarm yang ikut diam bersama fitur lain
+  // adalah alarm yang paling mungkin diam justru ketika dibutuhkan. Ia tetap
+  // berada di bawah penjaga 501 gabungan — di lingkungan tanpa kunci relayer
+  // sama sekali, tidak ada cron yang memanggil rute ini untuk dijaga.
+  keluar.dompet = await auditInvarianDompet(supa);
 
   return NextResponse.json(keluar);
 }

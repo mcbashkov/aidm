@@ -4,7 +4,11 @@ import { getPrivyServerClient } from "@/lib/privy/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSessionValue } from "@/lib/auth/session-cookie";
 import { SESSION_COOKIE, SESSION_MAX_AGE } from "@/lib/auth/constants";
-import { bacaIdentitas, type MetodeMasuk } from "@/lib/privy/identitas";
+import {
+  bacaIdentitas,
+  buatDompetPrivy,
+  type MetodeMasuk,
+} from "@/lib/privy/identitas";
 
 export const runtime = "nodejs";
 
@@ -21,8 +25,10 @@ const METODE: MetodeMasuk[] = ["google", "email", "sms"];
  * Tukar access token Privy → sesi AIDM.
  * 1) Verifikasi token (server-side) → dapat DID (bukti identitas).
  * 2) Baca identitas dari Privy memakai DID itu → email, telepon, dompet.
- * 3) Upsert users + wallets (service-role) → 100% akun punya wallet (AC §7.1).
- * 4) Set cookie sesi ber-HMAC.
+ * 3) Bila dompetnya belum ada, BUAT di sini (`buatDompetPrivy`) — bukan di
+ *    komponen mana pun. Ini yang menegakkan AC §7.1.
+ * 4) Upsert users + wallets (service-role) → 100% akun punya wallet.
+ * 5) Set cookie sesi ber-HMAC.
  *
  * HARDENING §14 M5 (menutup TODO sejak M0). Sebelumnya alamat dompet, email,
  * dan nomor telepon diambil APA ADANYA dari badan permintaan, dengan alasan
@@ -113,11 +119,34 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Gagal menyimpan user" }, { status: 500 });
   }
 
-  if (identitas?.alamat) {
+  // Invarian §7.1 "punya akun = punya wallet" ditegakkan DI SINI, pada jalur
+  // yang harus dilewati setiap sesi. Sebelumnya ia bersandar pada modal Privy
+  // (`createOnLogin`), dan runtuh tanpa suara begitu modal itu diganti UI kita
+  // — tujuh pengguna mendaftar tanpa dompet selama sepuluh hari sementara
+  // setiap permintaan tetap dijawab 200. Penjelasan lengkap ada di
+  // `buatDompetPrivy()`.
+  let alamat = identitas?.alamat ?? null;
+  if (identitas && !alamat) {
+    const hasil = await buatDompetPrivy(privy, did);
+    if (hasil.status === "ada") {
+      alamat = hasil.alamat;
+    } else {
+      // Login TIDAK digagalkan — tokennya sah, dan menahan orang di luar pintu
+      // karena kegagalan kita sendiri menghukum pihak yang salah. Yang berubah
+      // adalah kegagalan ini sekarang BERSUARA: prefiks tetap supaya ia
+      // mengelompok di klaster galat Vercel, dan alarm §Tahap-3 akan
+      // menghitungnya lagi dari sisi data satu jam kemudian.
+      console.error(
+        `[auth] PEMBUATAN DOMPET GAGAL (did=${did}): ${hasil.sebab}. Pengguna ini masuk tanpa dompet — klaim misi & segel akan tertolak sampai dompetnya ada.`,
+      );
+    }
+  }
+
+  if (alamat) {
     const { error: errWallet } = await supa.from("wallets").upsert(
       {
         user_id: userRow.id,
-        address: identitas.alamat,
+        address: alamat,
         provider: "privy",
         chain_default: "opbnb",
       },
@@ -149,7 +178,7 @@ export async function POST(req: Request) {
     },
   );
 
-  return NextResponse.json({ ok: true, wallet: identitas?.alamat ?? null });
+  return NextResponse.json({ ok: true, wallet: alamat });
 }
 
 export async function DELETE() {
