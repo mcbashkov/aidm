@@ -4,7 +4,7 @@ Pelacak pekerjaan lintas sesi. **README** menjelaskan produk & cara menjalankan;
 berkas ini menjawab satu pertanyaan saja: *apa yang sudah beres, apa berikutnya,
 dan siapa yang mengerjakan.*
 
-Diperbarui: **2026-08-31** · cabang `main`
+Diperbarui: **2026-09-07** · cabang `main`
 
 > ⚠️ **Sisi token digantikan `docs/PERINTAH-AGEN-FINAL.md`.** Untuk apa pun yang
 > menyangkut IDMX/IDM Reborn/swap/kurs/tokenomics, dokumen itu sumber kebenaran
@@ -59,9 +59,14 @@ perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
 build sukses **tanpa peringatan**. Uji browser produksi: 17/17 (P2-6 + guardrail)
 dan 11/11 (perbaikan "Menyiapkan…" + identitas ber-cache).
 
-**Produksi 2026-08-31:** 12 pengguna · 118 transaksi · 13 klaim misi ·
-2 langganan (masa coba PO) · 48 baris `credit_ledger` (arsip, beku) · 0 yatim.
+**Produksi 2026-09-07:** 16 pengguna · 128 transaksi · 13 klaim misi ·
+**16/16 punya `wallets`, 0 alamat ganda** (sesudah perbaikan §7d) · 2 langganan
+keduanya `tidak_aktif` (masa coba PO habis) · 0 klaim menggantung · 0 yatim.
 **Dikonfirmasi PO 2026-08-31: aplikasi terasa cepat setelah perbaikan.**
+
+⚠️ **Nol klaim misi baru sejak 2026-08-26** — akibat langsung §7d, bukan
+kurangnya minat: tanpa dompet, klaim memang ditolak. Angka ini yang pertama
+harus bergerak kalau perbaikannya benar.
 
 ⚠️ **`test:api` masih menunggu satu run penuh.** Penyebab kerapuhannya sudah
 dicabut 2026-08-27 (keep-alive dimatikan di harness, §6), tapi belum ada satu
@@ -134,6 +139,12 @@ di bawah; ini hanya menjawab *"mulai dari mana"*.
 **Keadaan: M5 tuntas kecuali kunci Midtrans. M6 terbuka tapi punya syarat
 keamanan baru.**
 
+> 🔴 **Terakhir dikerjakan (2026-09-07): jalur pembuatan dompet ternyata MATI
+> sejak 28 Agustus** — tujuh akun mendaftar tanpa dompet selama sepuluh hari,
+> tanpa satu pun sinyal (gejalanya `200`, bukan `409`). Akar penyebabnya
+> dicabut, tujuh akun dipulihkan, dan alarm invarian dipasang serta terbukti
+> berbunyi. **Baca §7d dan §7e sebelum menyentuh apa pun di jalur masuk.**
+
 ### ⛔ Memblokir — butuh tangan PO
 
 | # | Apa | Kenapa |
@@ -141,6 +152,8 @@ keamanan baru.**
 | 1 | **Kunci Midtrans di Vercel MASIH DITOLAK** (2026-08-31) | Kunci **sudah terpasang** — `/api/langganan/bayar` menjawab 502, bukan 501, jadi `isMidtransConfigured()` lolos. Tapi Midtrans membalas **401 "Access denied … check client or server key"**. Kunci di `.env.local` terbukti SEHAT: sandbox **201 + token**, produksi **401** (diuji ulang 2026-08-31). Dua kemungkinan, keduanya di dashboard Vercel: (a) `MIDTRANS_IS_PRODUCTION` terlanjur diisi `true` → kode menembak endpoint produksi dengan kunci sandbox; (b) kunci yang di-paste berbeda/ada spasi. **Cara membedakan:** bandingkan 14 karakter awal `MIDTRANS_SERVER_KEY` di Vercel dengan `Mid-server-gLR` (panjang 35), lalu pastikan `MIDTRANS_IS_PRODUCTION` **tidak ada sama sekali**. |
 | 2 | **Payment Notification URL** Midtrans | → `https://ai.idmtoken.com/api/langganan/webhook` |
 | 3 | **Temuan audit F-01 & F-08** (§ di bawah) | Keputusan tata kelola kunci, bukan kode. **Memblokir mainnet M6.** |
+
+*(F-05 sudah keluar dari daftar ini — diputuskan PO 2026-09-07, lihat di bawah.)*
 
 ### 🔐 Audit pra-mainnet — `docs/audit/LAPORAN-PRA-AUDIT.md`
 
@@ -166,19 +179,33 @@ drift, kolam 150 juta IDM utuh.
 
 ### ✅ Bisa dikerjakan tanpa menunggu siapa pun
 
-1. **F-07** (SwapClaim tanpa circuit breaker) — murni kode.
-2. **Bundel `/masuk` 829 KB** — sisa terakhir M5 (§6 menjelaskan kenapa
+**Urutan yang ditetapkan PO 2026-09-07:** dompet (§7d) → alarm (§7e) → F-05 →
+sisanya. Dua yang pertama SELESAI. **Jangan sentuh jalur Midtrans** — PO sedang
+menunggu Business review dan melanjutkan di sandbox.
+
+1. **F-05** — perbaiki `claim()` + redeploy testnet. Berikutnya.
+2. **F-07** (SwapClaim tanpa circuit breaker) — murni kode.
+3. **Satu run penuh `test:api`** — angka 123/123 yang sah terakhir tercatat
+   2026-08-22, sebelum batch UI, batch langganan, dan batch dompet.
+4. **Bundel `/masuk` 829 KB** — sisa terakhir M5 (§6 menjelaskan kenapa
    refaktornya ditunda dan apa penggantinya yang sudah jalan).
-3. **M6 — mainnet & beta tertutup**, setelah F-01/F-08 diputuskan.
+5. **M6 — mainnet & beta tertutup**, setelah F-01/F-08 diputuskan.
 
-**F-05 DIPINDAH ke daftar memblokir (lihat tabel di atas).** Perbaikannya
-bukan `setCap` — kuncinya ada di dalam `claim()` (`claimedOnDay[user][bucket][day]`
-memakai `day` yang sama untuk kedua ember), jadi butuh **redeploy**. Menunggu PO
-memutuskan niatnya: dua ember harian (kalimat brief yang diperbaiki) atau
-memang bulanan (kodenya yang kurang).
+**F-05 TIDAK LAGI MEMBLOKIR — diputuskan PO 2026-09-07: niatnya memang
+BULANAN, dan yang salah adalah kodenya.** Alasan PO, dicatat utuh karena
+menentukan bentuk perbaikannya: ember bulanan ada untuk reward besar (segel
++150, profil +50), dan kalau reset harian orang bisa mengklaim reward "bulanan"
+setiap hari — itu bukan cap. Akibatnya plafon darurat sesungguhnya **700/hari,
+bukan 250** seperti tertulis; cap on-chain justru hanya berguna saat backend
+gagal atau kunci bocor, dan di saat itulah selisih 450 itu nyata. F-08 (satu
+alamat memegang `voucherSigner`) membuatnya makin genting. Perbaikannya BUKAN
+`setCap` — kuncinya di dalam `claim()` (`claimedOnDay[user][bucket][day]`
+memakai `day` yang sama untuk kedua ember), jadi butuh **redeploy**; testnet,
+jadi gratis. Dikerjakan SETELAH batch dompet, atas urutan PO.
 
-**Menunggu tangan PO (tidak memblokir):** uji batch 2026-08-27 (empat misi baru
-+ halaman Akun) · prompt instal PWA di Android (§7).
+**Menunggu tangan PO (tidak memblokir):** **satu pendaftaran akun sungguhan
+untuk menutup verifikasi §7d** · uji batch 2026-08-27 (empat misi baru +
+halaman Akun) · prompt instal PWA di Android (§7).
 
 ---
 
@@ -932,6 +959,112 @@ produksi. Kegagalan disimulasikan dengan memblokir `/api/me` di lapisan
 jaringan (CDP) — blokir tingkat halaman tidak menangkap permintaan yang lewat
 service worker, dan uji yang menyangka sudah memblokir padahal belum akan lulus
 karena alasan yang salah.
+
+### 7d. ~~Tujuh akun tanpa dompet — jalur pembuatan dompet MATI~~ ✅ **SELESAI 2026-09-07**
+
+**Kerusakan produksi yang berlangsung sepuluh hari tanpa satu pun sinyal.**
+Ditemukan saat menjawab pertanyaan status rutin PO, bukan oleh pemantauan.
+
+Sejak `1156194` (28 Agu, layar masuk headless) **tidak ada satu pun baris kode
+kita yang membuat embedded wallet.** Yang membuatnya selama ini adalah MODAL
+Privy lewat `embeddedWallets.createOnLogin` — dan `createOnLogin` dieksekusi
+oleh layar modal itu sendiri, bukan oleh SDK secara umum (`"create-wallet"`
+adalah screen React di dalam bundel, lengkap dengan tombol "Try again"). Ketika
+modal diganti UI Indonesia demi P1-4, pembuatan dompet ikut hilang bersamanya.
+Tujuh pengguna berturut-turut mendaftar tanpa dompet; satu di antaranya sudah
+mencatat 21 transaksi.
+
+**Bukti yang memisahkan hipotesis** — `email` dan `auth_provider` terisi 7/7,
+dan keduanya lahir dari panggilan Privy yang SAMA yang menghasilkan `alamat`.
+Jadi `bacaIdentitas()` sehat; hanya `alamatDariAkun()` yang null. Dikonfirmasi
+ke Privy REST: akun terdampak `linked_accounts: [google_oauth]` saja, akun
+sehat punya `wallet client=privy`. **Dompetnya tidak terlambat — tidak pernah
+dibuat.** Dashboard Privy memang `create_on_login: "off"`, tapi itu BUKAN
+penyebabnya: bundel SDK membuktikan config klien menang (`B ?? … ?? z`).
+
+**Kenapa jaring pengaman 2026-08-26 tidak menangkap: ia tidak gagal.**
+`alamatWalletUser()` hanya bisa MENYALIN alamat yang sudah ada di Privy ke
+Postgres. Ia dengan patuh menjawab "belum siap" untuk sesuatu yang tidak akan
+pernah siap. Diagnosis 26 Agustus ("Privy membuat dompet secara asinkron")
+mengandaikan dompetnya PASTI jadi — dan andaian itulah yang salah.
+
+- [x] **`buatDompetPrivy()`** (`lib/privy/identitas.ts`) memakai
+      `privy.createWallets()` **server-side**. Mode aplikasi
+      `user-controlled-server-wallets-only` + recovery default = satu panggilan
+      API **tanpa UI apa pun**, jadi syarat P1-4 "nol teks Inggris di alur
+      masuk" tetap utuh. Diukur dari dokumentasi SDK sendiri sebelum dipilih,
+      bukan diasumsikan.
+- [x] **Dipanggil `POST /api/auth/session` DAN `alamatWalletUser()`** — satu
+      definisi, dua pemanggil, sejajar `alamatDariAkun()`. Balapan ditangani
+      dengan **bertanya ulang ke Privy**, bukan mencocokkan teks pesan galat
+      yang bisa berubah diam-diam.
+- [x] **Invarian §7.1 pindah ke server.** Syarat PO: pembuatan dompet tidak
+      boleh bergantung pada komponen UI mana pun. Komponen tampilan boleh
+      diganti kapan saja oleh orang yang tidak tahu ada invarian menumpang di
+      sana — jalur sesi tidak.
+- [x] **Kegagalan pembuatan BERSUARA** dan mengembalikan `galat-privy`, bukan
+      `belum-siap`: layar menerima `idmx: null` ("belum tahu"), bukan angka nol
+      yang pasti tentang uang yang tidak pernah diperiksa.
+- [x] **Backfill 7 user: 7 pulih, 0 belum siap, 0 galat.** Diverifikasi dua
+      arah — `wallets` 16/16 tanpa alamat ganda, DAN Privy REST mengonfirmasi
+      dompetnya benar-benar ada di sana sekarang.
+
+**Gejalanya `200`, bukan `409`.** Tiga hari lalu lintas produksi pada hari
+penemuan: 4.527×200, 70×304, 7×307 — **nol 4xx, nol 5xx.** Catatan lama di
+berkas ini ("gejalanya 400/409, tidak pernah 500, jadi tidak muncul di
+pemantauan error") ternyata masih terlalu optimistis.
+
+- [ ] **🧑 Satu pendaftaran akun sungguhan** untuk menutup verifikasi.
+      `buatDompetPrivy()` sudah TERBUKTI hidup di produksi — backfill 7 user
+      berjalan lewat fungsi itu di deployment nyata. Yang belum terbukti hanya
+      cabang `POST /api/auth/session`, dan itu menuntut access token Privy asli
+      yang cuma lahir dari login sungguhan. Harness uji mencetak cookie sesi
+      sendiri dengan `SESSION_SECRET`, jadi ia melewati rute itu dan secara
+      struktural tidak bisa membuktikannya. **Kalau gagal, alarm §7e berbunyi
+      dalam satu jam — bukan sepuluh hari.**
+
+### 7e. Alarm invarian dompet — ✅ **TERPASANG & TERBUKTI BERBUNYI 2026-09-07**
+
+`lib/pemantauan/invarian-dompet.ts`, menumpang cron `/api/relayer/tick` yang
+sudah ada dan baris `relayer_state` berkunci `id` — **nol cron baru, nol tabel
+baru, nol migrasi.** Sekali per jam.
+
+- **Ambangnya NOL, bukan angka yang bisa disetel.** Invariannya menyatakan
+  100%; setiap pelanggaran adalah cacat. Ambang yang bisa disetel adalah ambang
+  yang bisa salah setel, dan yang paling mungkin disetel adalah "cukup tinggi
+  supaya berhenti berisik".
+- **Melaporkan UMUR pelanggaran tertua**, bukan cuma jumlah. "7 akun, tertua 10
+  hari" adalah jalur mati; "3 akun, tertua 6 menit" adalah lonjakan trafik.
+  Angka telanjang tidak bisa membedakan keduanya — dan justru pembedaan itu
+  yang tidak kita punya selama sepuluh hari.
+- **Memeriksa INVARIANNYA, bukan gejala kegagalannya.** Pertanyaan "apakah ada
+  permintaan yang gagal" tidak akan pernah bisa menjawab "apakah setiap akun
+  punya dompet". Inilah alasan struktural kelas bug ini luput.
+- **User uji `did:privy:__test__` dikecualikan** — `SUPABASE_DB_URL` menunjuk
+  instance yang sama dengan produksi, dan alarm yang pernah berbohong sekali
+  akan diabaikan pada kali berikutnya, justru ketika ia benar.
+- **`relayer_state.audit_dompet` ditulis juga saat SEHAT.** Alarm yang diam
+  karena sehat dan alarm yang diam karena mati terlihat persis sama dari luar;
+  `updated_at` di situ satu-satunya yang membedakan.
+
+**Dijalankan manual dan terbukti berbunyi** (2026-09-07 04:21 UTC, sebelum
+backfill), mendarat sebagai `[error/serverless]` pada permintaan ber-status
+`200` — persis titiknya:
+
+```
+[audit-dompet] INVARIAN §7.1 DILANGGAR: 7 akun tanpa dompet lebih dari 15
+menit, tertua 231 jam. Umur tertua yang besar berarti jalur pembuatan dompet
+MATI, bukan sedang antre — periksa POST /api/auth/session dan
+buatDompetPrivy(). Pengguna ini tidak bisa mengklaim misi maupun menyegel
+laporan.
+```
+
+231 jam = 9,6 hari, cocok persis dengan user terdampak pertama (28 Agu 13:24).
+
+- [ ] **🧑 Kanal yang lebih keras (Telegram/email).** `console.error` mendarat
+      di klaster galat Vercel, dan itu tetap bergantung pada notifikasi Vercel
+      yang aktif. Alarm yang benar-benar mengejar Anda butuh kredensial Anda —
+      keputusan PO, ditunda sadar sampai versi ini terbukti jalan.
 
 ### 8. 🤖 M5 — premium di balik LANGGANAN
 
