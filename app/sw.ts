@@ -12,6 +12,7 @@ import {
   NetworkFirst,
   NetworkOnly,
   Serwist,
+  StaleWhileRevalidate,
 } from "serwist";
 
 declare global {
@@ -136,6 +137,36 @@ const runtimeCaching: RuntimeCaching[] = [
       plugins: [
         janganSimpanPengalihan,
         new ExpirationPlugin({ maxEntries: 32, maxAgeSeconds: 1440 * 60 }),
+      ],
+    }),
+  },
+  {
+    /**
+     * Gambar milik kita sendiri — menggantikan aturan `static-image-assets`
+     * bawaan defaultCache (StaleWhileRevalidate, 30 hari).
+     *
+     * Strateginya TIDAK diubah; yang diganti hanya NAMA cache-nya, dan itulah
+     * seluruh maksudnya. Persis alasan `pages-v2` di bawah: perangkat yang
+     * sudah memasang PWA memegang salinan gambar dari service worker
+     * sebelumnya, dan StaleWhileRevalidate menyajikan salinan itu lebih dulu.
+     * Akibatnya pergantian logo tidak terlihat pada muat pertama — pengguna
+     * (dan penguji) melihat lambang lama, menyimpulkan tidak ada yang berubah,
+     * padahal berkasnya sudah baru di server sejak menit pertama.
+     *
+     * Nama baru membuat salinan lama DITINGGALKAN, bukan diwarisi. Sekali
+     * ditinggalkan, muat pertama sesudah pembaruan langsung mengambil dari
+     * jaringan.
+     *
+     * Naikkan angkanya lagi bila logo berganti lagi. Ongkosnya satu kali
+     * pengambilan ulang gambar; yang ditukar dengan itu adalah kepastian bahwa
+     * apa yang dilihat pengguna sama dengan apa yang kita terbitkan.
+     */
+    matcher: ({ request, sameOrigin }) =>
+      sameOrigin && request.destination === "image",
+    handler: new StaleWhileRevalidate({
+      cacheName: "static-image-assets-v2",
+      plugins: [
+        new ExpirationPlugin({ maxEntries: 64, maxAgeSeconds: 30 * 24 * 60 * 60 }),
       ],
     }),
   },
