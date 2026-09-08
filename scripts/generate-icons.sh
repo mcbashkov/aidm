@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
-# Regenerasi ikon PWA dari lambang brand (public/brand/logo-master.png) memakai ImageMagick.
-# Ikon hasil sudah di-commit; jalankan hanya bila logo berubah:  pnpm icons
+# Regenerasi SELURUH turunan brand dari satu sumber (public/brand/logo-master.png)
+# memakai ImageMagick. Hasilnya sudah di-commit; jalankan hanya bila logo
+# berubah:  pnpm icons
+#
+# "SELURUH" itu penting, dan baru benar sejak 2026-09-08. Logo splash
+# (public/logo-idm.png) dulu berdiri sendiri di luar skrip ini — dan ternyata
+# artwork-nya memang BERBEDA dari logo-master (RMSE 20,8%, jauh di atas derau
+# resampling ~0,5%). Aset yang tidak ikut diregenerasi adalah aset yang
+# diam-diam mempertahankan brand lama setelah pergantian, dan yang paling
+# mungkin terlewat justru yang paling besar terlihat: layar pembuka.
 #
 # Sumbernya sengaja LAMBANG BERLIAN saja, bukan kunci horizontal
 # (idmtokenlogo.png). Ikon selalu dirender di kotak — kunci 4,5:1 akan menyusut
@@ -51,4 +59,10 @@ convert "$SRC" -trim +repage -resize 256x256 -background none -gravity center \
 convert "/tmp/aidm_favicon_src.png" -background none -alpha on \
   -define icon:auto-resize=16,32,48 "$APP/favicon.ico"
 
-echo "Selesai. Ikon ada di public/icons + app/."
+echo "→ logo splash (public/logo-idm.png) — TRANSPARAN"
+# Layar pembuka merender lambang ini pada 820px di atas latar hitam. Transparan,
+# bukan berlatar: splash punya latarnya sendiri, dan lambang yang membawa latar
+# sendiri akan tampak seperti kotak tertempel di atasnya.
+convert "$SRC" -resize 820x820 -background none -alpha on "$ROOT/public/logo-idm.png"
+
+echo "Selesai. Ikon ada di public/icons + app/, logo splash di public/."
