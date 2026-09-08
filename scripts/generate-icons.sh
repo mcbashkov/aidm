@@ -10,15 +10,34 @@
 # diam-diam mempertahankan brand lama setelah pergantian, dan yang paling
 # mungkin terlewat justru yang paling besar terlihat: layar pembuka.
 #
-# Sumbernya sengaja LAMBANG BERLIAN saja, bukan kunci horizontal
-# (idmtokenlogo.png). Ikon selalu dirender di kotak — kunci 4,5:1 akan menyusut
-# jadi garis tipis yang tak terbaca di 192px, apalagi 16px favicon.
+# ── SUMBER SELALU DIPANGKAS DULU (2026-09-09) ───────────────────────────────
+#
+# Setiap keluaran disusun dari sumber yang sudah di-`-trim`, lalu dipusatkan
+# pada kanvas berukuran pasti. Alasannya ditemukan saat pergantian logo:
+# padding di dalam berkas sumber TIDAK BOLEH menentukan besar ikon.
+#
+# Logo lama mengisi 89% kanvasnya; logo baru hanya 58% (1200x1282 di dalam
+# 2048x2048). Tanpa pemangkasan, `-resize 512x512` menurunkan setiap ikon
+# sekitar sepertiga — app/icon 89%→58%, apple-icon 76%→49%, maskable 62%→41% —
+# dan penyusutan itu akan terlihat seperti keputusan desain padahal ia semata
+# akibat ruang kosong di berkas yang dikirim. Kelas kegagalan yang sama dengan
+# regresi senyap mana pun: hasilnya berubah, tidak ada yang menyatakannya.
+#
+# Angka ISI di bawah karena itu bukan angka baru. Ia diukur dari ikon yang
+# SEDANG terpasang, supaya satu-satunya hal yang berubah saat logo diganti
+# adalah artwork-nya — bukan geometrinya.
+#
+# Sumber boleh tidak persegi (yang sekarang 1200x1282, sedikit potret).
+# `-resize NxN` memuat gambar DI DALAM kotak NxN dengan rasio terjaga, jadi
+# sisi terpanjang yang menyentuh target dan tidak ada yang gepeng.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC="$ROOT/public/brand/logo-master.png"
 ICO="$ROOT/public/icons"
 APP="$ROOT/app"
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
 
 if ! command -v convert >/dev/null 2>&1; then
   echo "ImageMagick 'convert' tidak ditemukan. Install dulu (mis. sudo apt-get install imagemagick)." >&2
@@ -27,42 +46,64 @@ fi
 
 mkdir -p "$ICO" "$APP"
 
-echo "→ manifest 'any' (transparan)"
-convert "$SRC" -resize 512x512 "$ICO/icon-512.png"
-convert "$SRC" -resize 192x192 "$ICO/icon-192.png"
+# Satu kali pangkas, dipakai seluruh keluaran di bawah.
+MARK="$TMP/mark.png"
+convert "$SRC" -trim +repage -background none -alpha on "$MARK"
+echo "→ sumber dipangkas ke konten: $(identify -format '%wx%h' "$MARK") (dari $(identify -format '%wx%h' "$SRC"))"
+
+# Susun lambang di tengah kanvas berukuran pasti.
+#   $1 ukuran kanvas · $2 ukuran lambang · $3 latar · $4 tujuan
+susun() {
+  convert -size "$1x$1" "xc:$3" \
+    \( "$MARK" -resize "$2x$2" \) -gravity center -composite \
+    -alpha "$( [ "$3" = "none" ] && echo on || echo off )" "$4"
+}
+
+echo "→ manifest 'any' (transparan, isi 89%)"
+susun 512 456 none "$ICO/icon-512.png"
+susun 192 171 none "$ICO/icon-192.png"
 
 # Maskable WAJIB opak — Android memotongnya dengan masker (lingkaran/squircle)
 # dan alpha di baliknya menjadi lubang, bukan latar. Warnanya HITAM MURNI,
 # bukan ivory dan bukan --ink #1B1B1B: iOS mengisi alpha apple-touch-icon
 # dengan #000000, jadi hitam murni-lah satu-satunya nilai yang membuat ikon di
-# Android dan iOS benar-benar terlihat sama. Zona aman 70% (lambang 360 dari
-# 512) — diuji terhadap masker lingkaran maupun squircle, tidak terpotong.
-echo "→ manifest 'maskable' (bg hitam #000000, sama dengan hasil iOS, zona aman 70%)"
-convert -size 512x512 xc:'#000000' \( "$SRC" -resize 360x360 \) -gravity center -composite "$ICO/maskable-512.png"
+# Android dan iOS benar-benar terlihat sama.
+#
+# Isi 62% menyamai maskable yang sedang terpasang — bukan 70% nominal yang
+# tertulis di versi lama skrip ini. Keduanya berbeda karena artwork lama
+# membawa ~10% ruang kosong sendiri di dalam komposit 70% itu. Memakai 70%
+# terhadap lambang yang sudah dipangkas justru MEMBESARKAN ikon melewati apa
+# yang pernah diuji terhadap masker, dan mendekatkannya ke tepi potong.
+echo "→ manifest 'maskable' (bg hitam #000000, isi 62% — zona aman terjaga)"
+susun 512 317 '#000000' "$ICO/maskable-512.png"
 convert "$ICO/maskable-512.png" -resize 192x192 "$ICO/maskable-192.png"
 
 echo "→ Next app conventions (favicon, icon, apple-icon) — TRANSPARAN"
-# Ketiganya dirender di atas kanvas KOSONG (xc:none), bukan ivory. Ikon yang
-# membawa latarnya sendiri terlihat seperti stiker tertempel di tab gelap dan
-# di layar utama bertema gelap; alpha membiarkan sistem operasi yang memutuskan
-# latarnya. `-background none -alpha on` dipasang eksplisit karena ImageMagick
-# meratakan alpha saat menulis ICO bila tidak diminta sebaliknya.
-convert "$SRC" -resize 512x512 "$APP/icon.png"
-convert -size 180x180 xc:none \( "$SRC" -resize 152x152 \) -gravity center \
-  -composite -background none -alpha on "$APP/apple-icon.png"
-# Favicon DIPANGKAS PENUH ke konten (-trim), bukan sekadar diperkecil.
-# Lambangnya membawa ~5% ruang kosong sendiri; pada 16px ruang itu ditukar
-# langsung dengan ketebalan garis, dan garis di lambang ini sudah di bawah satu
-# piksel. Diuji berdampingan pada 16/32/48: pangkas penuh menang di ketiganya.
-convert "$SRC" -trim +repage -resize 256x256 -background none -gravity center \
-  -extent 256x256 -alpha on "/tmp/aidm_favicon_src.png"
-convert "/tmp/aidm_favicon_src.png" -background none -alpha on \
+# Ketiganya dirender di atas kanvas KOSONG, bukan ivory. Ikon yang membawa
+# latarnya sendiri terlihat seperti stiker tertempel di tab gelap dan di layar
+# utama bertema gelap; alpha membiarkan sistem operasi yang memutuskan latarnya.
+susun 512 456 none "$APP/icon.png"
+susun 180 137 none "$APP/apple-icon.png"
+
+# Favicon DIPANGKAS PENUH tanpa margin sama sekali — bukan 89% seperti yang
+# lain. Pada 16px, setiap piksel margin ditukar langsung dengan ketebalan
+# garis, dan garis di lambang ini sudah di bawah satu piksel. Diuji
+# berdampingan pada 16/32/48: pangkas penuh menang di ketiganya.
+convert "$MARK" -resize 256x256 -background none -gravity center \
+  -extent 256x256 -alpha on "$TMP/favicon-src.png"
+convert "$TMP/favicon-src.png" -background none -alpha on \
   -define icon:auto-resize=16,32,48 "$APP/favicon.ico"
 
-echo "→ logo splash (public/logo-idm.png) — TRANSPARAN"
+echo "→ logo splash (public/logo-idm.png) — TRANSPARAN, isi 86%"
 # Layar pembuka merender lambang ini pada 820px di atas latar hitam. Transparan,
 # bukan berlatar: splash punya latarnya sendiri, dan lambang yang membawa latar
 # sendiri akan tampak seperti kotak tertempel di atasnya.
-convert "$SRC" -resize 820x820 -background none -alpha on "$ROOT/public/logo-idm.png"
+susun 820 705 none "$ROOT/public/logo-idm.png"
 
-echo "Selesai. Ikon ada di public/icons + app/, logo splash di public/."
+echo "→ logo modal Privy (public/brand/idmtokenlogo.png) — TRANSPARAN"
+# Dipakai Privy pada modal ekspor wallet. Slotnya lebar (dulu diisi kunci
+# horizontal 1729x381), tapi lambang baru berbentuk persegi — keputusan PO
+# 2026-09-08: pakai lambangnya, Privy melebarkan slot dan hasilnya tetap rapi.
+susun 512 456 none "$ROOT/public/brand/idmtokenlogo.png"
+
+echo "Selesai. Ikon ada di public/icons + app/, logo splash & Privy di public/."

@@ -4,7 +4,7 @@ Pelacak pekerjaan lintas sesi. **README** menjelaskan produk & cara menjalankan;
 berkas ini menjawab satu pertanyaan saja: *apa yang sudah beres, apa berikutnya,
 dan siapa yang mengerjakan.*
 
-Diperbarui: **2026-09-08** · cabang `main`
+Diperbarui: **2026-09-09** · cabang `main`
 
 > ⚠️ **Sisi token digantikan `docs/PERINTAH-AGEN-FINAL.md`.** Untuk apa pun yang
 > menyangkut IDMX/IDM Reborn/swap/kurs/tokenomics, dokumen itu sumber kebenaran
@@ -746,12 +746,12 @@ kali — localhost dan `https://ai.idmtoken.com`. Nol luber mendatar di
 localhost), carousel terbukti reset satu-langkah bukan animasi mundur,
 reduced-motion diam di 'Catat'.
 
-**Tersisa di tangan PO:** lambang sederhana untuk favicon 16px. Berkas
-`logo-mark-simple.svg` yang dikirim ternyata BELUM disederhanakan — diukur,
-bukan dikira: irisan mendatar menunjukkan 10 garis tebal 4,2–4,6% lebar, angka
-identik dengan `logo-master` (selisih artwork 1,18/kanal = gambar yang sama).
-Yang dibutuhkan: **≤ 3 garis, tebal ≥ 10% lebar, PNG 1024×1024 RGBA.** Tanpa
-itu pun 32/48/180/192/512 sudah baik; hanya 16px yang tetap jadi bercak.
+~~**Tersisa di tangan PO:** lambang sederhana untuk favicon 16px.~~
+✅ **LUNAS 2026-09-09** — logo baru dari PO menyelesaikannya. Diukur dengan
+metode yang sama: **3–5 garis per irisan, tebal 15,5% rata-rata** (lama: 10
+garis, 4,4%). Sebagian besar garis melewati patokan ≥10% lebar. Dua detail
+tipis di bagian bawah (2,8% dan 5,0%) tetap hilang di 16px, tapi siluetnya
+utuh — bukan lagi bercak.
 
 ### 6. 🤖 Utang teknis kecil
 
@@ -1226,6 +1226,38 @@ nyata.
 **Ekspor wallet: BUKAN bug** — diperiksa PO, berfungsi normal. Modal milik
 Privy, iframe terisolasi, kunci privat tidak pernah melewati kode kita. Jangan
 disentuh.
+
+### 7i. ~~Pergantian logo AIDM~~ ✅ **SELESAI 2026-09-09**
+
+Logo baru dari PO (sudah didaftarkan) menggantikan seluruh turunan brand.
+Aturan latar sesuai perintah PO: **transparan** untuk favicon, apple-icon,
+ikon platform, splash, dan logo Privy · **hitam `#000000`** untuk maskable
+Android/iOS saat aplikasi diinstal.
+
+- [x] Seluruhnya lahir dari SATU sumber `public/brand/logo-master.png` lewat
+      `pnpm icons` — favicon.ico (16/32/48), app/icon, app/apple-icon,
+      icon-192/512, maskable-192/512, logo splash, dan logo modal Privy.
+- [x] **Sumber kini SELALU dipangkas dulu**, dan ini mencegah regresi senyap
+      yang nyaris terjadi: logo lama mengisi 89% kanvasnya, logo baru hanya
+      **58%** (1200×1282 di dalam 2048×2048). Tanpa pemangkasan, `-resize`
+      akan mengecilkan setiap ikon sekitar sepertiga — app/icon 89%→58%,
+      apple-icon 76%→49%, maskable 62%→41% — dan penyusutan itu akan terlihat
+      seperti keputusan desain padahal semata akibat ruang kosong di berkas.
+- [x] **Angka isi disalin dari ikon yang SEDANG terpasang**, bukan dikarang:
+      89% · 76% · 62% · 86%. Yang berubah hanya artwork-nya, bukan geometrinya.
+      Diverifikasi sesudah generasi: 89/76/85/61% — cocok dalam pembulatan 1%.
+- [x] **Maskable 62%, bukan 70% nominal** seperti versi lama skrip. Keduanya
+      berbeda karena artwork lama membawa ~10% ruang kosong sendiri di dalam
+      komposit 70% itu; memakai 70% terhadap lambang yang sudah dipangkas
+      justru membesarkan ikon melewati apa yang pernah diuji terhadap masker.
+- [x] **Diverifikasi per berkas, bukan diasumsikan:** transparan → piksel pojok
+      `srgba(0,0,0,0)`; maskable → `alpha=False`, pojok `srgb(0,0,0)`; favicon
+      → alpha sungguhan (min=0 max=1) di ketiga ukuran, bukan diratakan.
+      Diuji juga di bawah masker lingkaran — lambang tidak terpotong.
+- [x] Logo modal Privy (`idmtokenlogo.png`) ikut diganti dengan lambang persegi
+      — keputusan PO 2026-09-08, opsi (b).
+
+**`og-image.jpg` sengaja TIDAK disentuh** atas instruksi PO.
 
 ### 8. 🤖 M5 — premium di balik LANGGANAN
 
