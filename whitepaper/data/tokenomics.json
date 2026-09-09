@@ -88,15 +88,23 @@
             "id": "Kewajiban terverifikasi",
             "en": "Verified obligation"
           },
-          "tokens": 146082699.41
+          "tokens": 146082699.41,
+          "note": {
+            "id": "490 alamat, sudah masuk root merkle",
+            "en": "490 addresses, committed to the merkle root"
+          }
         },
         {
           "label": {
-            "id": "Alokasi belum beralamat",
-            "en": "Allocation without recipient"
+            "id": "Disisihkan menunggu verifikasi",
+            "en": "Set aside pending verification"
           },
           "tokens": 586060.85,
-          "pending": true
+          "pending": true,
+          "note": {
+            "id": "Alamat penerima belum diketahui. Disisihkan sebagai barisnya sendiri — bukan dihapus, bukan dilebur ke kolam keterlambatan.",
+            "en": "Recipient address not yet known. Held as its own line — neither removed nor folded into the late-claim pool."
+          }
         },
         {
           "label": {
@@ -104,7 +112,11 @@
             "en": "Late-claim pool"
           },
           "tokens": 13331239.74,
-          "mechanism": null
+          "mechanism": null,
+          "note": {
+            "id": "Mekanisme pro-rata belum ditentukan.",
+            "en": "Pro-rata mechanism not yet decided."
+          }
         }
       ],
       "vesting": {
@@ -220,16 +232,20 @@
     "tgeCirculating": 49357088.17,
     "linearTotal": 96725611.25,
     "monthlyEmission": 16120935.21,
-    "unassignedAllocation": {
-      "tokens": 586060.85,
-      "recipient": null
-    },
     "latePool": {
       "tokens": 13331239.74,
       "mechanism": null,
       "note": {
         "id": "Mekanisme pro-rata belum ditentukan — sengaja tidak dikarang.",
         "en": "Pro-rata mechanism not yet decided — deliberately not invented."
+      }
+    },
+    "setAside": {
+      "tokens": 586060.85,
+      "recipient": null,
+      "note": {
+        "id": "Disisihkan menunggu verifikasi alamat — berdiri sendiri, tidak masuk kolam keterlambatan.",
+        "en": "Set aside pending address verification — a line of its own, not part of the late-claim pool."
       }
     }
   },
@@ -240,11 +256,11 @@
   },
   "treasury": {
     "tokens": 100000000,
-    "multisig": "2-of-3",
-    "address": null,
-    "addressNote": {
-      "id": "Alamat dipublikasikan setelah dompet dibuat.",
-      "en": "Address will be published once the wallet is created."
+    "multisig": null,
+    "address": "0x97Fbc7fF7A8B9198F9966B7650FAbfb2A59f78D9",
+    "custody": {
+      "id": "Dompet tunggal milik perusahaan.",
+      "en": "Single company-controlled wallet."
     },
     "split": {
       "operations": 45,
@@ -252,5 +268,13 @@
       "emergency": 20,
       "buyback": 15
     }
+  },
+  "documentStatus": {
+    "version": "v0.1",
+    "label": {
+      "id": "DRAF",
+      "en": "DRAFT"
+    },
+    "final": false
   }
 }

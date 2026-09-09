@@ -1,26 +1,26 @@
 {
   "idmRebornSupply": {
     "value": "1000000000",
-    "fetchedAt": "2026-09-09T02:43:11.498Z"
+    "fetchedAt": "2026-09-09T04:18:06.135Z"
   },
   "idmxSupply": {
     "value": "50000000000",
-    "fetchedAt": "2026-09-09T02:43:11.498Z"
+    "fetchedAt": "2026-09-09T04:18:06.135Z"
   },
   "deadBalance": {
     "value": "454625363.021430251",
-    "fetchedAt": "2026-09-09T02:43:11.498Z"
+    "fetchedAt": "2026-09-09T04:18:06.135Z"
   },
   "swapClaimPool": {
     "value": "150000000",
-    "fetchedAt": "2026-09-09T02:43:11.498Z"
+    "fetchedAt": "2026-09-09T04:18:06.135Z"
   },
   "missionRewardsPool": {
     "value": "99999255",
-    "fetchedAt": "2026-09-09T02:43:11.498Z"
+    "fetchedAt": "2026-09-09T04:18:06.135Z"
   },
   "sealedReports": {
     "value": 4,
-    "fetchedAt": "2026-09-09T02:43:11.498Z"
+    "fetchedAt": "2026-09-09T04:18:06.135Z"
   }
 }

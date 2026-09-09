@@ -39,6 +39,22 @@ for (const a of t.allocations) {
     galat.push(`komponen "${a.id}" berjumlah ${rp(jk)}, induknya ${rp(a.tokens)}`);
 }
 
+/**
+ * Pos migrasi WAJIB menjumlah TEPAT ke alokasinya.
+ *
+ * Diperiksa terpisah dari pemeriksaan komponen umum karena taruhannya berbeda:
+ * ketiga bagiannya adalah kewajiban kepada orang sungguhan, dan salah satunya
+ * — 586.060,85 yang disisihkan — ada justru karena pemiliknya belum
+ * teridentifikasi. Selisih sepeser pun di sini berarti ada token yang tidak
+ * punya rumah, dan token tanpa rumah adalah token yang diam-diam hilang.
+ */
+const migrasi = t.allocations.find((a) => a.id === "migration");
+if (migrasi?.components) {
+  const j = migrasi.components.reduce((s, c) => s + c.tokens, 0);
+  if (j !== migrasi.tokens)
+    galat.push(`pos migrasi berjumlah ${rp(j)}, harus TEPAT ${rp(migrasi.tokens)} (selisih ${rp(j - migrasi.tokens)})`);
+}
+
 // Sirkulasi TGE bukan angka bebas: ia jumlah dari pos-posnya sendiri.
 const jumlahSirkulasi = t.allocations.reduce((s, a) => s + (a.circulatingAtTge ?? 0), 0);
 if (!dekat(jumlahSirkulasi, t.tge.circulating))

@@ -49,8 +49,8 @@
 >
 > Perubahan pokok v1 → v2: **pos Migrasi Holder v1 (16%) lahir**, dan seluruh
 > pos lain menyusut untuk memberi ruang. Private sale turun harga
-> ($0,00333 → $0,003571 — diskon 28,6%, bukan 33%). Treasury turun 15% → 10%
-> dan multisig 3-dari-5 → **2-dari-3**.
+> ($0,00333 → $0,003571 — diskon 28,6%, bukan 33%). Treasury turun 15% → 10%.
+> Skema penandatangan treasury dicabut seluruhnya 9 Sep 2026 — dompet tunggal.
 
 **Parameter dasar** *(tidak berubah dari v1, terverifikasi on-chain)*
 
@@ -71,9 +71,9 @@
 |---|---:|---:|---|
 | Ecosystem & Rewards | 26% | 260.000.000 | 150.000.000 kolam swap (SwapClaim, BSC) + 110.000.000 cadangan reward |
 | Liquidity | 18% | 180.000.000 | 80.000.000 DEX LP + 100.000.000 CEX reserve |
-| **Migrasi Holder v1** | **16%** | **160.000.000** | 146.668.760 kewajiban terverifikasi + ±13.331.240 kolam keterlambatan |
+| **Migrasi Holder v1** | **16%** | **160.000.000** | Terbagi TIGA — lihat rincian di bawah |
 | Private Sale | 14% | 140.000.000 | $500.000 @ $0,003571 |
-| Treasury | 10% | 100.000.000 | Multisig **2-dari-3** |
+| Treasury | 10% | 100.000.000 | Dompet tunggal perusahaan · `0x97Fbc7f…78D9` |
 | Team & Founders | 10% | 100.000.000 | Cliff 12 bulan + vesting 24 bulan |
 | Marketing | 4% | 40.000.000 | |
 | Advisors | 2% | 20.000.000 | Cliff 6 bulan + vesting 18 bulan |
@@ -114,6 +114,21 @@ sekali — jangan mencoba mencocokkannya dengan struktur lama.
 | **Total** | **490** | **146.082.699,41** | **49.357.088,17** | **96.725.611,25** |
 
 Emisi bulanan migrasi: **16.120.935 token/bulan selama 6 bulan**.
+
+**Pos migrasi 160.000.000 terbagi TIGA — ketiganya berdiri sendiri.**
+
+| Bagian | Token | Keadaan |
+|---|---:|---|
+| Kewajiban terverifikasi | **146.082.699,41** | 490 alamat, sudah masuk root merkle |
+| **Disisihkan menunggu verifikasi** | **586.060,85** | Alamat penerima belum diketahui. **BUKAN dihapus, BUKAN dilebur ke kolam keterlambatan** |
+| Kolam keterlambatan | **13.331.239,74** | Mekanisme pro-rata **belum ditentukan** |
+| **Jumlah** | **160.000.000,00** | Tepat, diperiksa `verify-tokenomics` |
+
+> Alokasi 586.060,85 **disisihkan**, bukan hilang. Melebur­kannya ke kolam
+> keterlambatan akan menghapus jejak bahwa ia milik seseorang yang identitasnya
+> belum terverifikasi — dan sekali jejak itu hilang, tidak ada yang akan
+> mencarinya lagi. Ia berdiri sebagai barisnya sendiri sampai alamatnya
+> diketahui, lalu masuk ke root merkle berikutnya.
 
 > Seluruh baris di atas **dihitung ulang dari CSV**, bukan disalin. Reproduksi:
 > `pnpm merkle:verify`. Angka kohort versi sebelumnya (487 alamat, 357/130,
@@ -175,7 +190,8 @@ bawah di tabel. Persentase 15,7857% dibulatkan ke 15,79%.)*
 
 #### Treasury
 
-100.000.000 token pada dompet multisig **2-dari-3** di BNB Chain.
+100.000.000 token pada **dompet tunggal milik perusahaan** di BNB Chain:
+**`0x97Fbc7fF7A8B9198F9966B7650FAbfb2A59f78D9`**
 
 | Peruntukan | % | Token |
 |---|---:|---:|
@@ -184,15 +200,16 @@ bawah di tabel. Persentase 15,7857% dibulatkan ke 15,79%.)*
 | Cadangan darurat | 20% | 20.000.000 |
 | Buyback | 15% | 15.000.000 |
 
-Ambang **2-dari-3, bukan 3-dari-3**: dengan 3-dari-3 satu kunci hilang
-membekukan treasury secara permanen.
-
-> 🧑 **Alamat Safe: BELUM ADA — butuh tangan PO.** Membuat Gnosis Safe menuntut
-> tanda tangan pemilik kunci dan dana gas; tidak bisa dikerjakan agen. Setelah
-> Safe dibuat, tempelkan alamatnya di baris ini dan di
-> `contracts/ALAMAT-DAN-CATATAN.md` §4. **Jangan diisi alamat sementara** —
-> alamat treasury yang salah di dokumen publik adalah kesalahan yang dibaca
-> orang sebagai instruksi mengirim uang.
+> **Perubahan 9 Sep 2026 (keputusan PO): treasury adalah dompet TUNGGAL, bukan
+> multisig.** Rencana Safe 2-dari-3 — dan sebelumnya 3-dari-5 — tidak berlaku.
+> Alamatnya dipublikasikan, dan **tidak ada label skema penandatangan** yang
+> boleh dicantumkan di dokumen mana pun.
+>
+> Konsekuensinya harus disebut apa adanya, bukan disamarkan: satu kunci
+> mengendalikan 100 juta IDM. Ini memperkuat, bukan melemahkan, larangan yang
+> sudah berlaku — **jangan pernah mengklaim desentralisasi atau tata kelola
+> aman** di whitepaper, landing page, maupun materi apa pun. Temuan audit F-08
+> (pemusatan peran istimewa) menjadi makin relevan, bukan berkurang.
 
 #### Koreksi yang berlaku, bukan untuk diperdebatkan
 
