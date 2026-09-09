@@ -2,60 +2,58 @@
 sidebar_position: 1
 slug: /
 id: ringkasan
-title: "Ringkasan eksekutif"
-description: "Ringkasan mandiri IDM Reborn — token, empat pilar, dan status jujur tiap bagiannya."
+title: "Executive summary"
+description: "Standalone summary of IDM Reborn — the token, the four pillars, and an honest status for each."
 ---
 
 import AllocationTable from '@site/src/components/AllocationTable';
 import OnChainStat from '@site/src/components/OnChainStat';
 import StatusBadge from '@site/src/components/StatusBadge';
 
-# Ringkasan eksekutif
+# Executive summary
 
-**IDM Reborn** adalah token ekosistem di BNB Chain yang menopang empat produk,
-satu di antaranya sudah berjalan dengan pengguna nyata.
+**IDM Reborn** is an ecosystem token on BNB Chain backing four products, one of
+which is already running with real users.
 
-Dokumen ini ditulis untuk dibaca dengan curiga. Setiap angka di dalamnya punya
-sumber yang bisa Anda periksa sendiri — dari rantai, dari kontrak, atau dari
-berkas data yang ikut diterbitkan. Yang belum ada dinyatakan belum ada.
+This document is written to be read sceptically. Every figure in it has a source
+you can check yourself — on-chain, in a contract, or in the published data
+files. Whatever does not exist yet is stated as not existing.
 
-## Apa yang sudah berjalan
+## What is already running
 
-| Pilar | Status | Ringkas |
+| Pillar | Status | Summary |
 |---|---|---|
-| **AIDM** — pencatatan keuangan UMKM | <StatusBadge pillar="aidm" /> | Aplikasi produksi di `ai.idmtoken.com` |
-| **SkemGuard** — pemindai keamanan token | <StatusBadge pillar="skemguard" /> | Enam jaringan |
-| **IDM Film** — produksi film | <StatusBadge pillar="film" /> | Dua judul tayang di bioskop nasional |
-| **IDM Chain** — layer 2 di BNB Chain | <StatusBadge pillar="idmchain" /> | Belum ada spesifikasi teknis |
-| Kontrak pintar | <StatusBadge pillar="contracts" /> | Tujuh kontrak, seluruhnya **testnet** |
+| **AIDM** — bookkeeping for micro-businesses | <StatusBadge pillar="aidm" /> | Production app at `ai.idmtoken.com` |
+| **SkemGuard** — token security scanner | <StatusBadge pillar="skemguard" /> | Six networks |
+| **IDM Film** — film production | <StatusBadge pillar="film" /> | Two titles released in national cinemas |
+| **IDM Chain** — layer 2 on BNB Chain | <StatusBadge pillar="idmchain" /> | No technical specification yet |
+| Smart contracts | <StatusBadge pillar="contracts" /> | Seven contracts, all on **testnet** |
 
-## Token
+## The token
 
-Dua token, dua jaringan, dua peran yang sengaja dipisah:
+Two tokens, two networks, two deliberately separated roles:
 
-- **IDM Reborn** (BNB Chain) — token nilai ekosistem. Pasokan
-  <OnChainStat metric="idmRebornSupply" /> tetap, tanpa fungsi cetak.
-- **IDMX** (opBNB) — poin imbalan aktivitas di dalam aplikasi. Pasokan
+- **IDM Reborn** (BNB Chain) — the ecosystem's value token. Supply
+  <OnChainStat metric="idmRebornSupply" /> fixed, with no mint function.
+- **IDMX** (opBNB) — in-app activity reward points. Supply
   <OnChainStat metric="idmxSupply" />.
 
-IDMX ditukar ke IDM Reborn lewat gerbang yang membakar IDMX-nya. Kolam
-penukaran berisi <OnChainStat metric="swapClaimPool" suffix=" IDM" />,
-terkunci di dalam kontrak.
+IDMX converts to IDM Reborn through a gate that burns the IDMX. The swap pool
+holds <OnChainStat metric="swapClaimPool" suffix=" IDM" />, locked inside the
+contract.
 
 <AllocationTable />
 
-## Yang perlu Anda ketahui sebelum membaca lebih jauh
+## What you should know before reading further
 
-- **Seluruh kontrak masih di testnet.** Tidak ada satu pun di mainnet saat
-  dokumen ini terbit.
-- **Belum ada audit pihak ketiga.** Yang ada pra-audit internal dengan delapan
-  temuan, sebagian besar masih terbuka. Rinciannya di bab Kepatuhan & risiko.
-- **Peran istimewa masih terpusat.** Satu alamat memegang sebagian besar
-  kewenangan kontrak, dan treasury adalah dompet tunggal. Kami tidak mengklaim
-  desentralisasi.
-- **Token belum diperdagangkan**, sehingga harganya belum terbentuk. Tidak ada
-  nilai rupiah yang bisa dijanjikan atas imbalan apa pun.
+- **Every contract is still on testnet.** None is on mainnet as of publication.
+- **No third-party audit yet.** What exists is an internal pre-audit with eight
+  findings, most still open. Details in Compliance & risk.
+- **Privileged roles remain centralised.** A single address holds most contract
+  authority, and the treasury is a single wallet. We make no decentralisation
+  claim.
+- **The token is not traded**, so no price exists. No rupiah value can be
+  promised for any reward.
 
-Empat kalimat di atas bukan disclaimer yang disembunyikan di akhir dokumen. Ia
-ada di sini karena pembaca yang mengetahuinya lebih dulu bisa menilai sisanya
-dengan tepat.
+Those four sentences are not a disclaimer buried at the end. They are here
+because a reader who knows them first can judge the rest accurately.

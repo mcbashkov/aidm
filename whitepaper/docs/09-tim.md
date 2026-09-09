@@ -2,38 +2,37 @@
 sidebar_position: 10
 slug: /tim
 id: tim
-title: "Tim & badan hukum"
-description: "PT IDM Film Sejahtera sebagai penerbit, dan hubungannya dengan empat pilar."
+title: "Team & legal entity"
+description: "PT IDM Film Sejahtera as issuer, and its relationship to the four pillars."
 ---
 
-# Tim & badan hukum
+# Team & legal entity
 
-## Penerbit
+## Issuer
 
-**PT IDM Film Sejahtera** — NIB **1006240127505**.
+**PT IDM Film Sejahtera** — business registration number **1006240127505**.
 
-Badan hukum yang sama menaungi keempat pilar. Pembaca institusional biasanya
-menanyakan hal ini lebih dulu daripada hal teknis mana pun, jadi kami
-menyatakannya di depan: tidak ada entitas terpisah per pilar, dan tidak ada
-struktur luar negeri yang tidak disebut di sini.
+The same legal entity covers all four pillars. Institutional readers usually ask
+this before any technical question, so we state it up front: there is no
+separate entity per pillar, and no offshore structure that is not named here.
 
 ## Treasury
 
-Alamat treasury: `0x97Fbc7fF7A8B9198F9966B7650FAbfb2A59f78D9` di BNB Chain.
+Treasury address: `0x97Fbc7fF7A8B9198F9966B7650FAbfb2A59f78D9` on BNB Chain.
 
-Ia **dompet tunggal milik perusahaan**, bukan dompet multipihak. Kami tidak
-mencantumkan skema penandatangan karena tidak ada — dan menyebut skema yang
-tidak ada akan lebih buruk daripada mengakui bentuknya sekarang.
+It is a **single company-controlled wallet**, not a multi-party wallet. We list
+no signing scheme because there is none — and naming a scheme that does not
+exist would be worse than acknowledging the present arrangement.
 
-## Tim
+## Team
 
-Susunan tim inti belum dipublikasikan di dokumen ini.
+The core team is not yet published in this document.
 
-Kami mencatatnya sebagai kekurangan, bukan sebagai pilihan gaya. Pembaca yang
-menilai proyek berhak tahu siapa yang mengerjakannya, dan bagian ini akan diisi
-sebelum versi 1.0 terbit.
+We record that as a gap rather than a stylistic choice. A reader assessing the
+project is entitled to know who builds it, and this section will be filled
+before v1.0 is published.
 
-## Kontak
+## Contact
 
-Pertanyaan mengenai dokumen ini dapat diajukan lewat kanal resmi yang tercantum
-di `idmtoken.com`.
+Questions about this document can be directed to the official channels listed at
+`idmtoken.com`.

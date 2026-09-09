@@ -2,107 +2,103 @@
 sidebar_position: 5
 slug: /arsitektur-token
 id: arsitektur-token
-title: "Arsitektur token"
-description: "IDM Reborn, IDMX, properti kontrak, alokasi, dan jadwal pelepasan."
+title: "Token architecture"
+description: "IDM Reborn, IDMX, contract properties, allocation, and unlock schedule."
 ---
 
 import AllocationTable from '@site/src/components/AllocationTable';
 import UnlockCurve from '@site/src/components/UnlockCurve';
 import OnChainStat from '@site/src/components/OnChainStat';
 
-# Arsitektur token
+# Token architecture
 
-## Dua token, dua peran
+## Two tokens, two roles
 
 | | IDM Reborn | IDMX |
 |---|---|---|
-| Jaringan | BNB Chain | opBNB |
-| Pasokan | <OnChainStat metric="idmRebornSupply" /> | <OnChainStat metric="idmxSupply" /> |
-| Peran | Token nilai ekosistem | Poin imbalan aktivitas |
-| Fungsi cetak | Tidak ada | Tidak ada |
+| Network | BNB Chain | opBNB |
+| Supply | <OnChainStat metric="idmRebornSupply" /> | <OnChainStat metric="idmxSupply" /> |
+| Role | Ecosystem value token | Activity reward points |
+| Mint function | None | None |
 
-**Kenapa dua, bukan satu.** IDMX diterbitkan terus-menerus sebagai imbalan
-aktivitas harian. Kalau ia sekaligus token nilai, setiap pencatatan transaksi
-menjadi inflasi langsung terhadap pemegang. Memisahkannya membuat aktivitas
-harian murah dan berlimpah, sementara konversi ke nilai melewati gerbang yang
-punya kurs, plafon, dan pembakaran.
+**Why two, not one.** IDMX is issued continuously as a reward for daily
+activity. If it were also the value token, every recorded transaction would
+directly inflate holders. Separating them keeps daily activity cheap and
+plentiful, while conversion into value passes through a gate with a rate, caps,
+and a burn.
 
-**Kenapa dua jaringan.** opBNB dipilih untuk aktivitas karena gasnya cukup
-murah untuk disponsori aplikasi — pelaku usaha mikro tidak boleh diminta
-membeli aset kripto hanya untuk mencatat penjualan. BNB Chain dipilih untuk
-token nilai karena di situlah likuiditas berada.
+**Why two networks.** opBNB was chosen for activity because its gas is cheap
+enough for the app to sponsor — a micro-business must not be asked to buy
+crypto merely to record a sale. BNB Chain was chosen for the value token
+because that is where liquidity lives.
 
-Ada pos ketiga yang sengaja **tidak** memakai token sama sekali: langganan
-Premium AIDM dibayar dengan uang biasa. Ekonomi produk tidak boleh menyandera
-ekonomi token, dan sebaliknya.
+A third stream deliberately uses **no token at all**: AIDM Premium
+subscriptions are paid in ordinary money. The product economy must not hold the
+token economy hostage, or the reverse.
 
-## Properti kontrak IDM Reborn
+## IDM Reborn contract properties
 
-- Pasokan tetap, **tanpa fungsi cetak**
-- **Tanpa pajak beli/jual** — ERC-20 standar murni. Ini keputusan kompatibilitas
-  listing, bukan sekadar keramahan: bursa menolak token bertax karena merusak
-  akuntansi order book mereka
-- Biaya transfer datar yang **dibakar seluruhnya**
+- Fixed supply, **no mint function**
+- **No buy/sell tax** — a plain ERC-20. This is a listing-compatibility
+  decision, not merely friendliness: exchanges reject taxed tokens because they
+  break order-book accounting
+- A flat transfer fee that is **burned in full**
 
-## Alokasi
+## Allocation
 
 <AllocationTable />
 
-Pos migrasi terbagi tiga baris terpisah, dan jumlah ketiganya **tepat** sama
-dengan alokasi induknya — diperiksa otomatis setiap kali situs ini dibangun.
-Selisih sepeser pun berarti ada token yang tidak punya rumah.
+The migration allocation is split into three separate lines, and the three sum
+**exactly** to their parent allocation — checked automatically every time this
+site is built. A discrepancy of even a fraction means some tokens have no home.
 
-## Jadwal pelepasan
+## Unlock schedule
 
 <UnlockCurve months={24} />
 
-Kurva di atas dihitung dari jadwal vesting tiap pos ditambah emisi migrasi
-enam bulan. Ia tidak digambar tangan: bila jadwalnya berubah, kurvanya ikut
-berubah.
+The curve is computed from each allocation's vesting schedule plus the
+six-month migration emission. It is not drawn by hand: if the schedule changes,
+the curve changes with it.
 
-Garis putus-putus menandai sirkulasi saat TGE.
+The dashed line marks circulating supply at TGE.
 
-## Penukaran IDMX → IDM Reborn
+## IDMX → IDM Reborn swap
 
-Satu kontrak tidak bisa menyentuh dua jaringan sekaligus, jadi penukarannya
-berbentuk jembatan bertanda tangan:
+A single contract cannot touch two networks, so the swap takes the form of a
+signed bridge:
 
-1. Pengguna mengumpulkan IDMX dari aktivitas di aplikasi (opBNB)
-2. IDMX **dibakar sungguhan** — pasokan berkurang, terlihat di penjelajah blok
-3. Layanan penghubung menandatangani kupon setelah menunggu konfirmasi yang
-   cukup untuk tahan terhadap reorganisasi rantai
-4. Kupon ditebus di BNB Chain; IDM dilepas dari kolam
+1. The user accumulates IDMX from in-app activity (opBNB)
+2. The IDMX is **genuinely burned** — supply decreases, visible on the explorer
+3. A relayer signs a voucher after waiting for enough confirmations to survive
+   a chain reorganisation
+4. The voucher is redeemed on BNB Chain; IDM is released from the pool
 
-Tiga sifat yang layak diperiksa sendiri oleh pembaca:
+Three properties a reader can verify independently:
 
-- **Pembakaran sejati.** IDMX yang ditukar hilang dari pasokan. Kolam yang
-  "dibakar" dengan cara dipindahkan ke alamat mati adalah klaim yang lebih
-  lemah.
-- **Kurs satu arah.** Fungsi pengubah kurs menolak nilai yang memburuk bagi
-  pengguna. Menaikkan kemurahan hati selalu bisa; menurunkannya menghancurkan
-  kepercayaan secara permanen — jadi kemungkinan itu ditutup oleh kode, bukan
-  oleh janji.
-- **Penebusan ganda mustahil.** Setiap kupon membawa nomor sekali pakai. Bahkan
-  server yang sepenuhnya dikompromikan tidak bisa membuat satu kupon dibayar
-  dua kali; kontraklah yang menolaknya.
+- **A true burn.** Swapped IDMX leaves the supply. A pool "burned" by moving it
+  to a dead address is a weaker claim.
+- **A one-way rate.** The rate-setting function rejects any value that worsens
+  the user's position. Raising generosity is always possible; lowering it
+  destroys trust permanently — so that possibility is closed by code, not by a
+  promise.
+- **Double redemption is impossible.** Each voucher carries a single-use nonce.
+  Even a fully compromised server cannot have one voucher paid twice; the
+  contract refuses it.
 
-Kolam penukaran: <OnChainStat metric="swapClaimPool" suffix=" IDM" />, dan
-kolam imbalan aktivitas: <OnChainStat metric="missionRewardsPool" suffix=" IDMX" />.
+Swap pool: <OnChainStat metric="swapClaimPool" suffix=" IDM" />, and the
+activity reward pool: <OnChainStat metric="missionRewardsPool" suffix=" IDMX" />.
 
-## Plafon berlapis
+## Layered caps
 
-Batas dipasang di beberapa tingkat sekaligus: minimum penukaran, plafon per
-dompet per minggu, plafon harian per dompet untuk imbalan, plafon bulanan untuk
-imbalan bernilai besar, dan **plafon global harian** yang berlaku untuk seluruh
-pengguna sekaligus.
+Limits sit at several levels at once: a swap minimum, a per-wallet weekly cap, a
+per-wallet daily reward cap, a monthly cap for higher-value rewards, and a
+**global daily cap** across all users combined.
 
-Plafon global bukan pertahanan terhadap penyalahgunaan identitas, dan tidak
-boleh dibaca begitu: kontrak tidak bisa membedakan seribu alamat milik seribu
-orang dari seribu milik satu orang — itu pertanyaan identitas, dan identitas
-hidup di luar rantai. Yang dilakukannya adalah **membatasi radius kerusakan**
-bila kunci penandatangan bocor: kerugian berhenti di satu hari, bukan seluruh
-kolam.
+The global cap is not a defence against identity abuse, and must not be read as
+one: a contract cannot tell a thousand addresses held by a thousand people from
+a thousand held by one — that is a question about identity, and identity lives
+off-chain. What it does is **bound the blast radius** if a signing key leaks:
+the loss stops at one day rather than the whole pool.
 
-Ongkosnya diakui: siapa pun yang menghabiskan plafon global menunda imbalan
-semua orang sampai hari berikutnya. Pada skala sekarang, pertukaran itu
-menguntungkan.
+The cost is acknowledged: anyone who exhausts the global cap delays everyone
+else's rewards until the next day. At present scale, that trade is favourable.

@@ -2,69 +2,66 @@
 sidebar_position: 6
 slug: /model-ekonomi
 id: model-ekonomi
-title: "Model ekonomi"
-description: "Langganan, imbalan aktivitas, treasury, dan pemisahan rel uang dari rel token."
+title: "Economic model"
+description: "Subscriptions, activity rewards, treasury, and the separation of money rails from token rails."
 ---
 
-# Model ekonomi
+# Economic model
 
-## Dua rel yang sengaja tidak bersinggungan
+## Two rails kept deliberately apart
 
-| Rel | Alat bayar | Untuk apa |
+| Rail | Payment | Purpose |
 |---|---|---|
-| Produk | Uang biasa (QRIS / transfer) | Langganan Premium AIDM |
-| Token | IDMX → IDM Reborn | Imbalan aktivitas, ditukar lewat kontrak |
+| Product | Ordinary money (QRIS / transfer) | AIDM Premium subscription |
+| Token | IDMX → IDM Reborn | Activity rewards, swapped via contract |
 
-Pemisahan ini disengaja karena dua alasan yang sama-sama mengikat: kepatuhan
-toko aplikasi, dan menjaga agar pendapatan produk tidak bergantung pada harga
-token — maupun sebaliknya. Produk yang pendapatannya bergantung pada harga
-tokennya sendiri akan mengambil keputusan produk demi harga, dan itu terlihat
-oleh pengguna sebelum terlihat oleh siapa pun.
+The separation is deliberate for two equally binding reasons: app-store
+compliance, and keeping product revenue independent of token price — and the
+reverse. A product whose revenue depends on its own token price will start
+making product decisions for the price, and users notice that before anyone
+else does.
 
-## Imbalan aktivitas
+## Activity rewards
 
-IDMX diberikan untuk perbuatan yang memang diinginkan produk — mencatat kedua
-sisi arus kas, mencatat lewat suara, membaca laporan, menyegel laporan bulanan.
-Bukan sekadar "membuka aplikasi".
+IDMX is granted for behaviour the product actually wants — recording both sides
+of cash flow, recording by voice, reading reports, sealing the monthly report.
+Not merely "opening the app".
 
-Seluruh imbalan **diturunkan dari data sumber**, bukan dari penanda yang bisa
-disetel sembarangan. Menghapus transaksi otomatis menurunkan kembali
-progresnya.
+Every reward is **derived from source data**, never from a flag that could be
+set arbitrarily. Deleting a transaction lowers the progress again.
 
-Klaim imbalan berjalan lewat kupon bertanda tangan yang ditebus di kontrak,
-dengan plafon harian dan bulanan per dompet. Rinciannya di bab Arsitektur
-token.
+Reward claims run through signed vouchers redeemed at the contract, with daily
+and monthly per-wallet caps. Details in Token architecture.
 
 ## Treasury
 
-Treasury dibagi menjadi operasional, kemitraan dan hibah, cadangan darurat, dan
-pembelian kembali. Porsi tiap bagian ada di berkas data yang sama dengan
-alokasi.
+The treasury is divided into operations, partnerships and grants, an emergency
+reserve, and buyback. The share of each is in the same data file as the
+allocation.
 
-**Treasury adalah dompet tunggal milik perusahaan**, bukan dompet multipihak.
-Alamatnya dipublikasikan di bab Lampiran.
+**The treasury is a single company-controlled wallet**, not a multi-party
+wallet. Its address is published in the Appendix.
 
-Konsekuensinya kami sebut apa adanya, bukan disamarkan: satu kunci
-mengendalikan seluruh isi treasury. Itu memperkuat — bukan melemahkan —
-larangan yang berlaku di seluruh dokumen ini, bahwa **kami tidak mengklaim
-desentralisasi maupun tata kelola yang aman**. Pembaca yang menilai risiko
-sebaiknya menimbang hal ini bersama temuan pemusatan peran di bab Kepatuhan &
-risiko.
+We state the consequence plainly rather than softening it: one key controls the
+entire treasury. That strengthens — rather than weakens — the rule applied
+throughout this document, that **we claim neither decentralisation nor secure
+governance**. Readers assessing risk should weigh this alongside the
+role-concentration finding in Compliance & risk.
 
-## Pembelian kembali
+## Buyback
 
-Sebagian treasury dialokasikan untuk pembelian kembali. Fungsinya di dokumen
-ini dinyatakan sebagai **ketertiban distribusi dan kedalaman pasar** — bukan
-sebagai mekanisme untuk mengelola harga.
+Part of the treasury is allocated to buyback. Its role in this document is
+stated as **orderly distribution and market depth** — not as a mechanism for
+managing price.
 
-Pembedaan itu bukan kehalusan bahasa. Penerbit yang menempatkan dirinya sebagai
-pengelola harga mengambil posisi yang tidak bisa dipertahankan di hadapan
-regulator mana pun, dan menciptakan harapan yang tidak bisa ia penuhi.
+That distinction is not linguistic delicacy. An issuer that positions itself as
+a price manager takes a position it cannot defend before any regulator, and
+creates an expectation it cannot meet.
 
-## Yang tidak dijanjikan
+## What is not promised
 
-- Kepemilikan token tidak memberi hak atas pendapatan, laba, maupun distribusi
-  apa pun dari perusahaan
-- Tidak ada nilai rupiah yang dijanjikan atas imbalan aktivitas — token belum
-  diperdagangkan, sehingga harganya belum terbentuk
-- Tidak ada janji pencatatan di bursa mana pun
+- Holding the token confers no right to revenue, profit, or any distribution
+  from the company
+- No rupiah value is promised for activity rewards — the token is not traded,
+  so no price exists
+- No promise of listing on any exchange

@@ -2,53 +2,52 @@
 sidebar_position: 2
 slug: /latar-belakang
 id: latar-belakang
-title: "Latar belakang"
-description: "Masalah yang dituju IDM Reborn dan alasan pendekatannya."
+title: "Background"
+description: "The problem IDM Reborn addresses and why this approach."
 ---
 
-# Latar belakang
+# Background
 
-## Masalah yang nyata, bukan yang dikarang
+## A real problem, not an invented one
 
-Pelaku usaha mikro di Indonesia berjumlah puluhan juta, dan sebagian besar
-tidak punya catatan keuangan yang bisa dibaca pihak lain. Bukan karena malas —
-karena mencatat menuntut waktu, disiplin, dan kosakata akuntansi yang tidak
-mereka miliki dan memang tidak perlu mereka miliki.
+Indonesia has tens of millions of micro-businesses, and most keep no financial
+records another party could read. Not out of laziness — because recording
+demands time, discipline, and an accounting vocabulary they do not have and
+should not need.
 
-Akibatnya bukan sekadar pembukuan yang berantakan. Tanpa rekam usaha, seorang
-pedagang yang omzetnya stabil selama lima tahun tetap tidak bisa membuktikan
-apa pun tentang usahanya. Ia tidak punya dokumen, dan dokumen adalah bahasa
-yang dipakai lembaga keuangan.
+The consequence is not merely untidy bookkeeping. Without a business record, a
+trader whose turnover has been steady for five years still cannot prove
+anything about that business. They have no document, and documents are the
+language financial institutions use.
 
-## Kenapa aplikasi pencatatan biasa tidak cukup
+## Why ordinary bookkeeping apps are not enough
 
-Aplikasi pembukuan sudah banyak. Yang membuatnya jarang dipakai adalah
-bentuknya: formulir dengan kolom, kategori, dan istilah yang menuntut pengguna
-belajar dulu sebelum bisa mencatat penjualan pertamanya.
+Bookkeeping apps are plentiful. What keeps them unused is their shape: forms
+with columns, categories, and terms that require the user to study before they
+can record their first sale.
 
-AIDM mengambil jalan lain — pengguna menulis atau mengucapkan kalimat biasa,
-dan sistem yang menerjemahkannya. Detail teknisnya ada di bab Teknologi.
+AIDM takes another route — the user writes or speaks an ordinary sentence, and
+the system translates it. The technical detail is in the Technology chapter.
 
-## Di mana blockchain benar-benar menambah sesuatu
+## Where blockchain genuinely adds something
 
-Ini pertanyaan yang layak dijawab dengan hati-hati, karena banyak proyek
-menempelkan blockchain pada masalah yang tidak membutuhkannya.
+This question deserves a careful answer, because many projects attach a
+blockchain to problems that do not need one.
 
-Pada produk ini ada tiga tempat yang jawabannya jelas:
+In this product there are three places where the answer is clear:
 
-1. **Bukti bahwa laporan tidak diubah.** Sidik jari kriptografis laporan
-   ditulis ke rantai; isinya tetap privat. Sesuatu yang bisa dihapus atau
-   disunting belakangan tidak akan pernah bisa membuktikan apa pun.
-2. **Imbalan yang tidak bisa dicabut sepihak.** Imbalan aktivitas dibayarkan
-   ke dompet yang dikendalikan pengguna, bukan ke saldo di server kami.
-3. **Aturan yang bisa dibaca siapa pun.** Plafon, kurs, dan syarat penukaran
-   hidup di dalam kontrak — bukan di kebijakan yang bisa berubah diam-diam.
+1. **Proof that a report was not altered.** A cryptographic fingerprint of the
+   report is written on-chain; the contents stay private. Something that can be
+   deleted or edited afterwards can never prove anything.
+2. **Rewards that cannot be revoked unilaterally.** Activity rewards are paid to
+   a wallet the user controls, not to a balance on our servers.
+3. **Rules anyone can read.** Caps, rates, and swap conditions live inside the
+   contracts — not in a policy that can change quietly.
 
-Di luar tiga hal itu, kami memakai basis data biasa, dan menyebutnya begitu.
+Beyond those three, we use an ordinary database, and we say so.
 
-## Yang TIDAK dijanjikan dokumen ini
+## What this document does not promise
 
-AIDM membantu sampai laporan menjadi berkas yang rapi dan tersegel. Mau dibawa
-ke mana berkas itu adalah urusan pemiliknya, dan penerimaannya adalah wewenang
-pihak yang menilai. Kami tidak menjanjikan hasil apa pun di luar alat yang kami
-buat.
+AIDM helps until the report becomes a tidy, sealed file. Where that file goes
+is its owner's business, and whether it is accepted is the assessor's
+authority. We promise no outcome beyond the tool we built.

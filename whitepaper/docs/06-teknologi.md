@@ -2,70 +2,69 @@
 sidebar_position: 7
 slug: /teknologi
 id: teknologi
-title: "Teknologi"
-description: "BSC dan opBNB, dompet tertanam, segel hash-only, dan keamanan."
+title: "Technology"
+description: "BSC and opBNB, embedded wallets, hash-only sealing, and security."
 ---
 
 import OnChainStat from '@site/src/components/OnChainStat';
 
-# Teknologi
+# Technology
 
-## Dompet tanpa hambatan masuk
+## Wallets without an entry barrier
 
-Prinsipnya: **punya akun berarti punya dompet.** Dompet tertanam dibuat
-otomatis saat pendaftaran, tanpa frasa pemulihan yang harus dicatat pengguna,
-dan gas untuk aktivitas di opBNB disponsori aplikasi.
+The principle: **having an account means having a wallet.** An embedded wallet
+is created automatically at sign-up, with no recovery phrase for the user to
+write down, and gas for opBNB activity is sponsored by the app.
 
-Pengguna dapat mengekspor kunci dompetnya kapan saja. Selama ia menyimpan kunci
-itu, dompetnya tetap miliknya bahkan setelah akunnya dihapus dari aplikasi.
+Users can export their wallet key at any time. As long as they keep that key,
+the wallet remains theirs even after the account is deleted from the app.
 
-Pembuatan dompet dijalankan di **server**, pada jalur yang harus dilewati
-setiap sesi. Ini terdengar seperti detail implementasi, tetapi ia keputusan
-arsitektur yang dibayar mahal: invarian produk yang menumpang pada komponen
-tampilan akan runtuh diam-diam ketika komponen itu diganti oleh orang yang
-tidak tahu ada invarian di sana.
+Wallet creation runs on the **server**, on a path every session must pass
+through. That sounds like an implementation detail, but it is an architectural
+decision paid for the hard way: a product invariant riding on a display
+component collapses silently when that component is replaced by someone who did
+not know an invariant lived there.
 
-## Segel laporan — hanya sidik jari
+## Report sealing — fingerprint only
 
-Laporan disusun menjadi bentuk kanonik (kunci terurut, angka bulat, zona waktu
-tetap), lalu di-hash. **Hanya hash-nya yang ditulis ke rantai.**
+A report is reduced to a canonical form (sorted keys, integer amounts, a fixed
+timezone) and hashed. **Only the hash is written on-chain.**
 
-Data keuangan tidak pernah menyentuh blockchain. Yang publik hanya sidik jari —
-cukup untuk membuktikan laporan itu ada dan tidak berubah pada tanggal
-tersebut, tidak cukup untuk mengetahui isinya.
+Financial data never touches the blockchain. What is public is only the
+fingerprint — enough to prove the report existed and was unchanged on that date,
+not enough to learn its contents.
 
-Sifat yang membuatnya bermakna adalah permanensinya, dan itu berlaku dua arah:
-hash tetap ada bahkan setelah pengguna menghapus akunnya. Kami menyampaikan itu
-kepada pengguna di dalam aplikasi sebagai konsekuensi, bukan menyembunyikannya
-— sesuatu yang bisa dihapus belakangan tidak akan pernah bisa membuktikan apa
-pun.
+The property that gives it meaning is permanence, and that cuts both ways: the
+hash remains even after a user deletes their account. We tell users that inside
+the app as a consequence rather than hiding it — something that can be deleted
+later can never prove anything.
 
-Laporan tersegel sejauh ini: <OnChainStat metric="sealedReports" />.
+Reports sealed so far: <OnChainStat metric="sealedReports" />.
 
-## Pemrosesan bahasa
+## Language processing
 
-Kalimat pengguna diproses model bahasa menjadi entri terstruktur, dengan parser
-cadangan berbasis aturan bila model gagal atau lambat. Ada gerbang deterministik
-sebelum model dipanggil: kalimat yang tidak memuat jejak uang sama sekali tidak
-pernah mencapai model.
+User sentences are turned into structured entries by a language model, with a
+rule-based fallback parser if the model fails or is slow. A deterministic gate
+runs before the model is called: a sentence with no trace of money in it never
+reaches the model.
 
-Angka uang tidak pernah dikarang. Kalimat yang menyebut transaksi tanpa nominal
-menghasilkan catatan yang menunggu, bukan angka tebakan.
+Monetary figures are never invented. A sentence describing a transaction with no
+amount produces a pending entry, not a guessed number.
 
-## Keamanan yang ditegakkan kontrak
+## Security enforced by contract
 
-Empat jaminan berikut hidup di dalam kontrak, bukan di server:
+The following four guarantees live inside the contracts, not on a server:
 
-1. **Penebusan ganda mustahil** — nomor sekali pakai pada tiap kupon
-2. **Plafon ditegakkan on-chain** — server yang gagal atau dikompromikan tidak
-   bisa melampauinya
-3. **Kurs hanya bisa bergerak ke arah yang menguntungkan pengguna**
-4. **Alokasi migrasi tidak bisa diturunkan** — akar merkle tidak bisa diubah
-   setelah kontrak dipasang, dan tidak ada fungsi jeda maupun penarikan yang
-   bisa menyentuh alokasi yang belum diklaim
+1. **Double redemption is impossible** — a single-use nonce per voucher
+2. **Caps are enforced on-chain** — a failing or compromised server cannot
+   exceed them
+3. **The rate can only move in the user's favour**
+4. **Migration allocations cannot be reduced** — the merkle root is immutable
+   after deployment, and there is no pause or withdrawal function that can
+   touch unclaimed allocations
 
-Butir keempat punya konsekuensi yang perlu dinyatakan: karena akar merkle tidak
-bisa diubah, daftar alokasi **harus final sebelum kontrak dipasang di mainnet**.
-Kontrak ini tidak bisa "diisi belakangan". Itu bukan keterbatasan melainkan
-sifat yang dituju — alokasi yang bisa diganti pemilik kontrak bukan kewajiban,
-melainkan janji.
+The fourth point has a consequence worth stating: because the merkle root is
+immutable, the allocation list **must be final before the contract is deployed
+to mainnet**. This contract cannot be "filled in later". That is not a
+limitation but the intended property — an allocation the contract owner can
+change is not an obligation, only a promise.

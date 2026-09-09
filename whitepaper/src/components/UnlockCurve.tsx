@@ -1,4 +1,5 @@
 import React from "react";
+import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import t from "@site/data/tokenomics.json";
 
 /**
@@ -41,7 +42,9 @@ function beredarPada(bulan: number): number {
   return total;
 }
 
-export default function UnlockCurve({ months = 24, locale = "id" }: { months?: number; locale?: "id" | "en" }) {
+export default function UnlockCurve({ months = 24, locale }: { months?: number; locale?: "id" | "en" }) {
+  const { i18n } = useDocusaurusContext();
+  const bahasa = locale ?? ((i18n.currentLocale === "en" ? "en" : "id") as "id" | "en");
   const W = 640, H = 260, P = 44;
   const titik = Array.from({ length: months + 1 }, (_, m) => ({ m, v: beredarPada(m) }));
   const maks = Math.max(...titik.map((p) => p.v), t.totalSupply * 0.35);
@@ -54,23 +57,23 @@ export default function UnlockCurve({ months = 24, locale = "id" }: { months?: n
   return (
     <figure className="idm-kurva">
       <svg viewBox={`0 0 ${W} ${H}`} role="img"
-           aria-label={locale === "en" ? "Cumulative unlock curve" : "Kurva pelepasan kumulatif"}>
+           aria-label={bahasa === "en" ? "Cumulative unlock curve" : "Kurva pelepasan kumulatif"}>
         <line x1={P} y1={H - P} x2={W - 12} y2={H - P} stroke="currentColor" strokeOpacity=".3" />
         <line x1={P} y1={16} x2={P} y2={H - P} stroke="currentColor" strokeOpacity=".3" />
         <line x1={P} y1={yTge} x2={W - 12} y2={yTge} stroke="currentColor" strokeOpacity=".35" strokeDasharray="4 4" />
         <text x={P + 6} y={yTge - 6} fontSize="11" fill="currentColor" opacity=".75">
-          {locale === "en" ? "TGE circulating" : "Sirkulasi TGE"} · {jt(t.tge.circulating)}
+          {bahasa === "en" ? "TGE circulating" : "Sirkulasi TGE"} · {jt(t.tge.circulating)}
         </text>
         <path d={garis} fill="none" stroke="currentColor" strokeWidth="2" />
         {[0, 6, 12, 18, 24].filter((m) => m <= months).map((m) => (
           <text key={m} x={x(m)} y={H - P + 16} fontSize="11" textAnchor="middle" fill="currentColor" opacity=".7">
-            {locale === "en" ? `M${m}` : `B${m}`}
+            {bahasa === "en" ? `M${m}` : `B${m}`}
           </text>
         ))}
         <text x={P} y={12} fontSize="11" fill="currentColor" opacity=".7">{jt(maks)}</text>
       </svg>
       <figcaption>
-        {locale === "en"
+        {bahasa === "en"
           ? `Cumulative circulating supply over ${months} months, derived from the vesting schedules in tokenomics.json.`
           : `Sirkulasi kumulatif selama ${months} bulan, diturunkan dari jadwal vesting di tokenomics.json.`}
       </figcaption>

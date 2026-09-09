@@ -2,35 +2,35 @@
 sidebar_position: 12
 slug: /riwayat-revisi
 id: riwayat-revisi
-title: "Riwayat revisi"
-description: "Perubahan tiap versi berikut hash PDF-nya."
+title: "Revision history"
+description: "Changes per version with the PDF hash of each."
 ---
 
-# Riwayat revisi
+# Revision history
 
-## v0.1 — DRAF · 9 September 2026
+## v0.1 — DRAFT · 9 September 2026
 
-> **Versi ini BUKAN dokumen final.** Ia draf dalam pengembangan: seluruh angka,
-> alamat, dan jadwal di dalamnya dapat berubah hingga penerapan mainnet.
-> Jangan mengutipnya sebagai rujukan, dan jangan meneruskannya sebagai
-> whitepaper resmi.
+> **This version is NOT a final document.** It is a work-in-progress draft: every
+> figure, address, and schedule in it may change before mainnet deployment. Do
+> not cite it as a reference, and do not circulate it as an official
+> whitepaper.
 
-Yang sudah berdiri di versi ini:
+What exists in this version:
 
-- Kerangka 12 bab, dwibahasa (Indonesia & Inggris)
-- Angka ekonomi bersumber tunggal dari `data/tokenomics.json`, turunan
+- A 12-chapter skeleton, in Indonesian and English
+- Economic figures sourced solely from `data/tokenomics.json`, derived from
   `docs/PERINTAH-AGEN-FINAL.md` §0.1
-- Angka on-chain dibaca langsung dari rantai, disertai tanggal pembacaannya
-- Tiga gerbang yang menggagalkan build: jumlah alokasi, klaim terlarang, dan
-  klaim tanpa bukti
+- On-chain figures read directly from the chains, each carrying its read date
+- Three gates that fail the build: allocation sums, forbidden claims, and
+  claims without evidence
 
-Yang BELUM ada:
+What does not exist yet:
 
-- Isi kedua belas bab — baru kerangkanya
-- Alamat kontrak mainnet; seluruh kontrak masih di testnet
-- Alokasi 586.060,85 IDM yang disisihkan menunggu verifikasi alamat, sehingga
-  root merkle migrasi masih berlaku untuk testnet saja
-- Hash PDF berversi — dicatat di sini setelah versi 1.0 terbit
+- The prose of all twelve chapters — only the skeleton
+- Mainnet contract addresses; every contract is still on testnet
+- The 586,060.85 IDM set aside pending address verification, which keeps the
+  migration merkle root valid for testnet only
+- Versioned PDF hashes — recorded here once v1.0 is published
 
-Situs ini disetel `noindex, nofollow` selama masih draf. Penanda itu dicabut
-saat versi 1.0 terbit, bukan sebelumnya.
+This site is set to `noindex, nofollow` while it remains a draft. That marker is
+removed when v1.0 is published, not before.

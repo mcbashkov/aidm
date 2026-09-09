@@ -21,17 +21,19 @@ const LOGO = "img/logo.png";
  * `announcementBar` dan `footer.copyright` memang tidak ikut berkas terjemahan
  * JSON bawaan.
  */
-const LOCALE = (process.env.DOCUSAURUS_CURRENT_LOCALE ?? "id") as "id" | "en";
+const LOCALE = (process.env.DOCUSAURUS_CURRENT_LOCALE ?? "en") as "id" | "en";
 const TEKS = {
   id: {
     pengumuman:
       "Draf dalam pengembangan. Seluruh angka, alamat, dan jadwal dapat berubah hingga penerapan mainnet.",
     versi: "v0.1 — DRAF",
+    produk: "Produk",
   },
   en: {
     pengumuman:
       "Work-in-progress draft. All figures, addresses, and schedules may change until mainnet deployment.",
     versi: "v0.1 — DRAFT",
+    produk: "Products",
   },
 }[LOCALE];
 
@@ -56,12 +58,24 @@ const config: Config = {
    */
   noIndex: true,
   onBrokenMarkdownLinks: "throw",
+  /**
+   * INGGRIS adalah locale bawaan sejak 9 Sep 2026 (keputusan PO).
+   *
+   * Konsekuensinya pada URL, dan ini perlu diketahui sebelum menautkan apa
+   * pun: `/` kini melayani bahasa Inggris, sedangkan bahasa Indonesia pindah
+   * ke `/id/`. Tautan lama ke halaman Indonesia tanpa awalan `/id/` akan
+   * mendarat di versi Inggrisnya, bukan 404 — jadi tidak ada yang rusak, tapi
+   * bahasanya berganti.
+   *
+   * Isi bahasa Indonesia tidak berkurang sedikit pun; ia hanya berpindah dari
+   * `docs/` ke `i18n/id/`.
+   */
   i18n: {
-    defaultLocale: "id",
-    locales: ["id", "en"],
+    defaultLocale: "en",
+    locales: ["en", "id"],
     localeConfigs: {
-      id: { label: "Bahasa Indonesia", htmlLang: "id-ID" },
       en: { label: "English", htmlLang: "en-US" },
+      id: { label: "Bahasa Indonesia", htmlLang: "id-ID" },
     },
   },
   presets: [
@@ -94,6 +108,17 @@ const config: Config = {
       title: "IDM Whitepaper",
       logo: { alt: "IDM Reborn", src: LOGO },
       items: [
+        {
+          type: "dropdown",
+          label: TEKS.produk,
+          position: "left",
+          items: [
+            { to: "/produk/aidm", label: "AIDM" },
+            { to: "/produk/skemguard", label: "SkemGuard" },
+            { to: "/produk/film", label: "IDM Film" },
+            { to: "/produk/idm-chain", label: "IDM Chain" },
+          ],
+        },
         { type: "localeDropdown", position: "right" },
         { href: "https://idmtoken.com", label: "idmtoken.com", position: "right" },
       ],

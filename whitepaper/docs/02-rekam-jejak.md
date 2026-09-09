@@ -2,73 +2,71 @@
 sidebar_position: 3
 slug: /rekam-jejak
 id: rekam-jejak
-title: "Rekam jejak & migrasi"
-description: "Token v1, keputusan menghentikan perdagangan, dan skema migrasi ke IDM Reborn."
+title: "Track record & migration"
+description: "The v1 token, the decision to halt trading, and the migration scheme to IDM Reborn."
 ---
 
 import OnChainStat from '@site/src/components/OnChainStat';
 import Receipt from '@site/src/components/Receipt';
 
-# Rekam jejak & migrasi
+# Track record & migration
 
-## Token generasi pertama
+## The first-generation token
 
-IDM generasi pertama berhenti diperdagangkan atas kesepakatan tim dan pemegang,
-sebagai transisi menuju fase "Reborn". Itu keputusan sadar, bukan proyek yang
-ditinggalkan — dan bedanya bisa diperiksa: sebagian besar pasokan lama dikunci
-permanen di alamat mati.
+First-generation IDM stopped trading by agreement between the team and holders,
+as a transition into the "Reborn" phase. That was a deliberate decision, not an
+abandoned project — and the difference is checkable: most of the old supply is
+permanently locked at a burn address.
 
 <Receipt
-  claim="Token v1 yang terkunci permanen di alamat 0x…dEaD"
-  evidence="Dibaca langsung dari kontrak token v1 di BNB Chain"
+  claim="v1 tokens permanently locked at 0x…dEaD"
+  evidence="Read directly from the v1 token contract on BNB Chain"
   url="https://bscscan.com/token/0x14B13E06f75E1F0Fd51ca2E699589Ef398E10F4C"
-  date="lihat tanggal pada angka di bawah" />
+  date="see the date attached to the figure below" />
 
-Saldo terkunci: <OnChainStat metric="deadBalance" decimals={2} suffix=" IDM v1" />
+Locked balance: <OnChainStat metric="deadBalance" decimals={2} suffix=" v1 IDM" />
 
-Angka itu dibaca dari rantai setiap kali situs ini dibangun. Ia tidak diketik.
+That figure is read from the chain every time this site is built. It is not
+typed.
 
-## Migrasi ke IDM Reborn
+## Migration to IDM Reborn
 
-Pemegang yang memilih lanjut menerima alokasi IDM Reborn. Daftarnya
-terverifikasi dan dikunci ke dalam sebuah *merkle tree* — struktur yang
-memungkinkan setiap orang membuktikan haknya sendiri tanpa perlu memercayai
-daftar yang kami simpan.
+Holders who chose to continue receive an IDM Reborn allocation. The list is
+verified and committed to a *merkle tree* — a structure that lets each person
+prove their own entitlement without trusting the list we keep.
 
-Pos migrasi terbagi tiga bagian yang berdiri sendiri:
+The migration allocation is split into three standalone parts:
 
-| Bagian | Keadaan |
+| Part | State |
 |---|---|
-| Kewajiban terverifikasi | Sudah masuk *merkle root*; setiap alamat bisa membuktikan haknya |
-| Disisihkan menunggu verifikasi | Alamat penerimanya belum diketahui — **bukan dihapus, bukan dilebur** |
-| Kolam keterlambatan | Mekanisme pembagiannya **belum ditentukan** |
+| Verified obligation | Committed to the merkle root; every address can prove its claim |
+| Set aside pending verification | Recipient address unknown — **neither removed nor folded in** |
+| Late-claim pool | Distribution mechanism **not yet decided** |
 
-Angka ketiganya ada di bab Arsitektur token, diambil dari berkas data yang sama
-yang dipakai membangun pohon.
+The figures for all three appear in Token architecture, taken from the same
+data file used to build the tree.
 
-### Kenapa bagian yang disisihkan tidak dilebur saja
+### Why the set-aside portion is not simply folded in
 
-Melebur alokasi tanpa alamat ke dalam kolam keterlambatan akan menghapus jejak
-bahwa ia milik seseorang. Sekali jejak itu hilang, tidak ada yang akan
-mencarinya lagi. Ia berdiri sebagai barisnya sendiri sampai alamatnya
-diketahui.
+Folding an address-less allocation into the late-claim pool would erase the
+trace that it belongs to someone. Once that trace is gone, nobody goes looking
+for it again. It stands as its own line until the address is known.
 
-Konsekuensinya jujur: **selama alokasi itu belum beralamat, akar merkle yang
-ada hanya sah untuk testnet.** Akar itu tidak bisa diubah setelah kontrak
-dipasang, jadi memasangnya di mainnet sekarang berarti mengunci kelalaian itu
-secara permanen.
+The consequence, stated plainly: **while that allocation has no address, the
+existing merkle root is valid for testnet only.** The root cannot be changed
+after the contract is deployed, so deploying it on mainnet now would make the
+omission permanent.
 
-## Jadwal pelepasan migrasi
+## Migration release schedule
 
-Dua tingkat, dibedakan oleh ambang saldo, dan **tingkatnya dihitung oleh
-kontrak** dari jumlah alokasi — bukan disimpan di dalam daftar:
+Two tiers, separated by a balance threshold, and **the tier is computed by the
+contract** from the allocation amount — not stored in the list:
 
-- Di bawah ambang → seluruhnya terbuka saat TGE
-- Pada atau di atas ambang → sebagian terbuka saat TGE, sisanya matang linear
-  selama enam bulan
+- Below the threshold → fully unlocked at TGE
+- At or above → part unlocks at TGE, the remainder vests linearly over six
+  months
 
-Kematangan dihitung dari **waktu TGE**, bukan dari tanggal seseorang mengklaim.
-Kalau dihitung dari tanggal klaim, pemegang yang terlambat membaca pengumuman
-justru selesai vesting paling akhir — keterlambatan berubah menjadi hukuman.
-Dengan waktu awal bersama, mengklaim lebih lambat tidak pernah merugikan: yang
-sudah matang tetap matang dan menunggu.
+Maturity is measured from **TGE**, not from the date someone claims. Measured
+from the claim date, whoever read the announcement late would finish vesting
+last — lateness would become a penalty. With a shared start time, claiming
+later never costs anything: what has matured stays matured and waits.

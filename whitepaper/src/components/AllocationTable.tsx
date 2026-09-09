@@ -1,4 +1,5 @@
 import React from "react";
+import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import t from "@site/data/tokenomics.json";
 
 /**
@@ -14,9 +15,19 @@ type Alokasi = { id: string; label: Record<string, string>; pct: number; tokens:
 
 const n = (v: number) => v.toLocaleString("id-ID", { maximumFractionDigits: 2 });
 
-export default function AllocationTable({ locale = "id" }: { locale?: "id" | "en" }) {
+/**
+ * Bahasa dibaca dari konteks Docusaurus, bukan dioper lewat props.
+ *
+ * Sebuah halaman yang lupa mengoper prop akan merender tabel dalam bahasa yang
+ * salah — dan kesalahan itu tidak menggagalkan apa pun, ia hanya salah. Dengan
+ * membacanya dari konteks, halaman tidak bisa lagi keliru; prop hanya tersisa
+ * sebagai override yang disengaja.
+ */
+export default function AllocationTable({ locale }: { locale?: "id" | "en" }) {
+  const { i18n } = useDocusaurusContext();
+  const bahasa = locale ?? ((i18n.currentLocale === "en" ? "en" : "id") as "id" | "en");
   const alokasi = t.allocations as Alokasi[];
-  const judul = locale === "en"
+  const judul = bahasa === "en"
     ? { pos: "Allocation", pct: "%", tok: "Tokens", rinci: "Breakdown" }
     : { pos: "Pos", pct: "%", tok: "Token", rinci: "Rincian" };
   return (
@@ -25,18 +36,18 @@ export default function AllocationTable({ locale = "id" }: { locale?: "id" | "en
       <tbody>
         {alokasi.map((a) => (
           <tr key={a.id}>
-            <td>{a.label[locale]}</td>
+            <td>{a.label[bahasa]}</td>
             <td style={{ textAlign: "right" }}>{a.pct}%</td>
             <td style={{ textAlign: "right" }}>{n(a.tokens)}</td>
             <td>
               {a.components
                 ? a.components.map((c, i) => (
                     <div key={i}>
-                      {n(c.tokens)} {c.label[locale]}
-                      {c.locked ? (locale === "en" ? " (locked)" : " (terkunci)") : ""}
-                      {c.pending ? (locale === "en" ? " — recipient unknown" : " — belum beralamat") : ""}
+                      {n(c.tokens)} {c.label[bahasa]}
+                      {c.locked ? (bahasa === "en" ? " (locked)" : " (terkunci)") : ""}
+                      {c.pending ? (bahasa === "en" ? " — recipient unknown" : " — belum beralamat") : ""}
                       {c.mechanism === null && !c.pending
-                        ? (locale === "en" ? " — mechanism undecided" : " — mekanisme belum ditentukan")
+                        ? (bahasa === "en" ? " — mechanism undecided" : " — mekanisme belum ditentukan")
                         : ""}
                     </div>
                   ))
@@ -45,7 +56,7 @@ export default function AllocationTable({ locale = "id" }: { locale?: "id" | "en
           </tr>
         ))}
         <tr className="idm-alokasi__total">
-          <td>{locale === "en" ? "Total" : "Jumlah"}</td>
+          <td>{bahasa === "en" ? "Total" : "Jumlah"}</td>
           <td style={{ textAlign: "right" }}>{alokasi.reduce((s, a) => s + a.pct, 0)}%</td>
           <td style={{ textAlign: "right" }}>{n(alokasi.reduce((s, a) => s + a.tokens, 0))}</td>
           <td />

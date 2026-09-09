@@ -2,73 +2,72 @@
 sidebar_position: 11
 slug: /lampiran
 id: lampiran
-title: "Lampiran"
-description: "Alamat kontrak, sumber data, dan glosarium."
+title: "Appendix"
+description: "Contract addresses, data sources, and glossary."
 ---
 
 import OnChainStat from '@site/src/components/OnChainStat';
 
-# Lampiran
+# Appendix
 
-## Alamat kontrak
+## Contract addresses
 
-> ⚠️ **Seluruh kontrak di bawah berada di TESTNET.** Alamat mainnet akan
-> menggantikan bagian ini setelah penerapan, dan versi dokumen ini akan
-> dinaikkan bersamanya.
+> ⚠️ **Every contract below is on TESTNET.** Mainnet addresses will replace this
+> section after deployment, and this document's version will be raised with
+> them.
 
-| Kontrak | Jaringan | Peran |
+| Contract | Network | Role |
 |---|---|---|
-| `IDMX` | opBNB testnet | Token imbalan aktivitas |
-| `MissionRewards` | opBNB testnet | Membayar imbalan atas kupon bertanda tangan |
-| `ReportAttestation` | opBNB testnet | Menyegel sidik jari laporan |
-| `SwapInitiator` | opBNB testnet | Membakar IDMX, menerbitkan permintaan tukar |
-| `IDMReborn` | BNB Chain testnet | Token nilai ekosistem |
-| `SwapClaim` | BNB Chain testnet | Menebus kupon, melepas IDM dari kolam |
-| `MigrationVesting` | BNB Chain testnet | Melepas alokasi migrasi sesuai jadwal |
+| `IDMX` | opBNB testnet | Activity reward token |
+| `MissionRewards` | opBNB testnet | Pays rewards against signed vouchers |
+| `ReportAttestation` | opBNB testnet | Seals report fingerprints |
+| `SwapInitiator` | opBNB testnet | Burns IDMX, issues swap requests |
+| `IDMReborn` | BNB Chain testnet | Ecosystem value token |
+| `SwapClaim` | BNB Chain testnet | Redeems vouchers, releases IDM from the pool |
+| `MigrationVesting` | BNB Chain testnet | Releases migration allocations on schedule |
 
-Alamat lengkap, argumen konstruktor, dan setelan kompilasi tiap kontrak
-diterbitkan di repositori proyek. Source keenam kontrak inti dan kontrak
-vesting migrasi sudah terverifikasi di penjelajah blok.
+Full addresses, constructor arguments, and compiler settings for each contract
+are published in the project repository. The six core contracts and the
+migration vesting contract have verified source on the block explorer.
 
-## Angka on-chain
+## On-chain figures
 
-Seluruh angka berikut dibaca langsung dari rantai saat situs ini dibangun,
-lengkap dengan tanggal pembacaannya.
+All figures below are read directly from the chains when this site is built,
+each carrying its read date.
 
-| Metrik | Nilai |
+| Metric | Value |
 |---|---|
-| Pasokan IDM Reborn | <OnChainStat metric="idmRebornSupply" /> |
-| Pasokan IDMX | <OnChainStat metric="idmxSupply" /> |
-| Token v1 terkunci di alamat mati | <OnChainStat metric="deadBalance" decimals={2} /> |
-| Kolam penukaran | <OnChainStat metric="swapClaimPool" /> |
-| Kolam imbalan aktivitas | <OnChainStat metric="missionRewardsPool" /> |
-| Laporan tersegel | <OnChainStat metric="sealedReports" /> |
+| IDM Reborn supply | <OnChainStat metric="idmRebornSupply" /> |
+| IDMX supply | <OnChainStat metric="idmxSupply" /> |
+| v1 tokens locked at the burn address | <OnChainStat metric="deadBalance" decimals={2} /> |
+| Swap pool | <OnChainStat metric="swapClaimPool" /> |
+| Activity reward pool | <OnChainStat metric="missionRewardsPool" /> |
+| Reports sealed | <OnChainStat metric="sealedReports" /> |
 
-Bila sebuah angka membawa penanda "perlu diperbarui", artinya pembacaan
-terakhir gagal dan nilai yang ditampilkan berasal dari cache. Kami memilih
-menampilkan angka lama yang jujur tentang umurnya daripada menggagalkan
-halaman.
+If a figure carries a "needs refresh" marker, the last read failed and the value
+shown comes from cache. We prefer showing an older figure that is honest about
+its age over failing the page.
 
-## Sumber data
+## Data sources
 
-| Berkas | Isi |
+| File | Contents |
 |---|---|
-| `data/tokenomics.json` | Alokasi, jadwal pelepasan, treasury |
-| `data/onchain.cache.json` | Hasil pembacaan rantai terakhir |
-| `data/status.json` | Status tiap pilar |
-| `data/migration-allocations.csv` | Daftar alokasi migrasi terverifikasi |
+| `data/tokenomics.json` | Allocation, unlock schedule, treasury |
+| `data/onchain.cache.json` | Last successful chain read |
+| `data/status.json` | Status of each pillar |
+| `data/migration-allocations.csv` | Verified migration allocation list |
 
-## Glosarium
+## Glossary
 
-| Istilah | Arti |
+| Term | Meaning |
 |---|---|
-| **TGE** | Saat token pertama kali diterbitkan dan mulai dapat beredar |
-| **Kolam swap** | Cadangan IDM yang terkunci di kontrak untuk penukaran IDMX |
-| **Merkle tree** | Struktur data yang memungkinkan seseorang membuktikan haknya tanpa mengungkap seluruh daftar |
-| **Merkle root** | Ringkasan satu nilai dari seluruh daftar; tidak bisa diubah setelah dipasang |
-| **Vesting** | Pelepasan token secara bertahap menurut jadwal |
-| **Cliff** | Jangka waktu sebelum pelepasan bertahap mulai berjalan |
-| **Segel laporan** | Penulisan sidik jari laporan ke rantai; isinya tetap privat |
-| **Dompet tertanam** | Dompet yang dibuat otomatis oleh aplikasi, tanpa frasa pemulihan |
-| **Burn** | Pemusnahan token; pasokan berkurang dan terlihat di penjelajah blok |
-| **Testnet** | Jaringan uji. Token di atasnya tidak punya nilai ekonomi |
+| **TGE** | The moment tokens are first issued and can begin circulating |
+| **Swap pool** | The IDM reserve locked in a contract for IDMX conversion |
+| **Merkle tree** | A structure letting someone prove their entitlement without revealing the whole list |
+| **Merkle root** | A single-value summary of the whole list; immutable once deployed |
+| **Vesting** | Gradual release of tokens on a schedule |
+| **Cliff** | The period before gradual release begins |
+| **Report seal** | Writing a report's fingerprint on-chain; the contents stay private |
+| **Embedded wallet** | A wallet created automatically by the app, with no recovery phrase |
+| **Burn** | Destruction of tokens; supply falls and the change is visible on the explorer |
+| **Testnet** | A test network. Tokens on it have no economic value |

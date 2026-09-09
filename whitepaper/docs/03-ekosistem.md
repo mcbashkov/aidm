@@ -2,77 +2,76 @@
 sidebar_position: 4
 slug: /ekosistem
 id: ekosistem
-title: "Ekosistem empat pilar"
-description: "AIDM, SkemGuard, IDM Film, dan IDM Chain — berikut status jujur masing-masing."
+title: "The four pillars"
+description: "AIDM, SkemGuard, IDM Film, and IDM Chain — with an honest status for each."
 ---
 
 import StatusBadge from '@site/src/components/StatusBadge';
 import OnChainStat from '@site/src/components/OnChainStat';
 
-# Ekosistem empat pilar
+# The four pillars
 
-Empat pilar dengan tingkat kematangan yang sangat berbeda. Menyajikannya
-seolah setara akan menyesatkan, jadi tiap bagian membawa statusnya sendiri.
+Four pillars at very different stages of maturity. Presenting them as equals
+would mislead, so each carries its own status.
 
 ## AIDM <StatusBadge pillar="aidm" />
 
-Aplikasi pencatatan keuangan berbasis percakapan untuk pelaku usaha mikro.
-Pengguna mencatat dengan kalimat biasa atau suara; sistem mengubahnya menjadi
-catatan terstruktur, lalu menyusun laporan yang bisa dicetak dan disegel.
+A conversational bookkeeping app for micro-businesses. Users record in ordinary
+sentences or by voice; the system turns that into structured entries and builds
+reports that can be printed and sealed.
 
-Ini pilar dengan porsi teknologi blockchain terbesar — dompet otomatis,
-imbalan aktivitas on-chain, dan segel laporan semuanya hidup di sini. Laporan
-tersegel sejauh ini: <OnChainStat metric="sealedReports" />.
+This is the pillar with the largest blockchain component — automatic wallets,
+on-chain activity rewards, and report seals all live here. Reports sealed so
+far: <OnChainStat metric="sealedReports" />.
 
 ## SkemGuard <StatusBadge pillar="skemguard" />
 
-Pemindai keamanan token untuk enam jaringan. Pengguna menempelkan alamat
-kontrak dan menerima penilaian risiko sebelum membeli.
+A token security scanner covering six networks. Users paste a contract address
+and get a risk assessment before buying.
 
-**Utilitas token IDM di SkemGuard saat ini nol, dan itu keputusan desain, bukan
-kelalaian.** Halaman metodologinya menyatakan tidak ada pengecualian untuk
-token mana pun — termasuk token ekosistem sendiri — tidak ada daftar putih, dan
-tidak ada slot berbayar untuk memperbaiki hasil.
+**IDM token utility in SkemGuard is currently zero, and that is a design
+decision rather than an oversight.** Its methodology page states there are no
+exceptions for any token — including our own ecosystem token — no allowlist,
+and no paid slot to improve a result.
 
-Konsekuensinya perlu disebut terang-terangan: utilitas token yang paling lazim
-di produk semacam ini — bayar untuk memindai, staking untuk hasil lebih baik,
-whitelist — **bertabrakan langsung dengan pembeda produknya sendiri.** Pemindai
-keamanan yang hasilnya bisa dipengaruhi uang tidak punya alasan untuk
-dipercaya, dan kepercayaan adalah satu-satunya barang yang dijualnya.
+The consequence deserves to be said plainly: the most common token utilities
+for a product like this — pay to scan, stake for better results, allowlisting —
+**collide directly with the product's own differentiator.** A security scanner
+whose results money can influence has no reason to be trusted, and trust is the
+only thing it sells.
 
-Arah yang sedang dipertimbangkan, dan belum diputuskan: token untuk **data
-turunan**, bukan untuk vonis — hasil pemindaian tetap gratis dan identik bagi
-semua orang, sementara yang berbayar adalah akses ke lapisan reputasi deployer
-(API, ekspor, riwayat). Itu menjual pekerjaan akumulasi, bukan menjual pengaruh
-atas hasil.
+The direction under consideration, and not yet decided: token utility for
+**derived data** rather than for verdicts — scan results stay free and
+identical for everyone, while what is paid for is access to the deployer
+reputation layer (API, exports, history). That sells accumulated work, not
+influence over outcomes.
 
-Sampai keputusan itu diambil, dokumen ini tidak mengklaim IDM punya utilitas di
-SkemGuard.
+Until that decision is made, this document claims no IDM utility in SkemGuard.
 
 ## IDM Film <StatusBadge pillar="film" />
 
-Produksi film, dengan dua judul yang sudah tayang di bioskop nasional. Badan
-hukum penerbit token adalah PT IDM Film Sejahtera — entitas yang sama.
+Film production, with two titles released in national cinemas. The token
+issuer, PT IDM Film Sejahtera, is the same legal entity.
 
-**Tidak ada skema pendanaan film lewat token**, dan untuk saat ini itu
-disengaja. Utilitas yang aman dan tetap bermakna adalah token sebagai **akses**
-— tiket, pemutaran perdana, konten di balik layar. Skema yang menautkan
-kepemilikan token dengan pendapatan film adalah wilayah yang menuntut nasihat
-hukum lebih dulu, dan tidak akan dirumuskan sambil lalu di dokumen ini.
+**There is no scheme funding films through the token**, and for now that is
+deliberate. The safe and still meaningful utility is the token as **access** —
+tickets, premieres, behind-the-scenes material. Any scheme linking token
+ownership to film revenue is territory that requires legal advice first, and it
+will not be sketched casually in this document.
 
 ## IDM Chain <StatusBadge pillar="idmchain" />
 
-Layer 2 di atas BNB Chain. **Belum ada spesifikasi teknis, kontrak, maupun
-riset arsitektur** — yang ada baru rencana.
+A layer 2 on BNB Chain. **There is no technical specification, no contract, and
+no architecture research** — only a plan.
 
-Kami menolak menyebut jenis arsitekturnya sebelum risetnya selesai. Istilah
-seperti *optimistic rollup*, *zk*, dan *sidechain* punya konsekuensi keamanan,
-biaya, dan waktu penarikan yang sangat berbeda; memilih salah satunya karena
-terdengar meyakinkan adalah cara cepat kehilangan kepercayaan pembaca teknis.
+We decline to name an architecture before the research exists. Terms such as
+*optimistic rollup*, *zk*, and *sidechain* carry very different security, cost,
+and withdrawal-time consequences; picking one because it sounds convincing is a
+fast way to lose a technical reader.
 
-Pertanyaan yang harus dijawab lebih dulu, dan belum terjawab: **kenapa butuh
-chain sendiri, sementara AIDM sudah berjalan baik di opBNB?** Sampai ada
-jawaban yang didukung angka biaya nyata, posisi kami adalah *belum diperlukan*.
+The question that must be answered first, and is not yet answered: **why a
+dedicated chain, when AIDM already runs well on opBNB?** Until there is an
+answer backed by real cost figures, our position is *not needed yet*.
 
-Komitmennya: testnet lebih dulu; mainnet hanya bila metrik penggunaan tercapai,
-dan metriknya diumumkan sebelum dikejar — bukan sesudah.
+The commitment: testnet first; mainnet only if usage metrics are met, with the
+metrics announced before they are pursued — not after.
