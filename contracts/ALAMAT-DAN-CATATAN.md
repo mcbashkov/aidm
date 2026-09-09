@@ -51,6 +51,23 @@ dengan nominal kecil.
 | `merkleRoot` demo | `0x59cd7d1615415891773eb0cc6bb11719301eb23c72a459318713a0e0fc09c472` |
 | `totalAllocated` demo | 400.100 IDM (terdanai dari treasury) |
 | `t0` | disetel 2026-09-09; percobaan kedua **ditolak** `TgeAlreadySet` (revert data `0x7d11506a`, didekode dari rantai) |
+| source | ✅ **Verified di testnet.bscscan.com**, 9 Sep 2026 |
+
+**Verifikasi diperiksa ulang dari explorer, bukan dari jawaban "Pass" API.**
+`getsourcecode` mengembalikan `ContractName: MigrationVesting`, source 11.650
+karakter, `v0.8.26+commit.8a97fa7a`, optimizer on/200, dan ABI yang memuat
+`TgeAlreadySet` · `ObligationBreach` · `vestedAt` · `claimable` ·
+`totalAllocated` — bukti bahwa yang tersaji publik adalah versi berbahasa
+Inggris, bukan deployment pertama.
+
+Argumen konstruktor dideteksi explorer sendiri lalu didekode ulang untuk
+dicocokkan: `token` → `0x78c7…2f5B` ✓ · `merkleRoot` → `0x59cd7d16…c472` ✓ ·
+`totalAllocated` → 400.100 IDM ✓.
+
+**Source yang terverifikasi TIDAK akan berubah saat daftar migrasi final
+tersedia** — yang berganti hanya argumen konstruktor dan alamatnya. Karena itu
+memverifikasinya sekarang bukan pekerjaan yang terbuang: auditor bisa meninjau
+kodenya hari ini.
 
 > **`merkleRoot` IMMUTABLE.** Konsekuensinya keras dan disengaja: daftar
 > alokasi final **wajib ada sebelum deploy**, karena tidak ada jalan
@@ -279,6 +296,7 @@ Wajib cocok persis untuk verifikasi ulang. Seragam untuk ketujuh kontrak.
 |---|---|---|---|
 | `IDMReborn` | 97 | ✅ Verified di testnet.bscscan.com | — |
 | `SwapClaim` | 97 | ✅ Verified di testnet.bscscan.com | — |
+| `MigrationVesting` | 97 | ✅ Verified di testnet.bscscan.com *(9 Sep 2026)* | — |
 | `IDMX` | 5611 | ❌ **belum** | ✅ `exact_match` |
 | `MissionRewards` | 5611 | ❌ **belum** | ✅ `exact_match` |
 | `SwapInitiator` | 5611 | ❌ **belum** | ✅ `exact_match` |

@@ -1,11 +1,12 @@
 /**
- * Verifikasi source keenam kontrak INTI ke explorer, lewat API terpadu Etherscan V2
- *
- * `MigrationVesting.sol` (kontrak ketujuh, BSC) BELUM masuk daftar ini —
- * deployment testnet-nya memakai pohon demo, jadi memverifikasi source-nya
- * sekarang akan mempublikasikan kontrak yang alamat & root-nya akan berganti
- * saat daftar migrasi final tersedia.
+ * Verifikasi source ketujuh kontrak ke explorer, lewat API terpadu Etherscan V2
  * (satu API key untuk opBNB Testnet 5611 dan BSC Testnet 97).
+ *
+ * `MigrationVesting` (BSC) ikut diverifikasi meskipun deployment testnet-nya
+ * memakai pohon merkle DEMO. Yang diverifikasi adalah SOURCE-nya, dan source
+ * itu tidak akan berubah saat daftar migrasi final tersedia — yang berubah
+ * hanya argumen konstruktor. Kontrak yang source-nya terbuka lebih mudah
+ * ditinjau auditor sekarang, dan itu justru gunanya.
  *
  * Memakai standard-json-input, BUKAN single-file: setelan kompilasi ikut
  * terkirim apa adanya, jadi tidak ada peluang salah pilih optimizer/evmVersion
@@ -74,6 +75,7 @@ const TARGET = [
   { nama: "SwapInitiator", berkas: "SwapInitiator.sol", chainId: 5611, alamat: A("NEXT_PUBLIC_SWAP_INITIATOR_ADDRESS") },
   { nama: "IDMReborn", berkas: "IDMReborn.sol", chainId: 97, alamat: A("NEXT_PUBLIC_IDM_REBORN_ADDRESS") },
   { nama: "SwapClaim", berkas: "SwapClaim.sol", chainId: 97, alamat: A("NEXT_PUBLIC_SWAP_CLAIM_ADDRESS") },
+  { nama: "MigrationVesting", berkas: "MigrationVesting.sol", chainId: 97, alamat: A("MIGRATION_VESTING_ADDRESS") },
 ];
 
 const hanya = process.argv[2];
