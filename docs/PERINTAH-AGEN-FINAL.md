@@ -113,6 +113,19 @@ sekali — jangan mencoba mencocokkannya dengan struktur lama.
 
 Emisi bulanan migrasi: **16.120.935 token/bulan selama 6 bulan**.
 
+> ✅ **SELISIH 685.459 TERJAWAB oleh `data/migration-allocations.csv`
+> (9 Sep 2026).** Daftar sungguhan memuat **490 alamat** senilai
+> **146.082.699,41 IDM**; ditambah satu alokasi **586.060,85 IDM yang belum
+> punya alamat**, jumlahnya **146.668.760,26** — cocok dengan kewajiban
+> terverifikasi di tabel alokasi, selisih 0,26 IDM pembulatan. Angka kohort
+> lama (357/130, 25.076.287/120.907.014) berasal dari snapshot sebelumnya;
+> yang berlaku sekarang **360 di bawah ambang · 130 di atas**.
+>
+> Yang MASIH terbuka: alamat penerima alokasi 586.060,85 IDM. Selama belum
+> ada, root merkle hanya sah untuk testnet.
+>
+> <details><summary>Catatan asli (selisih 685.459) — disimpan sebagai riwayat</summary>
+>
 > ⚠️ **PERLU KONFIRMASI PO — selisih 685.459 token.**
 > Jumlah kedua kohort di atas adalah **145.983.301**
 > (25.076.287 + 120.907.014), sedangkan baris alokasi menyebut kewajiban
@@ -128,6 +141,8 @@ Emisi bulanan migrasi: **16.120.935 token/bulan selama 6 bulan**.
 > Sampai diputuskan, **daftar alamat terverifikasi adalah rujukan yang
 > mengikat** — kontrak dibangun dari daftar itu, bukan dari angka ringkasan
 > mana pun. Jangan menyamakan keduanya secara diam-diam.
+>
+> </details>
 
 #### Sirkulasi TGE
 

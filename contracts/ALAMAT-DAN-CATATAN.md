@@ -35,55 +35,44 @@ lihat §9 untuk cara memverifikasi ulang sendiri.
 |---|---|---|
 | `IDMReborn` | `0x78c7e68142e7e1b564c0fd342954aa515a3d2f5b` | Token IDM, 1 miliar, tanpa owner |
 | `SwapClaim` | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` | Memegang kolam 150 juta IDM, membayar voucher swap |
-| `MigrationVesting` 🆕 | `0xe2f196d57796c1e917e79bfdd7eee29f3540e240` | Melepas alokasi Migrasi Holder v1 sesuai jadwal §0.1. **Ter-deploy 2026-09-09 dengan POHON DEMO** — lihat §1.1 |
+| `MigrationVesting` 🆕 | `0x9d56c21e8c6bd5d79756afdec43755d9d5a8a9ef` | Melepas alokasi Migrasi Holder v1 sesuai jadwal §0.1. **Ter-deploy 2026-09-09 dengan POHON DEMO** — lihat §1.1 |
 
-### 1.1 ⚠️ `MigrationVesting` testnet memakai pohon DEMO
+### 1.1 ⚠️ `MigrationVesting` — root TESTNET, daftar belum lengkap
 
-Kontrak ketujuh ter-deploy dan terverifikasi berperilaku benar di BSC Testnet,
-**tetapi `merkleRoot`-nya bukan data migrasi nyata.** Daftar 487 alamat
-terverifikasi tidak ada di repositori ini; yang ada hanya angka ringkasannya di
-§0.1. Pohon demo dipakai supaya perilaku kontrak bisa diuji di rantai
-sungguhan, bentuknya meniru kedua kohort (di bawah & di atas ambang 250.000)
-dengan nominal kecil.
+Kontrak ketujuh kini memakai **root dari daftar alokasi sungguhan**
+(`data/migration-allocations.csv`, 490 alamat), bukan lagi pohon demo.
 
 | | |
 |---|---|
-| `merkleRoot` demo | `0x59cd7d1615415891773eb0cc6bb11719301eb23c72a459318713a0e0fc09c472` |
-| `totalAllocated` demo | 400.100 IDM (terdanai dari treasury) |
-| `t0` | disetel 2026-09-09; percobaan kedua **ditolak** `TgeAlreadySet` (revert data `0x7d11506a`, didekode dari rantai) |
-| source | ✅ **Verified di testnet.bscscan.com**, 9 Sep 2026 |
+| `merkleRoot` | `0xabeba6c7cff72122fd8e9740e10e350c775f5712ffedfd6c1385034eb9fc1ce4` |
+| `totalAllocated` | 146.082.699,41289409 IDM — **terdanai persis sejumlah itu** |
+| Daun | 490 · 360 di bawah ambang · 130 di atas |
+| `TGE_THRESHOLD` | 250.000 IDM, dibaca dari kontrak |
+| source | ✅ Verified di testnet.bscscan.com |
 
-**Verifikasi diperiksa ulang dari explorer, bukan dari jawaban "Pass" API.**
-`getsourcecode` mengembalikan `ContractName: MigrationVesting`, source 11.650
-karakter, `v0.8.26+commit.8a97fa7a`, optimizer on/200, dan ABI yang memuat
-`TgeAlreadySet` · `ObligationBreach` · `vestedAt` · `claimable` ·
-`totalAllocated` — bukti bahwa yang tersaji publik adalah versi berbahasa
-Inggris, bukan deployment pertama.
+> ⚠️ **ROOT INI UNTUK TESTNET SAJA.** Satu alokasi senilai **586.060,85 IDM
+> belum punya alamat penerima** dan karena itu tidak ada di pohon. `merkleRoot`
+> IMMUTABLE: memakai root ini di mainnet **tidak menunda** kelalaian itu,
+> melainkan menguncinya permanen — pemegang yang bersangkutan tidak akan pernah
+> punya jalan ke alokasinya. Regenerasi dengan `pnpm merkle:build` setelah
+> alamatnya diketahui.
 
-Argumen konstruktor dideteksi explorer sendiri lalu didekode ulang untuk
-dicocokkan: `token` → `0x78c7…2f5B` ✓ · `merkleRoot` → `0x59cd7d16…c472` ✓ ·
-`totalAllocated` → 400.100 IDM ✓.
+**Tier tidak disimpan di daun.** Daun hanya `(address, amount)`; kontrak
+menurunkan tier-nya sendiri dari jumlah terhadap `TGE_THRESHOLD`. Penyusun
+pohon karena itu **tidak bisa salah mengklasifikasikan siapa pun** — aturannya
+terbaca publik di kontrak, bukan dipercaya dari berkas.
 
-**Source yang terverifikasi TIDAK akan berubah saat daftar migrasi final
-tersedia** — yang berganti hanya argumen konstruktor dan alamatnya. Karena itu
-memverifikasinya sekarang bukan pekerjaan yang terbuang: auditor bisa meninjau
-kodenya hari ini.
+**Diperiksa terhadap rantai, bukan hanya terhadap berkas:** root on-chain ==
+artefak · `leaf()` kontrak == daun artefak (3 sampel) · `tgeAmountOf` cocok 6/6
+sampel · alamat nyata ≥ ambang menunjukkan `claimable` **20,00%**, alamat < ambang
+**100%**.
 
-> **`merkleRoot` IMMUTABLE.** Konsekuensinya keras dan disengaja: daftar
-> alokasi final **wajib ada sebelum deploy**, karena tidak ada jalan
-> menukarnya sesudahnya. Deployment mainnet menuntut daftar 487 alamat yang
-> sudah terverifikasi — kontrak ini tidak bisa "diisi belakangan".
->
-> Alasan desainnya: alokasi yang bisa diganti owner bukan kewajiban, melainkan
-> janji. Pos migrasi adalah utang kepada pemegang lama, dan utang tidak boleh
-> punya tombol batal.
+Artefak: `data/migration-merkle-tree.json` + `data/migration-merkle-proofs.json`,
+diregenerasi `pnpm merkle:build`, diperiksa `pnpm merkle:verify` (17 pemeriksaan).
 
-**Deployment pertama (`0xecfa6190…f573`) DITINGGALKAN.** Ia ditulis dengan
-komentar dan identifier berbahasa Indonesia, melanggar §2 konvensi kontrak.
-Bukan soal gaya: nama fungsi dan error ikut masuk ABI, dan auditor pihak ketiga
-yang men-decode revert akan menerima `T0SudahDisetel` alih-alih
-`TgeAlreadySet`. Kontrak adalah artefak publik. Ditulis ulang sepenuhnya dalam
-bahasa Inggris dan di-deploy ulang; alamat lama jangan dipakai atau dirujuk.
+**Dua deployment sebelumnya DITINGGALKAN:** `0xecfa6190…f573` (identifier
+berbahasa Indonesia, melanggar §2) dan `0xe2f196d5…e240` (pohon demo + tier
+disimpan di daun). Jangan dirujuk.
 
 ---
 

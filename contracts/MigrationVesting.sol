@@ -38,24 +38,23 @@ interface IERC20 {
  * linearly over six months. Holders below the threshold receive everything at
  * once.
  *
- * ── ONE FORMULA, NOT TWO CODE PATHS ─────────────────────────────────────────
+ * ── THE TIER IS DERIVED HERE, NOT SUPPLIED ──────────────────────────────────
  *
- * The balance threshold is deliberately ABSENT from this contract. It is
- * applied once, off-chain, while the allocation list is compiled; the outcome
- * is then frozen into each merkle leaf as `tgeAmount`, the portion unlocked at
- * TGE.
+ * A merkle leaf commits to two values only: the recipient and the amount. The
+ * tier is then computed on-chain from that amount against `TGE_THRESHOLD`.
  *
- *   · below threshold → tgeAmount == total → fully vested from the first second
- *   · above threshold → tgeAmount == 20%   → remainder linear over six months
+ *   · below threshold → the whole allocation unlocks at TGE
+ *   · at or above     → 20% at TGE, remainder linear over six months
  *
- * Both are then served by the exact same formula. No branch, no second code
- * path that can drift from the first. A conditional that distinguishes classes
- * of holder inside `claim()` is where the most expensive bug can hide: it is
- * wrong only for some people, and those people are never the ones who test it.
+ * Keeping the tier out of the leaf is what makes the rule verifiable rather
+ * than merely stated. Whoever compiles the allocation list cannot misclassify
+ * anyone — not by mistake and not on purpose — because the classification is
+ * not theirs to make. Anyone can read the threshold in this contract and
+ * recompute every holder's schedule from the amount alone.
  *
- * A consequence worth stating: every address can verify its own schedule from
- * its own leaf, without having to trust that this contract applies a threshold
- * correctly. What cannot be checked cannot be trusted.
+ * It also keeps the list minimal: a leaf that carries a derived value invites
+ * the derived value and its source to disagree, and nothing on-chain would
+ * notice if they did.
  *
  * ── MATURITY MEASURED FROM TGE, NOT FROM THE CLAIM DATE ─────────────────────
  *
@@ -86,9 +85,26 @@ contract MigrationVesting {
     /// a line.
     uint64 public constant VESTING_DURATION = 180 days;
 
+    /// Allocations strictly below this receive everything at TGE; the rest
+    /// receive 20% at TGE with the remainder vesting linearly.
+    uint256 public constant TGE_THRESHOLD = 250_000 ether;
+    /// Numerator/denominator of the TGE release for allocations at or above
+    /// the threshold: 20%.
+    uint256 private constant TGE_NUMERATOR = 1;
+    uint256 private constant TGE_DENOMINATOR = 5;
+
     IERC20 public immutable token;
     /// Root of the verified allocation list. Leaf:
-    /// keccak256(bytes.concat(keccak256(abi.encode(account, total, tgeAmount))))
+    /// keccak256(bytes.concat(keccak256(abi.encode(account, amount))))
+    ///
+    /// WARNING FOR ANY DEPLOYMENT BEYOND TESTNET. The root supplied at
+    /// construction must commit to the COMPLETE allocation list. At the time
+    /// of writing, one allocation worth 586,060.85 IDM has no known recipient
+    /// address and is therefore absent from the list; a root built from that
+    /// list is valid for testnet only. This field is immutable, so deploying
+    /// with an incomplete root does not merely postpone the omission — it
+    /// makes it permanent, and the holder it belongs to would have no path to
+    /// their allocation ever.
     bytes32 public immutable merkleRoot;
     /// Sum of every allocation in the tree. A merkle root does not reveal the
     /// total it commits to, so it is fixed here to give the `sweep` guard a
@@ -191,38 +207,41 @@ contract MigrationVesting {
     /// Merkle leaf for one allocation. Hashed TWICE: a single-hash leaf can
     /// collide with an internal node of the tree, and such a collision is a
     /// forged proof that verifies correctly.
-    function leaf(address account, uint256 total, uint256 tgeAmount)
-        public
-        pure
-        returns (bytes32)
-    {
-        return keccak256(
-            bytes.concat(keccak256(abi.encode(account, total, tgeAmount)))
-        );
+    function leaf(address account, uint256 amount) public pure returns (bytes32) {
+        return keccak256(bytes.concat(keccak256(abi.encode(account, amount))));
+    }
+
+    /// Portion of `amount` that unlocks at TGE, derived from the threshold.
+    /// Public so that any holder can check their own schedule without running
+    /// a claim, and without trusting a list.
+    function tgeAmountOf(uint256 amount) public pure returns (uint256) {
+        if (amount < TGE_THRESHOLD) return amount;
+        return (amount * TGE_NUMERATOR) / TGE_DENOMINATOR;
     }
 
     /// Amount vested at `timestamp`. Zero before TGE.
-    function vestedAt(uint256 total, uint256 tgeAmount, uint64 timestamp)
+    function vestedAt(uint256 amount, uint64 timestamp)
         public
         view
         returns (uint256)
     {
         uint64 start = t0;
         if (start == 0 || timestamp < start) return 0;
-        if (tgeAmount >= total) return total;
+        uint256 tgeAmount = tgeAmountOf(amount);
+        if (tgeAmount >= amount) return amount;
         uint64 elapsed = timestamp - start;
-        if (elapsed >= VESTING_DURATION) return total;
-        uint256 linear = total - tgeAmount;
+        if (elapsed >= VESTING_DURATION) return amount;
+        uint256 linear = amount - tgeAmount;
         return tgeAmount + (linear * elapsed) / VESTING_DURATION;
     }
 
     /// Amount `account` can withdraw right now.
-    function claimable(address account, uint256 total, uint256 tgeAmount)
+    function claimable(address account, uint256 amount)
         external
         view
         returns (uint256)
     {
-        uint256 vested = vestedAt(total, tgeAmount, uint64(block.timestamp));
+        uint256 vested = vestedAt(amount, uint64(block.timestamp));
         uint256 already = claimed[account];
         return vested > already ? vested - already : 0;
     }
@@ -236,15 +255,11 @@ contract MigrationVesting {
      * address — there is no "claim on behalf of" mode that could be used to
      * force tokens onto someone at a moment they did not choose.
      */
-    function claim(uint256 total, uint256 tgeAmount, bytes32[] calldata proof)
-        external
-    {
+    function claim(uint256 amount, bytes32[] calldata proof) external {
         if (t0 == 0) revert TgeNotSet();
-        if (!_verify(proof, leaf(msg.sender, total, tgeAmount))) {
-            revert InvalidProof();
-        }
+        if (!_verify(proof, leaf(msg.sender, amount))) revert InvalidProof();
 
-        uint256 vested = vestedAt(total, tgeAmount, uint64(block.timestamp));
+        uint256 vested = vestedAt(amount, uint64(block.timestamp));
         uint256 already = claimed[msg.sender];
         if (vested <= already) revert NothingVested();
         uint256 amount = vested - already;
