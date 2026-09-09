@@ -86,8 +86,8 @@ const config: Config = {
     announcementBar: {
       id: "draf-v0-1",
       content: TEKS.pengumuman,
-      backgroundColor: "#9a6700",
-      textColor: "#ffffff",
+      backgroundColor: "#edb415",
+      textColor: "#1b1b1b",
       isCloseable: false,
     },
     navbar: {

@@ -1,42 +1,125 @@
 /**
- * Any CSS included here will be global. The classic template
- * bundles Infima by default. Infima is a CSS framework designed to
- * work well for content-centric websites.
+ * Tema docs.idmtoken.com — palet layar masuk AIDM.
+ *
+ * Nilainya disalin dari `app/globals.css` blok `.onboarding` di repo AIDM,
+ * bukan dikira-kira: cream #FAF7F0, tinta #1B1B1B, emas #edb415 dengan
+ * varian dalam #b9860c. Alasan memilih palet ONBOARDING dan bukan palet
+ * aplikasi: layar masuk dirancang untuk dibaca oleh orang yang belum kenal
+ * produk ini — persis pembaca whitepaper.
+ *
+ * Emas dipakai sebagai AKSEN, bukan sebagai warna teks. #edb415 di atas cream
+ * hanya mencapai rasio kontras ~1,9:1 — terbaca sebagai dekorasi, bukan
+ * sebagai kata. Tautan dan teks memakai #b9860c ke bawah; emas terang
+ * disimpan untuk garis, latar chip, dan mode gelap.
  */
 
-/* You can override the default Infima variables here. */
 :root {
-  --ifm-color-primary: #2e8555;
-  --ifm-color-primary-dark: #29784c;
-  --ifm-color-primary-darker: #277148;
-  --ifm-color-primary-darkest: #205d3b;
-  --ifm-color-primary-light: #33925d;
-  --ifm-color-primary-lighter: #359962;
-  --ifm-color-primary-lightest: #3cad6e;
-  --ifm-code-font-size: 95%;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  --ob-cream: #faf7f0;
+  --ob-cream-2: #f7efdd;
+  --ob-cream-3: #f3e6c6;
+  --ob-ink: #1b1b1b;
+  --ob-ink-soft: #4a463e;
+  --ob-muted: #a79e8c;
+  --ob-muted-2: #8e8574;
+  --ob-gold: #edb415;
+  --ob-gold-deep: #b9860c;
+  --ob-hair: rgba(27, 27, 27, 0.12);
+
+  --ifm-color-primary: #a2760a;
+  --ifm-color-primary-dark: #926a09;
+  --ifm-color-primary-darker: #8a6409;
+  --ifm-color-primary-darkest: #715307;
+  --ifm-color-primary-light: #b2820b;
+  --ifm-color-primary-lighter: #ba880c;
+  --ifm-color-primary-lightest: #d29b0d;
+
+  --ifm-background-color: var(--ob-cream);
+  --ifm-background-surface-color: #fffdf8;
+  --ifm-font-color-base: var(--ob-ink);
+  --ifm-heading-color: var(--ob-ink);
+  --ifm-toc-border-color: var(--ob-hair);
+  --ifm-hr-border-color: var(--ob-hair);
+  --ifm-code-font-size: 92%;
+  --ifm-code-background: var(--ob-cream-2);
+  --docusaurus-highlighted-code-line-bg: rgba(237, 180, 21, 0.18);
+
+  --ifm-navbar-background-color: var(--ob-cream);
+  --ifm-navbar-shadow: inset 0 -1px 0 var(--ob-hair);
+  --ifm-footer-background-color: var(--ob-ink);
+  --ifm-footer-color: var(--ob-cream);
+  --ifm-footer-link-color: var(--ob-gold);
+
+  --ifm-menu-color: var(--ob-ink-soft);
+  --ifm-menu-color-background-active: var(--ob-cream-2);
+  --ifm-menu-color-background-hover: var(--ob-cream-2);
+  --ifm-blockquote-color: var(--ob-ink-soft);
+  --ifm-blockquote-border-color: var(--ob-gold);
+  --ifm-table-border-color: var(--ob-hair);
+  --ifm-table-head-background: var(--ob-cream-2);
+  --ifm-table-stripe-background: rgba(237, 180, 21, 0.05);
 }
 
-/* For readability concerns, you should choose a lighter palette in dark mode. */
-[data-theme='dark'] {
-  --ifm-color-primary: #25c2a0;
-  --ifm-color-primary-dark: #21af90;
-  --ifm-color-primary-darker: #1fa588;
-  --ifm-color-primary-darkest: #1a8870;
-  --ifm-color-primary-light: #29d5b0;
-  --ifm-color-primary-lighter: #32d8b4;
-  --ifm-color-primary-lightest: #4fddbf;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+/* Mode gelap memakai warna kartu dompet AIDM — bukan abu generik Docusaurus.
+   Di sini emas terang justru menjadi warna teks yang benar: #edb415 di atas
+   #14110B mencapai kontras yang nyaman untuk dibaca lama. */
+[data-theme="dark"] {
+  --ifm-color-primary: #edb415;
+  --ifm-color-primary-dark: #d6a30f;
+  --ifm-color-primary-darker: #c9990e;
+  --ifm-color-primary-darkest: #a67e0c;
+  --ifm-color-primary-light: #f0bd31;
+  --ifm-color-primary-lighter: #f2c243;
+  --ifm-color-primary-lightest: #f6d275;
+
+  --ifm-background-color: #14110b;
+  --ifm-background-surface-color: #1e1a12;
+  --ifm-font-color-base: #f3ece0;
+  --ifm-heading-color: #fffdf8;
+  --ifm-toc-border-color: rgba(237, 180, 21, 0.18);
+  --ifm-hr-border-color: rgba(237, 180, 21, 0.18);
+  --ifm-code-background: #241f16;
+  --docusaurus-highlighted-code-line-bg: rgba(237, 180, 21, 0.16);
+
+  --ifm-navbar-background-color: #14110b;
+  --ifm-navbar-shadow: inset 0 -1px 0 rgba(237, 180, 21, 0.18);
+  --ifm-footer-background-color: #0d0b07;
+  --ifm-menu-color: #cfc6b6;
+  --ifm-menu-color-background-active: #241f16;
+  --ifm-menu-color-background-hover: #241f16;
+  --ifm-table-head-background: #241f16;
+  --ifm-table-stripe-background: rgba(237, 180, 21, 0.05);
 }
+
+/* Judul halaman memakai serif seperti heading AIDM — kontras dengan tubuh
+   teks sans membuat dokumen panjang lebih mudah dipindai. */
+.markdown h1:first-child {
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: -0.015em;
+}
+
+/* Bilah pengumuman: emas penuh dengan tinta di atasnya. Kontras tertinggi
+   yang bisa dicapai palet ini, dan memang perlu — isinya peringatan bahwa
+   seluruh angka di situs ini masih bisa berubah. */
+div[class^="announcementBar_"] {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-bottom: 1px solid var(--ob-gold-deep);
+}
+
+.navbar__title { font-weight: 700; letter-spacing: -0.01em; }
+.navbar__logo img { object-fit: contain; }
+
+.footer { border-top: 3px solid var(--ob-gold); }
+.footer__copyright { font-size: .86rem; opacity: .85; }
 
 /* ── Komponen whitepaper ──────────────────────────────────────────────────
    Gaya minimal dan sengaja: dokumen ini dibaca berjam-jam, dicetak, dan
    diekspor ke PDF. Yang tidak terbaca di kertas hitam-putih tidak dipakai. */
 
 .idm-receipt {
-  border-left: 3px solid var(--ifm-color-primary);
-  background: var(--ifm-color-emphasis-100);
-  padding: .75rem 1rem; margin: 1rem 0; border-radius: 0 6px 6px 0;
+  border-left: 3px solid var(--ob-gold);
+  background: var(--ifm-background-surface-color);
+  padding: .8rem 1rem; margin: 1.1rem 0; border-radius: 0 8px 8px 0;
 }
 .idm-receipt__claim { margin: 0 0 .35rem; font-weight: 600; }
 .idm-receipt__meta { margin: 0; font-size: .85rem; color: var(--ifm-color-emphasis-700); }
@@ -45,22 +128,30 @@
 /* Warna berbeda per status DAN teksnya menyebut statusnya sendiri —
    warna saja gagal di cetakan hitam-putih dan bagi pembaca buta warna. */
 .idm-badge {
-  display: inline-block; padding: .1rem .5rem; border-radius: 999px;
+  display: inline-block; padding: .12rem .55rem; border-radius: 999px;
   font-size: .78rem; font-weight: 700; letter-spacing: .02em;
   border: 1px solid currentColor;
 }
-.idm-badge--live    { color: #1a7f37; background: #1a7f3714; }
-.idm-badge--testnet { color: #9a6700; background: #9a670014; }
-.idm-badge--concept { color: #57606a; background: #57606a14; }
+.idm-badge--live    { color: #17864a; background: rgba(23, 134, 74, .10); }
+.idm-badge--testnet { color: var(--ob-gold-deep); background: rgba(237, 180, 21, .14); }
+.idm-badge--concept { color: var(--ob-muted-2); background: rgba(142, 133, 116, .12); }
+[data-theme="dark"] .idm-badge--live    { color: #4cc98a; }
+[data-theme="dark"] .idm-badge--testnet { color: var(--ob-gold); }
+[data-theme="dark"] .idm-badge--concept { color: var(--ob-muted); }
 
 .idm-stat__tanggal { font-size: .82rem; color: var(--ifm-color-emphasis-600); }
-.idm-stat--basi .idm-stat__tanggal { color: #9a6700; font-weight: 600; }
+.idm-stat--basi .idm-stat__tanggal { color: var(--ob-gold-deep); font-weight: 600; }
+[data-theme="dark"] .idm-stat--basi .idm-stat__tanggal { color: var(--ob-gold); }
 .idm-stat--kosong { color: var(--ifm-color-emphasis-600); font-style: italic; }
 
-.idm-alokasi { width: 100%; font-size: .92rem; }
-.idm-alokasi__total td { font-weight: 700; border-top: 2px solid var(--ifm-color-emphasis-300); }
+.idm-alokasi { width: 100%; font-size: .92rem; display: table; }
+.idm-alokasi__total td {
+  font-weight: 700; border-top: 2px solid var(--ob-gold);
+  background: rgba(237, 180, 21, .07);
+}
 
-.idm-kurva svg { width: 100%; height: auto; color: var(--ifm-color-primary); }
+.idm-kurva svg { width: 100%; height: auto; color: var(--ob-gold-deep); }
+[data-theme="dark"] .idm-kurva svg { color: var(--ob-gold); }
 .idm-kurva figcaption {
-  font-size: .84rem; color: var(--ifm-color-emphasis-700); margin-top: .4rem;
+  font-size: .84rem; color: var(--ifm-color-emphasis-700); margin-top: .45rem;
 }
