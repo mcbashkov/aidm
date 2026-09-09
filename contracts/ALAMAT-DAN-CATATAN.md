@@ -35,7 +35,7 @@ lihat §9 untuk cara memverifikasi ulang sendiri.
 |---|---|---|
 | `IDMReborn` | `0x78c7e68142e7e1b564c0fd342954aa515a3d2f5b` | Token IDM, 1 miliar, tanpa owner |
 | `SwapClaim` | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` | Memegang kolam 150 juta IDM, membayar voucher swap |
-| `MigrationVesting` 🆕 | `0xecfa619024526040e321816e200cf5a78e6bf573` | Melepas alokasi Migrasi Holder v1 sesuai jadwal §0.1. **Ter-deploy 2026-09-09 dengan POHON DEMO** — lihat §1.1 |
+| `MigrationVesting` 🆕 | `0xe2f196d57796c1e917e79bfdd7eee29f3540e240` | Melepas alokasi Migrasi Holder v1 sesuai jadwal §0.1. **Ter-deploy 2026-09-09 dengan POHON DEMO** — lihat §1.1 |
 
 ### 1.1 ⚠️ `MigrationVesting` testnet memakai pohon DEMO
 
@@ -49,8 +49,8 @@ dengan nominal kecil.
 | | |
 |---|---|
 | `merkleRoot` demo | `0x59cd7d1615415891773eb0cc6bb11719301eb23c72a459318713a0e0fc09c472` |
-| `totalAlokasi` demo | 400.100 IDM (terdanai dari treasury) |
-| `t0` | disetel 2026-09-09; percobaan kedua **ditolak** `T0SudahDisetel` |
+| `totalAllocated` demo | 400.100 IDM (terdanai dari treasury) |
+| `t0` | disetel 2026-09-09; percobaan kedua **ditolak** `TgeAlreadySet` (revert data `0x7d11506a`, didekode dari rantai) |
 
 > **`merkleRoot` IMMUTABLE.** Konsekuensinya keras dan disengaja: daftar
 > alokasi final **wajib ada sebelum deploy**, karena tidak ada jalan
@@ -60,6 +60,13 @@ dengan nominal kecil.
 > Alasan desainnya: alokasi yang bisa diganti owner bukan kewajiban, melainkan
 > janji. Pos migrasi adalah utang kepada pemegang lama, dan utang tidak boleh
 > punya tombol batal.
+
+**Deployment pertama (`0xecfa6190…f573`) DITINGGALKAN.** Ia ditulis dengan
+komentar dan identifier berbahasa Indonesia, melanggar §2 konvensi kontrak.
+Bukan soal gaya: nama fungsi dan error ikut masuk ABI, dan auditor pihak ketiga
+yang men-decode revert akan menerima `T0SudahDisetel` alih-alih
+`TgeAlreadySet`. Kontrak adalah artefak publik. Ditulis ulang sepenuhnya dalam
+bahasa Inggris dan di-deploy ulang; alamat lama jangan dipakai atau dirujuk.
 
 ---
 

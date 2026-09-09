@@ -109,23 +109,23 @@ const dep = async (art, args) => {
 };
 const idm = await dep(idmArt, [deployer.address]);
 const mv = await dep(mvArt, [idm, t.root, TOTAL]);
-const tulis = async (акк, addr, abi, fn, args) => {
-  const h = await W(акк).writeContract({ address: addr, abi, functionName: fn, args });
+const tulis = async (akun, addr, abi, fn, args) => {
+  const h = await W(akun).writeContract({ address: addr, abi, functionName: fn, args });
   return pub.waitForTransactionReceipt({ hash: h });
 };
 await tulis(deployer, idm, idmArt.abi, "transfer", [mv, TOTAL]);
 const baca = (fn, args = []) => pub.readContract({ address: mv, abi: mvArt.abi, functionName: fn, args });
 const saldo = (a) => pub.readContract({ address: idm, abi: idmArt.abi, functionName: "balanceOf", args: [a] });
-const klaim = (акк, i) => tulis(акк, mv, mvArt.abi, "klaim",
+const klaim = (akun, i) => tulis(akun, mv, mvArt.abi, "claim",
   [alokasi[i].total, alokasi[i].tge, bukti(t, i)]);
 const majuHari = async (n) => { await test.increaseTime({ seconds: n * 86400 }); await test.mine({ blocks: 1 }); };
 
 /* ── Sebelum TGE ─────────────────────────────────────────────────────────── */
 console.log("\nSebelum TGE — tidak ada yang matang");
 ok((await baca("t0")) === 0n, "t0 belum disetel");
-ok((await baca("bisaDiklaim", [kecil.address, alokasi[0].total, alokasi[0].tge])) === 0n,
+ok((await baca("claimable", [kecil.address, alokasi[0].total, alokasi[0].tge])) === 0n,
    "saldo kecil pun 0 sebelum TGE");
-await reverts(() => klaim(kecil, 0), "T0BelumDisetel", "klaim sebelum TGE ditolak");
+await reverts(() => klaim(kecil, 0), "TgeNotSet", "klaim sebelum TGE ditolak");
 
 /* ── t0 sekali saja ──────────────────────────────────────────────────────── */
 console.log("\nt0 — disetel sekali, tidak bisa digeser");
@@ -133,14 +133,14 @@ const now = BigInt((await pub.getBlock()).timestamp);
 await tulis(deployer, mv, mvArt.abi, "setT0", [now]);
 ok((await baca("t0")) === now, "t0 tersetel");
 await reverts(() => tulis(deployer, mv, mvArt.abi, "setT0", [now + 100n]),
-  "T0SudahDisetel", "setT0 kedua DITOLAK — jadwal tidak bisa digeser owner");
+  "TgeAlreadySet", "setT0 kedua DITOLAK — jadwal tidak bisa digeser owner");
 await reverts(() => tulis(asing, mv, mvArt.abi, "setT0", [now]), "NotOwner", "setT0 bukan owner ditolak");
 
 /* ── Saldo kecil: penuh di TGE ───────────────────────────────────────────── */
 console.log("\nSaldo < 250.000 — 100% di TGE");
 await klaim(kecil, 0);
 ok((await saldo(kecil.address)) === alokasi[0].total, "menerima seluruh alokasi seketika");
-await reverts(() => klaim(kecil, 0), "TidakAdaYangMatang", "klaim kedua tidak menghasilkan apa-apa");
+await reverts(() => klaim(kecil, 0), "NothingVested", "klaim kedua tidak menghasilkan apa-apa");
 
 /* ── Saldo besar: 20% di TGE, linear 6 bulan ─────────────────────────────── */
 console.log("\nSaldo ≥ 250.000 — 20% di TGE, sisa linear 6 bulan");
@@ -150,14 +150,14 @@ ok((await saldo(besar.address)) === parseEther("200000"), "  = 200.000 dari 1.00
 
 await majuHari(90);   // separuh dari 180 hari
 const setengah = alokasi[1].tge + (alokasi[1].total - alokasi[1].tge) / 2n;
-const m90 = await baca("matang", [alokasi[1].total, alokasi[1].tge, BigInt((await pub.getBlock()).timestamp)]);
+const m90 = await baca("vestedAt", [alokasi[1].total, alokasi[1].tge, BigInt((await pub.getBlock()).timestamp)]);
 ok(m90 === setengah, `hari ke-90 matang tepat setengah linear (${m90 / 10n**18n})`);
 await klaim(besar, 1);
 ok((await saldo(besar.address)) === setengah, "klaim di tengah jalan hanya memberi yang matang");
 
 await majuHari(89);
-ok((await baca("bisaDiklaim", [besar.address, alokasi[1].total, alokasi[1].tge])) > 0n, "hari ke-179 masih ada sisa");
-ok((await baca("matang", [alokasi[1].total, alokasi[1].tge, BigInt((await pub.getBlock()).timestamp)])) < alokasi[1].total,
+ok((await baca("claimable", [besar.address, alokasi[1].total, alokasi[1].tge])) > 0n, "hari ke-179 masih ada sisa");
+ok((await baca("vestedAt", [alokasi[1].total, alokasi[1].tge, BigInt((await pub.getBlock()).timestamp)])) < alokasi[1].total,
    "hari ke-179 BELUM penuh");
 await majuHari(2);
 await klaim(besar, 1);
@@ -172,11 +172,11 @@ ok((await saldo(besar2.address)) === alokasi[2].total,
 
 /* ── Bukti palsu ─────────────────────────────────────────────────────────── */
 console.log("\nBukti merkle");
-await reverts(() => tulis(asing, mv, mvArt.abi, "klaim",
-  [alokasi[0].total, alokasi[0].tge, bukti(t, 0)]), "BuktiTidakSah",
+await reverts(() => tulis(asing, mv, mvArt.abi, "claim",
+  [alokasi[0].total, alokasi[0].tge, bukti(t, 0)]), "InvalidProof",
   "alamat asing memakai bukti orang lain DITOLAK");
-await reverts(() => tulis(besar2, mv, mvArt.abi, "klaim",
-  [alokasi[2].total * 2n, alokasi[2].tge, bukti(t, 2)]), "BuktiTidakSah",
+await reverts(() => tulis(besar2, mv, mvArt.abi, "claim",
+  [alokasi[2].total * 2n, alokasi[2].tge, bukti(t, 2)]), "InvalidProof",
   "menaikkan sendiri jumlah alokasi DITOLAK");
 
 /* ── Sweep tidak bisa menyentuh kewajiban ────────────────────────────────── */
@@ -184,7 +184,7 @@ console.log("\nsweep — tidak bisa menyentuh alokasi yang belum diklaim");
 const mv2 = await dep(mvArt, [idm, t.root, TOTAL]);
 await tulis(deployer, idm, idmArt.abi, "transfer", [mv2, TOTAL + parseEther("500")]);
 await reverts(() => tulis(deployer, mv2, mvArt.abi, "sweep", [deployer.address, parseEther("501")]),
-  "MelanggarKewajiban", "menarik melebihi kelebihan DITOLAK");
+  "ObligationBreach", "menarik melebihi kelebihan DITOLAK");
 await tulis(deployer, mv2, mvArt.abi, "sweep", [deployer.address, parseEther("500")]);
 ok((await pub.readContract({ address: idm, abi: idmArt.abi, functionName: "balanceOf", args: [mv2] })) === TOTAL,
    "hanya KELEBIHAN yang bisa keluar; kewajiban utuh");

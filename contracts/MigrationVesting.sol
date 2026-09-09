@@ -29,81 +29,85 @@ interface IERC20 {
 }
 
 /**
- * MigrationVesting — melepas alokasi migrasi holder IDM v1 sesuai jadwal §0.1.
+ * MigrationVesting — releases IDM Reborn allocations to verified holders of the
+ * previous token generation, on a fixed schedule.
  *
- * KENAPA KONTRAK INI ADA. `SwapClaim` melepas token PENUH saat klaim, dan
- * jadwal migrasi tidak bisa dijalankan dengan itu: pemegang saldo besar hanya
- * boleh menerima 20% di TGE, sisanya matang linear selama enam bulan.
+ * WHY THIS CONTRACT EXISTS. The swap contract releases tokens in full on claim,
+ * and the migration schedule cannot be expressed that way: holders above a
+ * balance threshold receive only 20% at TGE, with the remainder maturing
+ * linearly over six months. Holders below the threshold receive everything at
+ * once.
  *
- * ── SATU RUMUS, BUKAN DUA JALUR ─────────────────────────────────────────────
+ * ── ONE FORMULA, NOT TWO CODE PATHS ─────────────────────────────────────────
  *
- * Ambang 250.000 IDM TIDAK ADA di kontrak ini, dan itu disengaja. Ia
- * dievaluasi SEKALI saat daftar alokasi disusun, lalu hasilnya dibekukan ke
- * dalam daun merkle sebagai `bagianTge` — jumlah yang terbuka di TGE.
+ * The balance threshold is deliberately ABSENT from this contract. It is
+ * applied once, off-chain, while the allocation list is compiled; the outcome
+ * is then frozen into each merkle leaf as `tgeAmount`, the portion unlocked at
+ * TGE.
  *
- *   · saldo kecil  → bagianTge == total  → matang penuh sejak detik pertama
- *   · saldo besar  → bagianTge == 20%    → sisanya linear enam bulan
+ *   · below threshold → tgeAmount == total → fully vested from the first second
+ *   · above threshold → tgeAmount == 20%   → remainder linear over six months
  *
- * Keduanya kemudian dilayani rumus yang SAMA PERSIS. Tidak ada percabangan,
- * tidak ada dua jalur kode yang bisa menyimpang. Sebuah `if` yang membedakan
- * kelas pemegang di dalam `klaim()` adalah tempat bug paling mahal bisa
- * bersembunyi — ia hanya salah untuk sebagian orang, dan sebagian orang itu
- * tidak pernah menjadi orang yang mengujinya.
+ * Both are then served by the exact same formula. No branch, no second code
+ * path that can drift from the first. A conditional that distinguishes classes
+ * of holder inside `claim()` is where the most expensive bug can hide: it is
+ * wrong only for some people, and those people are never the ones who test it.
  *
- * Konsekuensi yang layak disebut: jadwal setiap alamat bisa diperiksa siapa
- * pun dari daunnya sendiri, tanpa perlu memercayai bahwa kontrak menerapkan
- * ambang dengan benar. Yang tidak bisa diperiksa tidak bisa dipercaya.
+ * A consequence worth stating: every address can verify its own schedule from
+ * its own leaf, without having to trust that this contract applies a threshold
+ * correctly. What cannot be checked cannot be trusted.
  *
- * ── `t0` DARI TGE, BUKAN DARI TANGGAL KLAIM ─────────────────────────────────
+ * ── MATURITY MEASURED FROM TGE, NOT FROM THE CLAIM DATE ─────────────────────
  *
- * Kematangan dihitung dari `t0` (waktu TGE) yang sama untuk semua orang. Bila
- * dihitung dari tanggal klaim masing-masing, pemegang yang mengklaim terlambat
- * justru selesai vesting paling akhir — keterlambatan membaca pengumuman
- * berubah menjadi hukuman. Karena itu mengklaim lebih lambat TIDAK PERNAH
- * merugikan: yang sudah matang tetap matang dan menunggu.
+ * Vesting is computed from `t0`, a single timestamp shared by everyone. Were it
+ * measured from each holder's own claim date, whoever claimed late would finish
+ * vesting last — being slow to read an announcement would become a penalty.
+ * With a shared `t0`, claiming later never costs anything: what has matured
+ * stays matured and waits.
  *
- * ── YANG SENGAJA TIDAK ADA ──────────────────────────────────────────────────
+ * ── WHAT IS DELIBERATELY ABSENT ─────────────────────────────────────────────
  *
- * Tidak ada `pause`. Tidak ada fungsi yang bisa menurunkan alokasi. Tidak ada
- * cara bagi `owner` menyentuh token yang menopang alokasi belum diklaim —
- * `sweep` hanya bisa mengeluarkan KELEBIHAN di atas kewajiban, dan penjaga itu
- * dihitung dari `totalAlokasi` yang immutable. Ini kewajiban terhadap pemegang
- * lama; kewajiban tidak boleh punya tombol batal.
+ * No pause. No function that can reduce an allocation. No way for the owner to
+ * touch tokens backing unclaimed allocations — `sweep` can only remove the
+ * SURPLUS above outstanding obligations, and that guard is computed from an
+ * immutable total. This is a debt owed to earlier holders, and a debt must not
+ * come with a cancel button.
  *
- * ── DI LUAR LINGKUP ─────────────────────────────────────────────────────────
+ * ── OUT OF SCOPE ────────────────────────────────────────────────────────────
  *
- * TODO: **kolam keterlambatan (±13,3 juta IDM) TIDAK ditangani kontrak ini.**
- * Mekanismenya pro-rata dan BELUM DITENTUKAN (§0.1). Ia sengaja tidak dikarang
- * di sini — kolam yang aturannya ditebak lebih buruk daripada kolam yang belum
- * ada, karena yang pertama terlihat resmi.
+ * TODO: the late-claim pool is NOT handled here. Its distribution rule is
+ * pro-rata in principle but has not been decided, and it is deliberately not
+ * invented in code: a pool whose rules were guessed is worse than a pool that
+ * does not exist yet, because the first one looks official.
  */
 contract MigrationVesting {
-    /// Enam bulan sejak TGE. Angka hari, bukan bulan kalender: vesting linear
-    /// yang melompat di batas bulan menghasilkan tangga, bukan garis.
-    uint64 public constant DURASI = 180 days;
+    /// Six months after TGE, expressed in days rather than calendar months:
+    /// linear vesting that steps at month boundaries produces a staircase, not
+    /// a line.
+    uint64 public constant VESTING_DURATION = 180 days;
 
     IERC20 public immutable token;
-    /// Akar daftar alokasi terverifikasi. Daun:
-    /// keccak256(bytes.concat(keccak256(abi.encode(akun, total, bagianTge))))
+    /// Root of the verified allocation list. Leaf:
+    /// keccak256(bytes.concat(keccak256(abi.encode(account, total, tgeAmount))))
     bytes32 public immutable merkleRoot;
-    /// Jumlah SELURUH alokasi di dalam pohon. Merkle root tidak menyingkapkan
-    /// totalnya, jadi ia dipasang di sini agar penjaga `sweep` punya angka yang
-    /// tidak bisa digeser siapa pun.
-    uint256 public immutable totalAlokasi;
+    /// Sum of every allocation in the tree. A merkle root does not reveal the
+    /// total it commits to, so it is fixed here to give the `sweep` guard a
+    /// number nobody can move.
+    uint256 public immutable totalAllocated;
 
     address public owner;
     address public pendingOwner;
 
-    /// Waktu TGE. Nol = belum disetel; sekali disetel tidak bisa diubah.
+    /// TGE timestamp. Zero means unset; once set it can never change.
     uint64 public t0;
 
-    /// akun => jumlah yang sudah ditarik
-    mapping(address => uint256) public terklaim;
-    uint256 public totalTerklaim;
+    /// account => amount already withdrawn
+    mapping(address => uint256) public claimed;
+    uint256 public totalClaimed;
 
-    event T0Set(uint64 t0);
-    event Klaim(address indexed akun, uint256 jumlah, uint256 kumulatif);
-    event Sweep(address indexed ke, uint256 jumlah);
+    event TgeSet(uint64 t0);
+    event Claimed(address indexed account, uint256 amount, uint256 cumulative);
+    event Swept(address indexed to, uint256 amount);
     event OwnershipTransferStarted(address indexed to);
     event OwnershipTransferred(address indexed from, address indexed to);
 
@@ -111,62 +115,63 @@ contract MigrationVesting {
     error NotPendingOwner();
     error ZeroAddress();
     error ZeroAmount();
-    error T0BelumDisetel();
-    error T0SudahDisetel();
-    error BuktiTidakSah();
-    error TidakAdaYangMatang();
+    error TgeNotSet();
+    error TgeAlreadySet();
+    error InvalidProof();
+    error NothingVested();
     error TransferFailed();
-    error MelanggarKewajiban();
+    error ObligationBreach();
 
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
         _;
     }
 
-    constructor(address token_, bytes32 merkleRoot_, uint256 totalAlokasi_) {
+    constructor(address token_, bytes32 merkleRoot_, uint256 totalAllocated_) {
         if (token_ == address(0)) revert ZeroAddress();
-        if (merkleRoot_ == bytes32(0)) revert BuktiTidakSah();
-        if (totalAlokasi_ == 0) revert ZeroAmount();
+        if (merkleRoot_ == bytes32(0)) revert InvalidProof();
+        if (totalAllocated_ == 0) revert ZeroAmount();
         owner = msg.sender;
         token = IERC20(token_);
         merkleRoot = merkleRoot_;
-        totalAlokasi = totalAlokasi_;
+        totalAllocated = totalAllocated_;
     }
 
-    /* ── Administrasi ────────────────────────────────────────────────────── */
+    /* ── Administration ──────────────────────────────────────────────────── */
 
     /**
-     * Menyetel waktu TGE. Boleh SEKALI saja.
+     * Sets the TGE timestamp. Callable once, and once only.
      *
-     * Sekali disetel, seluruh jadwal enam bulan terkunci dan tidak ada yang
-     * bisa menggesernya — termasuk owner. Kalau `t0` bisa diubah, "vesting
-     * selesai bulan Maret" bukan lagi pernyataan tentang kontrak melainkan
-     * tentang niat orang yang memegang kuncinya.
+     * After it is set the entire six-month schedule is fixed and nobody can
+     * move it, the owner included. If `t0` were mutable, "vesting completes in
+     * March" would stop being a statement about this contract and become a
+     * statement about the intentions of whoever holds the key.
      */
     function setT0(uint64 t) external onlyOwner {
-        if (t0 != 0) revert T0SudahDisetel();
+        if (t0 != 0) revert TgeAlreadySet();
         if (t == 0) revert ZeroAmount();
         t0 = t;
-        emit T0Set(t);
+        emit TgeSet(t);
     }
 
     /**
-     * Menarik KELEBIHAN token di atas kewajiban yang belum diklaim.
+     * Withdraws only the SURPLUS held above outstanding obligations.
      *
-     * Bukan "sweep" dalam arti biasa: ia secara struktural tidak bisa menyentuh
-     * token yang menopang alokasi. Fungsi ini ada supaya kelebihan pendanaan
-     * (salah transfer, sisa setelah semua klaim) tidak terkunci selamanya —
-     * bukan supaya owner punya jalan keluar.
+     * This is not a sweep in the usual sense: it is structurally incapable of
+     * touching tokens that back allocations. It exists so that accidental
+     * overfunding — a mistaken transfer, or the dust left once everyone has
+     * claimed — does not stay locked forever. It does not exist to give the
+     * owner a way out.
      */
-    function sweep(address ke, uint256 jumlah) external onlyOwner {
-        if (ke == address(0)) revert ZeroAddress();
-        uint256 kewajiban = totalAlokasi - totalTerklaim;
-        uint256 saldo = token.balanceOf(address(this));
-        if (saldo < kewajiban || saldo - kewajiban < jumlah) {
-            revert MelanggarKewajiban();
+    function sweep(address to, uint256 amount) external onlyOwner {
+        if (to == address(0)) revert ZeroAddress();
+        uint256 obligation = totalAllocated - totalClaimed;
+        uint256 balance = token.balanceOf(address(this));
+        if (balance < obligation || balance - obligation < amount) {
+            revert ObligationBreach();
         }
-        if (!token.transfer(ke, jumlah)) revert TransferFailed();
-        emit Sweep(ke, jumlah);
+        if (!token.transfer(to, amount)) revert TransferFailed();
+        emit Swept(to, amount);
     }
 
     function transferOwnership(address to) external onlyOwner {
@@ -181,85 +186,85 @@ contract MigrationVesting {
         pendingOwner = address(0);
     }
 
-    /* ── Kematangan ──────────────────────────────────────────────────────── */
+    /* ── Maturity ────────────────────────────────────────────────────────── */
 
-    /// Daun merkle untuk sebuah alokasi. Di-hash DUA KALI: daun satu-lapis bisa
-    /// bertabrakan dengan simpul dalam pohon, dan tabrakan itu adalah bukti
-    /// palsu yang sah secara matematis.
-    function daun(address akun, uint256 total, uint256 bagianTge)
+    /// Merkle leaf for one allocation. Hashed TWICE: a single-hash leaf can
+    /// collide with an internal node of the tree, and such a collision is a
+    /// forged proof that verifies correctly.
+    function leaf(address account, uint256 total, uint256 tgeAmount)
         public
         pure
         returns (bytes32)
     {
         return keccak256(
-            bytes.concat(keccak256(abi.encode(akun, total, bagianTge)))
+            bytes.concat(keccak256(abi.encode(account, total, tgeAmount)))
         );
     }
 
-    /// Jumlah yang sudah matang pada `waktu`. Nol sebelum TGE.
-    function matang(uint256 total, uint256 bagianTge, uint64 waktu)
+    /// Amount vested at `timestamp`. Zero before TGE.
+    function vestedAt(uint256 total, uint256 tgeAmount, uint64 timestamp)
         public
         view
         returns (uint256)
     {
-        uint64 mulai = t0;
-        if (mulai == 0 || waktu < mulai) return 0;
-        if (bagianTge >= total) return total;
-        uint64 lewat = waktu - mulai;
-        if (lewat >= DURASI) return total;
-        uint256 linear = total - bagianTge;
-        return bagianTge + (linear * lewat) / DURASI;
+        uint64 start = t0;
+        if (start == 0 || timestamp < start) return 0;
+        if (tgeAmount >= total) return total;
+        uint64 elapsed = timestamp - start;
+        if (elapsed >= VESTING_DURATION) return total;
+        uint256 linear = total - tgeAmount;
+        return tgeAmount + (linear * elapsed) / VESTING_DURATION;
     }
 
-    /// Sisa yang bisa ditarik sekarang oleh `akun`.
-    function bisaDiklaim(address akun, uint256 total, uint256 bagianTge)
+    /// Amount `account` can withdraw right now.
+    function claimable(address account, uint256 total, uint256 tgeAmount)
         external
         view
         returns (uint256)
     {
-        uint256 m = matang(total, bagianTge, uint64(block.timestamp));
-        uint256 sudah = terklaim[akun];
-        return m > sudah ? m - sudah : 0;
+        uint256 vested = vestedAt(total, tgeAmount, uint64(block.timestamp));
+        uint256 already = claimed[account];
+        return vested > already ? vested - already : 0;
     }
 
-    /* ── Klaim ───────────────────────────────────────────────────────────── */
+    /* ── Claiming ────────────────────────────────────────────────────────── */
 
     /**
-     * Menarik seluruh porsi yang sudah matang tetapi belum ditarik.
+     * Withdraws everything that has matured but not yet been taken.
      *
-     * Penerima SELALU `msg.sender`, dan buktinya terikat pada alamat itu —
-     * tidak ada mode "klaim untuk orang lain" yang bisa disalahgunakan untuk
-     * memaksa seseorang menerima token di waktu yang tidak ia pilih.
+     * The recipient is ALWAYS `msg.sender`, and the proof is bound to that
+     * address — there is no "claim on behalf of" mode that could be used to
+     * force tokens onto someone at a moment they did not choose.
      */
-    function klaim(uint256 total, uint256 bagianTge, bytes32[] calldata bukti)
+    function claim(uint256 total, uint256 tgeAmount, bytes32[] calldata proof)
         external
     {
-        if (t0 == 0) revert T0BelumDisetel();
-        if (!_sahkan(bukti, daun(msg.sender, total, bagianTge))) {
-            revert BuktiTidakSah();
+        if (t0 == 0) revert TgeNotSet();
+        if (!_verify(proof, leaf(msg.sender, total, tgeAmount))) {
+            revert InvalidProof();
         }
 
-        uint256 m = matang(total, bagianTge, uint64(block.timestamp));
-        uint256 sudah = terklaim[msg.sender];
-        if (m <= sudah) revert TidakAdaYangMatang();
-        uint256 jumlah = m - sudah;
+        uint256 vested = vestedAt(total, tgeAmount, uint64(block.timestamp));
+        uint256 already = claimed[msg.sender];
+        if (vested <= already) revert NothingVested();
+        uint256 amount = vested - already;
 
-        // Efek sebelum interaksi.
-        terklaim[msg.sender] = m;
-        totalTerklaim += jumlah;
+        // Effects before interaction.
+        claimed[msg.sender] = vested;
+        totalClaimed += amount;
 
-        if (!token.transfer(msg.sender, jumlah)) revert TransferFailed();
-        emit Klaim(msg.sender, jumlah, m);
+        if (!token.transfer(msg.sender, amount)) revert TransferFailed();
+        emit Claimed(msg.sender, amount, vested);
     }
 
-    function _sahkan(bytes32[] calldata bukti, bytes32 d)
+    function _verify(bytes32[] calldata proof, bytes32 node)
         internal
         view
         returns (bool)
     {
-        bytes32 h = d;
-        for (uint256 i = 0; i < bukti.length; ++i) {
-            bytes32 p = bukti[i];
+        bytes32 h = node;
+        for (uint256 i = 0; i < proof.length; ++i) {
+            bytes32 p = proof[i];
             h = h <= p
                 ? keccak256(abi.encode(h, p))
                 : keccak256(abi.encode(p, h));
