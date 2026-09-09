@@ -101,6 +101,43 @@ if (iTier >= 0) {
   ok(bedaTier === 0, "kolom `tier` CSV cocok 490/490 dengan ambang on-chain");
 }
 
+console.log("\nAngka turunan §0.1 — dihitung dari daftar, bukan dipercaya");
+/**
+ * Bagian ini ada karena angka turunan sudah pernah menyimpang sekali: §0.1
+ * sempat memuat kohort 487 alamat sementara daftarnya sudah 490. Sebuah angka
+ * yang disalin tangan akan menyimpang lagi, dan penyimpangannya tidak terlihat
+ * sampai ada yang menjumlahkan ulang. Di sini ia dijumlahkan ulang setiap kali.
+ *
+ * Pos non-migrasi diambil dari §0.1 dan memang konstanta; yang dihitung adalah
+ * kontribusi migrasi, yaitu satu-satunya yang bergantung pada daftar.
+ */
+const TGE_NON_MIGRASI = 80_000_000n + 10_000_000n + 7_000_000n + 6_000_000n + 5_500_000n; // DEX LP · treasury 10% · private 5% · marketing 15% · cadangan reward 5%
+const HARGA_LAUNCH_SEN = 5n;            // $0,005 → 5 per 1000
+const DINYATAKAN = {
+  tgeMigrasi: 49_357_088n,
+  sirkulasi: 157_857_088n,
+  marketCapUsd: 789_285n,
+  emisiBulanan: 16_120_935n,
+};
+const kecilWei = entri.filter((e) => e.wei < AMBANG).reduce((s, e) => s + e.wei, 0n);
+const besarWei = entri.filter((e) => e.wei >= AMBANG).reduce((s, e) => s + e.wei, 0n);
+const tgeMigrasiWei = kecilWei + besarWei / 5n;
+const linearWei = besarWei - besarWei / 5n;
+const sirkulasiWei = TGE_NON_MIGRASI * 10n ** 18n + tgeMigrasiWei;
+const utuh = (w) => w / 10n ** 18n;   // dibulatkan ke bawah, seperti tabel §0.1
+
+ok(utuh(tgeMigrasiWei) === DINYATAKAN.tgeMigrasi,
+   `TGE migrasi ${utuh(tgeMigrasiWei)} == §0.1 ${DINYATAKAN.tgeMigrasi}`);
+ok(utuh(sirkulasiWei) === DINYATAKAN.sirkulasi,
+   `sirkulasi TGE ${utuh(sirkulasiWei)} == §0.1 ${DINYATAKAN.sirkulasi}`);
+ok(utuh(sirkulasiWei * HARGA_LAUNCH_SEN / 1000n) === DINYATAKAN.marketCapUsd,
+   `market cap awal $${utuh(sirkulasiWei * HARGA_LAUNCH_SEN / 1000n)} == §0.1 $${DINYATAKAN.marketCapUsd}`);
+ok(utuh(linearWei / 6n) === DINYATAKAN.emisiBulanan,
+   `emisi migrasi ${utuh(linearWei / 6n)}/bulan == §0.1 ${DINYATAKAN.emisiBulanan}`);
+// 1 miliar suplai → persen = token / 1e9 × 100 = token / 1e7
+const persen = Number(sirkulasiWei / 10n ** 16n) / 100 / 10_000_000;
+ok(Math.abs(persen - 15.79) < 0.005, `sirkulasi ${persen.toFixed(4)}% membulat ke 15,79%`);
+
 console.log("\nPeringatan mainnet");
 ok(/TESTNET SAJA/.test(tree.PERINGATAN ?? ""), "artefak pohon memuat peringatan testnet-saja");
 ok(/TESTNET SAJA/.test(proofs.PERINGATAN ?? ""), "artefak bukti memuat peringatan testnet-saja");

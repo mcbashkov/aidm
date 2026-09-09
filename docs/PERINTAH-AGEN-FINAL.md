@@ -104,22 +104,30 @@ sekali — jangan mencoba mencocokkannya dengan struktur lama.
 > tanggal klaim, pemegang yang mengklaim terlambat justru selesai vesting
 > paling akhir; keterlambatan membaca pengumuman berubah menjadi hukuman.
 
-**Angka turunan dari data migrasi aktual (487 alamat):**
+**Angka turunan dari daftar migrasi aktual — `data/migration-allocations.csv`,
+490 alamat, snapshot 9 September 2026.**
 
 | | Alamat | Token | Di TGE | Linear |
 |---|---:|---:|---:|---:|
-| Saldo < 250.000 | 357 (73,3%) | 25.076.287 | 25.076.287 | — |
-| Saldo ≥ 250.000 | 130 | 120.907.014 | 24.181.403 | 96.725.611 |
+| Saldo < 250.000 | 360 (73,5%) | 25.175.685,35 | 25.175.685,35 | — |
+| Saldo ≥ 250.000 | 130 | 120.907.014,06 | 24.181.402,81 | 96.725.611,25 |
+| **Total** | **490** | **146.082.699,41** | **49.357.088,17** | **96.725.611,25** |
 
 Emisi bulanan migrasi: **16.120.935 token/bulan selama 6 bulan**.
+
+> Seluruh baris di atas **dihitung ulang dari CSV**, bukan disalin. Reproduksi:
+> `pnpm merkle:verify`. Angka kohort versi sebelumnya (487 alamat, 357/130,
+> 25.076.287) berasal dari snapshot lama dan **tidak berlaku lagi** — yang
+> berubah kelompok di bawah ambang; total kelompok di atas ambang justru
+> identik sampai desimal.
 
 > ✅ **SELISIH 685.459 TERJAWAB oleh `data/migration-allocations.csv`
 > (9 Sep 2026).** Daftar sungguhan memuat **490 alamat** senilai
 > **146.082.699,41 IDM**; ditambah satu alokasi **586.060,85 IDM yang belum
 > punya alamat**, jumlahnya **146.668.760,26** — cocok dengan kewajiban
 > terverifikasi di tabel alokasi, selisih 0,26 IDM pembulatan. Angka kohort
-> lama (357/130, 25.076.287/120.907.014) berasal dari snapshot sebelumnya;
-> yang berlaku sekarang **360 di bawah ambang · 130 di atas**.
+> lama (487 alamat, 357/130, 25.076.287) berasal dari snapshot sebelumnya;
+> yang berlaku sekarang **490 alamat — 360 di bawah ambang · 130 di atas**.
 >
 > Yang MASIH terbuka: alamat penerima alokasi 586.060,85 IDM. Selama belum
 > ada, root merkle hanya sah untuk testnet.
@@ -149,17 +157,16 @@ Emisi bulanan migrasi: **16.120.935 token/bulan selama 6 bulan**.
 | Sumber | Token |
 |---|---:|
 | DEX LP | 80.000.000 |
-| Migrasi (saldo kecil + 20% saldo besar) | 49.257.689 |
+| Migrasi (saldo kecil + 20% saldo besar) | 49.357.088 |
 | Treasury 10% | 10.000.000 |
 | Private Sale 5% | 7.000.000 |
 | Marketing 15% | 6.000.000 |
 | Cadangan reward 5% | 5.500.000 |
-| **Total** | **157.757.689 (15,78%)** |
-| **Market cap awal** | **$788.788** |
+| **Total** | **157.857.088 (15,79%)** |
+| **Market cap awal** | **$789.285** |
 
-*(Aritmetika 20% × 120.907.014 membulat ke 24.181.403, sehingga penjumlahan
-murni menghasilkan 49.257.690 — selisih satu token terhadap angka tabel.
-Dicatat supaya tidak dikira salah ketik saat diperiksa ulang.)*
+*(Angka penuhnya 49.357.088,17 · 157.857.088,17 · $789.285,44 — dibulatkan ke
+bawah di tabel. Persentase 15,7857% dibulatkan ke 15,79%.)*
 
 > **Dinyatakan terbuka, bukan disembunyikan:** kolam swap 150 juta dan sisa
 > kolam migrasi **tidak** dihitung sebagai sirkulasi (belum diklaim siapa pun)
