@@ -57,7 +57,7 @@ menghantam kelompok ini paling keras.
 |---|---|---|---|
 | IDM lama (native) | — | — | warisan, **tidak disentuh sama sekali** |
 | **IDM Reborn** | **BSC** | **1 miliar** | token utama ekosistem, dipasangkan dengan BNB |
-| **IDMX** | **opBNB** | rencana 10 triliun | poin reward in-app, ditukar ke IDM Reborn |
+| **IDMX** | **opBNB** | **50 miliar** | poin reward in-app, ditukar ke IDM Reborn |
 
 Ada juga **Kredit AI** — dibeli dengan uang biasa (QRIS/VA), **tidak pernah**
 dengan token. Pemisahan ini disengaja demi kepatuhan app store dan agar ekonomi
@@ -67,7 +67,8 @@ token tidak bercampur dengan ekonomi pembayaran.
 terbentuk**. Konsekuensinya, nilai rupiah dari reward belum bisa dijanjikan ke
 pengguna — UI hanya boleh menampilkan jumlah token, bukan taksiran rupiah.
 
-**IDMX belum di-deploy**, jadi pasokannya masih bisa diubah.
+**IDMX sudah di-deploy** dengan suplai **50.000.000.000** dan terverifikasi
+on-chain. Pasokannya tidak lagi terbuka.
 
 ---
 
@@ -136,56 +137,29 @@ dihitung (nominal > 0, bukan duplikat persis dalam 60 detik); menghapus transaks
 
 ### ~~Pertanyaan A — Alokasi 1 miliar IDM Reborn~~ — ✅ DIPUTUSKAN
 
-Ringkasnya: **Ecosystem & Rewards 30% · Liquidity 20% · Private Sale 15% ·
-Treasury 15% · Team 12% · Marketing 5% · Advisors 3%.** Sirkulasi TGE
-**11,75%** (117,5 juta), harga launch **$0,005**, FDV **$5 juta**.
+**Alokasi, vesting, harga, sirkulasi TGE, dan treasury: lihat
+`docs/PERINTAH-AGEN-FINAL.md` §0.1 (versi 2, dikunci 9 September 2026).**
 
-Yang berubah dari usulan lama di dokumen ini: Team turun 15% → **12%**,
-Ekosistem naik 25% → **30%**, dan airdrop 2% dihapus. Arahnya sama dengan
-kekhawatiran yang ditulis di sini sebelumnya — porsi tim yang lebih kecil dan
-float yang tidak terlalu tipis. Rincian, vesting, dan tata kelola treasury:
-`docs/PERINTAH-AGEN-FINAL.md` §0.1.
+Angka tidak disalin ke sini dengan sengaja. Ringkasan alokasi yang dulu berdiri
+di tempat ini (30/20/15/15/12/5/3, sirkulasi TGE 11,75%) berasal dari versi
+28 Agustus yang kini **mati** — dan salinan yang tertinggal persis begitulah
+cara sebuah angka mati bertahan hidup berbulan-bulan.
 
-### ~~Pertanyaan B — Kurs IDMX → IDM Reborn~~ — ✅ DIPUTUSKAN
-
-**50 IDMX = 1 IDM**, dengan **one-way ratchet** — kurs hanya boleh membaik bagi
-pengguna, tidak pernah memburuk, dan itu ditegakkan kontrak (`setRate` menolak
-nilai yang lebih buruk), bukan kebijakan.
-
-Sudah **terverifikasi on-chain** 2026-08-28, dikonfirmasi ulang 2026-08-31:
-`rateIdmxPerIdm = 50`, kolam `SwapClaim` berisi 150.000.000 IDM, dan
-`maxIdmxPerVoucher` 2.000 IDMX. Nol perbedaan antara keputusan dan yang
-ter-deploy. Rujukan parameter lengkap: `contracts/ALAMAT-DAN-CATATAN.md` §5.
+Yang paling penting diketahui bila Anda membaca dokumen ini sebagai konteks
+sejarah: **pos "Migrasi Holder v1" (16%) lahir di versi 2** dan tidak punya
+padanan di struktur lama, jadi jangan mencoba memetakan satu ke yang lain.
 
 ---
 
-### Pertanyaan C — Pasokan IDMX: 10 triliun tidak koheren
+### ~~Pertanyaan C — Pasokan IDMX~~ — ✅ DIPUTUSKAN
 
-Temuan yang memicu pertanyaan ini:
+**Suplai IDMX = 50.000.000.000**, sudah ter-deploy dan terverifikasi on-chain.
 
-Pada kurs 50:1 dengan kolam 150 juta IDM, IDMX yang **pernah bisa ditukar** hanya
-**7,5 miliar — 0,075% dari 10 triliun**. Sisanya **99,92% tidak akan pernah
-beredar**. Untuk menukar seluruh 10 triliun dibutuhkan **200 miliar IDM**,
-padahal totalnya cuma 1 miliar — timpang **200 kali lipat**.
-
-Jadi angka 10 triliun bersifat **kosmetik**. Tidak salah secara teknis (berfungsi
-sebagai plafon maksimum), tapi menyesatkan siapa pun yang membacanya sebagai
-rencana distribusi.
-
-| Pasokan IDMX | Porsi yang benar-benar bisa beredar (kurs 50:1) |
-|---|---|
-| 10 triliun *(rencana lama)* | 0,08% |
-| 100 miliar | 7,5% |
-| **10 miliar** *(usulan)* | **75%** |
-
-Menurunkan pasokan **tidak mengubah nominal reward harian sama sekali** (tetap
-105 IDMX/hari) — yang berubah hanya plafon di atas kertas. Dan karena IDMX belum
-di-deploy, ini masih gratis untuk diubah.
-
-**Yang ingin didiskusikan:** apakah pasokan besar punya nilai psikologis yang
-sepadan dengan ketidakkoherenannya? Berapa pasokan yang wajar untuk token poin?
-
----
+Pertanyaan aslinya menyoroti bahwa 10 triliun tidak koheren: pada kurs 50:1
+dengan kolam 150 juta IDM, yang pernah bisa ditukar hanya 7,5 miliar IDMX.
+Keberatan itu diterima, dan angkanya diturunkan jauh sebelum deploy. **Angka
+10 triliun tidak berlaku di mana pun** — bukan sebagai plafon, bukan sebagai
+rencana.
 
 ### Pertanyaan D — Misi terasa tipis
 
@@ -273,7 +247,7 @@ pra-audit, dan anti-Sybil sepenuhnya bergantung pada backend.
 
 1. **Alokasi 1 miliar IDM Reborn** — apakah proporsi usulan masuk akal?
 2. **Kurs IDMX → IDM** — 50:1 wajar? Ada pendekatan lain selain kolam ÷ emisi?
-3. **Pasokan IDMX** — pertahankan 10 triliun atau turunkan ke 10 miliar?
+3. ~~**Pasokan IDMX**~~ — ✅ diputuskan: **50 miliar**, sudah ter-deploy.
 4. **Misi tambahan** — 4 misi usulan sudah tepat, atau ada yang lebih baik?
 5. **Gas** — pengguna bayar sendiri, disponsori penuh, atau berjenjang?
 6. **Cap tukar mingguan** — 2.000 IDMX?

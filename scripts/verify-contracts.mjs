@@ -1,5 +1,10 @@
 /**
- * Verifikasi source keenam kontrak ke explorer, lewat API terpadu Etherscan V2
+ * Verifikasi source keenam kontrak INTI ke explorer, lewat API terpadu Etherscan V2
+ *
+ * `MigrationVesting.sol` (kontrak ketujuh, BSC) BELUM masuk daftar ini —
+ * deployment testnet-nya memakai pohon demo, jadi memverifikasi source-nya
+ * sekarang akan mempublikasikan kontrak yang alamat & root-nya akan berganti
+ * saat daftar migrasi final tersedia.
  * (satu API key untuk opBNB Testnet 5611 dan BSC Testnet 97).
  *
  * Memakai standard-json-input, BUKAN single-file: setelan kompilasi ikut

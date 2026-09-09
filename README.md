@@ -26,7 +26,7 @@ harian bersih tanpa jargon.
 > ditegakkan on-chain. **M4 tuntas 2026-08-26** — kontrak ter-deploy & terdanai,
 > klaim diuji di aplikasi (spinner → Diklaim + tautan opBNBScan). Sejak
 > 2026-08-27 klaim berjalan **asinkron**: permintaan HTTP hanya menulis niat,
-> cron relayer yang mengirim dan merekonsiliasi. **Source keenam kontrak
+> cron relayer yang mengirim dan merekonsiliasi. **Source keenam kontrak inti
 > terverifikasi 2026-08-31** — rujukan alamat, argumen konstruktor, peran
 > kunci, dan aturan operasional ada di `contracts/ALAMAT-DAN-CATATAN.md`;
 > pra-audit keamanan di `docs/audit/LAPORAN-PRA-AUDIT.md`.

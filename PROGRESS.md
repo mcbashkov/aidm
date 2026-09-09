@@ -1365,52 +1365,23 @@ yang belum.
 
 ---
 
-## Ekonomi reward IDMX — perhitungan
+## Ekonomi reward IDMX
 
-Angka pendanaan awal kontrak reward (**100 juta IDMX**) di
-`scripts/deploy-rewards.mjs` adalah **float kerja untuk testnet & beta**, bukan
-angka yang diturunkan dari tokenomics. Berikut dasarnya, supaya bisa ditinjau.
+**Dipindahkan seluruhnya ke `docs/PERINTAH-AGEN-FINAL.md` §0.1** (versi 2,
+dikunci PO 9 September 2026). Bagian panjang yang dulu berdiri di sini —
+tabel perolehan misi setahun, ketahanan kolam, dan perspektif "100 juta dari
+10 triliun" — **dihapus, bukan ditandai usang.**
 
-**Yang bisa diperoleh satu pengguna paling rajin dalam setahun:**
+Alasannya adalah pelajaran yang sudah dibayar mahal di papan kerja ini:
+menandai sesuatu "usang" dan membiarkannya tetap terbaca berarti angka mati
+akan tetap dikutip oleh siapa pun yang membaca cepat. Angka 10 triliun
+bertahan berbulan-bulan justru dengan cara itu; suplai IDMX yang benar
+**50.000.000.000**.
 
-| Misi | Nilai | Frekuensi maksimal | Setahun |
-|---|---|---|---|
-| Catat transaksi pertama hari ini | 20 | harian | 7.300 |
-| Catat 5 transaksi dalam sehari | 50 | harian | 18.250 |
-| Catat 7 hari beruntun | 100 | mingguan | 5.200 |
-| Segel laporan bulanan | 150 | bulanan | 1.800 |
-| Lengkapi profil usaha | 50 | sekali | 50 |
-| **Total** | | | **≈ 32.600 IDMX/tahun** |
-
-Catatan: cap harian 250 IDMX **tidak pernah tersentuh** — misi harian yang
-tersedia hanya berjumlah 70/hari. Cap itu jaring pengaman untuk misi baru di
-masa depan dan untuk penyalahgunaan, bukan batas yang mengikat hari ini.
-
-**Berapa lama 100 juta IDMX bertahan:**
-
-| Skala | Perhitungan | Cukup untuk |
-|---|---|---|
-| Testnet (beberapa akun uji) | — | praktis tak terbatas |
-| **Beta tertutup M6 (100 user)** | 100 × 32.600 = 3,26 jt/tahun | **~30 tahun** |
-| Target §3 (50.000 user, ~35% aktif) | ≈ 600 jt/tahun | **~2 bulan** |
-
-**Kesimpulan jujur:** 100 juta **memadai untuk testnet dan beta M6**, dan itu
-memang cakupan yang sedang kita kerjakan. Angka itu **tidak** disiapkan untuk
-skala 50.000 user — di sana kolam reward habis dalam hitungan bulan.
-
-Perspektif pasokan: 100 juta dari 10 triliun = **0,001%**. Jadi ini bukan soal
-kekurangan token, melainkan soal *berapa banyak yang sengaja dialokasikan untuk
-reward* — dan itu justru keputusan §16 #8 yang masih terbuka.
-
-**Yang perlu dilakukan sebelum launch publik:**
-
-1. Tetapkan alokasi kolam reward di dokumen tokenomics (§16 #8) — 🧑
-2. Danai ulang kontrak sesuai alokasi itu; mengisi ulang cukup `transfer` biasa
-   dari treasury, tidak perlu deploy ulang — 🧑
-3. **Pasang peringatan saldo menipis** — 🤖. Ini risiko operasional nyata: bila
-   saldo kontrak habis, klaim akan *revert* dan pengguna melihat kegagalan yang
-   membingungkan, bukan pesan yang menjelaskan. Sebaiknya API memeriksa saldo
-   lebih dulu dan berkata apa adanya.
+Satu koreksi yang perlu diingat saat membaca dokumen lama: **kolam
+MissionRewards 100.000.000 adalah IDMX**, diambil dari suplai 50 miliar di
+opBNB — ia tidak menyentuh suplai 1 miliar IDM Reborn sama sekali. Dokumen
+yang menyandingkan keduanya seolah satu suplai adalah dokumen yang salah.
 
 ---
 

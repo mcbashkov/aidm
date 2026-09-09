@@ -13,7 +13,7 @@ yang sama.
 
 ### 0.1 Ruang lingkup
 
-Enam kontrak Solidity `0.8.26`, tanpa dependensi eksternal (tidak ada
+**Tujuh** kontrak Solidity `0.8.26`, tanpa dependensi eksternal (tidak ada
 OpenZeppelin), tersebar di dua chain:
 
 | Kontrak | Chain (testnet saat ini) |
@@ -24,6 +24,18 @@ OpenZeppelin), tersebar di dua chain:
 | `SwapInitiator.sol` | opBNB Testnet (chainId 5611) |
 | `IDMReborn.sol` | BSC Testnet (chainId 97) |
 | `SwapClaim.sol` | BSC Testnet (chainId 97) |
+| `MigrationVesting.sol` 🆕 | BSC Testnet (chainId 97) |
+
+> **Kontrak ketujuh masuk lingkup per 9 September 2026, dan BELUM dianalisis.**
+> `MigrationVesting.sol` ditulis sesudah Fase 1 selesai, jadi temuan F-01…F-08
+> tidak mencakupnya. Ia belum melewati Slither maupun pemetaan hak istimewa.
+> Sifat yang sudah dibangun sejak awal dan perlu diverifikasi auditor: tanpa
+> `pause`, tanpa fungsi penurun alokasi, `merkleRoot` & `totalAlokasi`
+> immutable, `t0` sekali-set, dan `sweep` yang secara struktural tidak bisa
+> menyentuh alokasi belum diklaim. Diuji `pnpm test:migrasi` — 24 pemeriksaan
+> lulus, termasuk bukti merkle palsu dan percobaan menaikkan alokasi sendiri.
+>
+> **Jumlah temuan akan bertambah** setelah kontrak ini ikut dianalisis.
 
 Di luar lingkup: seluruh kode aplikasi (`app/`, `lib/`, `components/`),
 backend Supabase, dan skrip deployment. Skrip deployment dibaca hanya untuk

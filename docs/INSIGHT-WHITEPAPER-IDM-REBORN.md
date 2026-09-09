@@ -1,6 +1,6 @@
 # Insight untuk Whitepaper IDM Reborn
 
-**Disusun:** 9 September 2026 · **Untuk:** PT IDM FILM SEJAHTERA
+**Disusun:** 9 September 2026 · **Diperbarui:** 9 September 2026 (ekonomi token v2) · **Untuk:** PT IDM FILM SEJAHTERA
 **Sumber:** repositori AIDM, pembacaan langsung on-chain, dan database produksi
 **Status dokumen:** bahan mentah terverifikasi — **bukan** draf whitepaper
 
@@ -31,21 +31,28 @@ saat menulis whitepaper**:
 
 ## 1. Peta empat proyek — dan batas pengetahuan saya
 
-IDM Reborn dinyatakan menaungi empat proyek. Kejujuran yang perlu saya
-sampaikan lebih dulu: **saya hanya punya bukti untuk satu di antaranya.**
+IDM Reborn menaungi empat proyek.
 
-| Proyek | Status bukti | Apa yang saya punya |
+> **Koreksi terhadap versi 8 September dokumen ini.** Saat itu saya menulis
+> "nol bukti" untuk SkemGuard, Film, dan IDM Chain. Itu benar untuk repositori
+> AIDM, dan **salah sebagai pernyataan umum** — repositori SkemGuard dan
+> landing page ada di mesin yang sama, hanya di luar direktori yang saya
+> periksa. Batas pemeriksaan saya terbaca sebagai batas kenyataan, dan itu
+> kesalahan saya.
+
+| Proyek | Status bukti | Apa yang ada |
 |---|---|---|
-| **AIDM** | ✅ Lengkap | Kode produksi, 6 kontrak hidup di testnet, database nyata, laporan pra-audit, metrik pengguna |
-| **SkemGuard** | ❌ Nol | Tidak ada satu pun berkas, rujukan, atau baris kode di repositori ini |
-| **Film** | ❌ Nol | Hanya nama badan hukum (PT IDM FILM SEJAHTERA). Tidak ada dokumen produk |
-| **IDM Chain (L2 BNB)** | ❌ Nol | Tidak ada spesifikasi, kontrak, maupun rujukan teknis |
+| **AIDM** | ✅ Lengkap | Kode produksi, 7 kontrak di testnet, database nyata, pra-audit, metrik pengguna |
+| **SkemGuard** | 🟡 Sebagian | Repositori `idmtoken/skemguard` dengan PRD lengkap + addendum reputasi deployer. Mendukung **6 jaringan** (Solana + Ethereum, BSC, Polygon, Base, Robinhood) — dibaca dari `lib/types.ts`. **Domainnya belum ada**: `skemguard.app` nol DNS per 9 Sep 2026 |
+| **Film** | 🟡 Sebagian | Landing page menyebut **2 film tayang di bioskop nasional**. Tidak ada dokumen produk di repo mana pun; klaimnya perlu bukti sebelum masuk whitepaper |
+| **IDM Chain (L2 BNB)** | ❌ Nol teknis | Disebut di landing page & roadmap ("testnet lebih dulu, mainnet hanya jika metrik tercapai"). **Tidak ada spesifikasi, kontrak, atau riset teknis** di mana pun |
 
 **Konsekuensinya untuk whitepaper.** Porsi teknis blockchain memang menumpuk
 di AIDM — dan itu kekuatan, bukan kelemahan, karena AIDM satu-satunya yang
 sudah punya kontrak hidup dan pengguna nyata. Tapi whitepaper yang menyebut
-empat proyek sementara hanya satu yang bisa dibuktikan akan langsung terbaca
-timpang oleh pembaca yang teliti.
+empat proyek sementara hanya satu yang punya bukti teknis lengkap akan
+langsung terbaca timpang oleh pembaca yang teliti — dan IDM Chain, yang paling
+ambisius terdengar, justru yang paling tipis buktinya.
 
 Dua jalan yang jujur, dan pilih satu secara sadar:
 
@@ -63,81 +70,78 @@ untuk mengisi tiga proyek lainnya.
 
 ## 2. IDM Reborn — token
 
-### 2.1 Parameter dasar 🔒/✅
+> **Angka ekonomi TIDAK disalin ke sini.** Sumbernya
+> `docs/PERINTAH-AGEN-FINAL.md` **§0.1 versi 2, dikunci PO 9 September 2026**.
+> Bagian ini hanya menerangkan bentuk dan alasannya; setiap angka diambil dari
+> §0.1 saat whitepaper disusun, bukan dari halaman ini.
+>
+> **Versi 28 Agustus MATI.** Dokumen ini sempat memuatnya (alokasi
+> 30/20/15/15/12/5/3, private sale diskon 33%, treasury 3-dari-5, sirkulasi
+> TGE 11,75%). Seluruhnya sudah dicabut — bukan ditandai usang, dicabut.
 
-Sumber kanonik: `docs/PERINTAH-AGEN-FINAL.md` §0.1, dikunci PO 28 Agustus 2026.
-Kolom kanan menandai mana yang sudah bisa dibuktikan on-chain **hari ini**.
+### 2.1 Bentuk alokasi v2 — apa yang berubah dan kenapa itu penting
 
-| Parameter | Nilai | Bukti |
-|---|---|---|
-| Nama / simbol | IDM Reborn / **IDM** | ✅ on-chain |
-| Desimal | 18 | ✅ |
-| Suplai | **1.000.000.000** tetap, tanpa mint | ✅ `totalSupply` = 1e9 |
-| Jaringan | BNB Chain | ✅ (testnet 97; mainnet belum) |
-| Tax beli/jual | **Tidak ada** — ERC-20 standar murni | ✅ |
-| Fee transfer | 1 IDM flat, 100% burn | ✅ di kode |
-| Harga launch | $0,005 · FDV $5.000.000 | 🔒 belum diperdagangkan |
-| Private sale | $500.000 @ $0,00333 (diskon 33%) | 🔒 |
-| Sirkulasi TGE | 117.500.000 (11,75%) · MC awal $587.500 | 🔒 |
+Satu perubahan mendominasi versi 2: **pos "Migrasi Holder v1" (16%, 160 juta
+IDM) lahir**, dan seluruh pos lain menyusut untuk memberi ruang. Pos ini tidak
+punya padanan di struktur lama — jangan mencoba memetakan satu ke yang lain.
 
-> **Nada untuk whitepaper:** "tanpa tax" adalah keputusan kompatibilitas
-> listing, bukan sekadar fitur ramah pengguna. Bursa menolak token bertax
-> karena merusak akuntansi order book mereka. Sebutkan alasannya — itu
-> menunjukkan keputusan yang dipikirkan, bukan yang diikutkan tren.
+Untuk whitepaper, ini bukan sekadar baris tabel. Ia **kewajiban kepada
+pemegang token generasi sebelumnya**, 487 alamat, yang dibayar dari suplai
+baru. Proyek yang membawa serta pemegang lamanya membaca sangat berbeda dari
+proyek yang meninggalkan mereka, dan bab tokenomics sebaiknya menjelaskannya
+sebagai keputusan, bukan menyelipkannya sebagai pos.
 
-### 2.2 Alokasi 🔒
+Perubahan lain: private sale $0,00333 → **$0,003571** (diskon **28,6%**, bukan
+33%); treasury 15% → **10%**, multisig 3-dari-5 → **2-dari-3**.
 
-| Pos | % | Token | Rincian |
-|---|---:|---:|---|
-| Ecosystem & Rewards | 30% | 300.000.000 | 150 jt kolam swap (unlock TGE, **terkunci di kontrak**) + 150 jt reward vesting 48 bln |
-| Liquidity | 20% | 200.000.000 | 80 jt DEX LP (locked 12–24 bln) + 120 jt CEX reserve |
-| Private Sale | 15% | 150.000.000 | $500k @ $0,00333 |
-| Treasury | 15% | 150.000.000 | Multisig 3-of-5 + timelock |
-| Team & Founders | 12% | 120.000.000 | Cliff 12 bln + vesting 24 bln |
-| Marketing | 5% | 50.000.000 | TGE 15%, vesting 12 bln |
-| Advisors | 3% | 30.000.000 | Cliff 6 bln + vesting 18 bln |
+### 2.2 Jadwal migrasi — bagian yang paling mudah salah tulis
 
-**Vesting**
-
-| Pos | TGE | Cliff | Linear |
+| Kohort | Alamat | Di TGE | Sesudahnya |
 |---|---|---|---|
-| Private Sale | 5% | 3 bln | 12 bln |
-| Team | 0% | 12 bln | 24 bln |
-| Advisors | 0% | 6 bln | 18 bln |
-| Ecosystem reward (150 jt) | 5% | — | 48 bln |
-| Kolam swap (150 jt) | unlock penuh, **terkunci kontrak** | — | — |
-| Treasury | 10% | — | 36 bln |
-| Marketing | 15% | — | 12 bln |
-| DEX LP (80 jt) | unlock penuh, LP token di-lock | — | — |
-| CEX Reserve (120 jt) | 0% | — | hanya dengan perjanjian listing resmi |
+| Saldo < 250.000 IDM | 357 (73,3%) | **100%** | — |
+| Saldo ≥ 250.000 IDM | 130 | **20%** | linear **6 bulan dari TGE** |
 
-**Satu keputusan yang layak ditonjolkan, bukan disembunyikan.** Kolam swap 150
-juta **tidak** dihitung sebagai sirkulasi (belum diklaim siapa pun) tetapi
-**tetap masuk FDV**. Menyembunyikannya dari FDV akan membuat angka lebih
-cantik dan lebih bohong. Pembaca whitepaper yang berpengalaman mencari persis
-trik ini; mengakuinya lebih dulu membeli kredibilitas yang tidak bisa dibeli
-dengan cara lain.
+**"Dari TGE", bukan dari tanggal klaim** — dan alasannya layak ditulis di
+whitepaper, bukan hanya di kode. Bila dihitung dari tanggal klaim, pemegang
+yang mengklaim terlambat justru selesai vesting paling akhir: keterlambatan
+membaca pengumuman berubah menjadi hukuman. Dengan `t0` bersama, mengklaim
+lebih lambat tidak pernah merugikan.
 
-**Treasury.** Gnosis Safe 3-of-5, alamat dipublikasikan, timelock 48–72 jam
-untuk pengeluaran > 1 juta IDM. Alokasi internal: Operasional 40% · Kemitraan
-25% · Cadangan darurat 20% (butuh 4-of-5) · Buyback & burn 15%. **Tidak untuk
-gaji founder/C-level.** Laporan treasury tiap kuartal.
+Ditegakkan `MigrationVesting.sol` (§4), bukan oleh kebijakan.
 
-### 2.3 ⚠️ Ketidakcocokan angka yang WAJIB diselesaikan sebelum menulis
+### 2.3 ⚠️ Satu angka yang masih perlu konfirmasi PO
 
-**Pasokan IDMX disebut dua nilai berbeda di dokumen internal:**
+Jumlah kedua kohort adalah **145.983.301**, sedangkan tabel alokasi menyebut
+kewajiban terverifikasi **146.668.760** — **selisih 685.459 token**. Keduanya
+dinyatakan berasal dari data migrasi aktual.
 
-| Sumber | Nilai | Status |
-|---|---|---|
-| `PERINTAH-AGEN-FINAL.md` §0 | **50.000.000.000** | ✅ **Benar** — cocok dengan `IDMX.totalSupply` on-chain |
-| `BRIEF-EKONOMI-TOKEN.md` §2 | 10.000.000.000.000 (10 triliun) | ❌ **Usang** — dokumen itu sendiri mempertanyakannya di "Pertanyaan C" |
-| `PROGRESS.md` bagian "Ekonomi reward IDMX" | 10 triliun | ❌ **Usang** — sudah ditandai usang di kepala berkas |
+Konsekuensinya bukan kosmetik: kolam keterlambatan adalah sisa setelah
+kewajiban, jadi ia **13.331.240** atau **14.016.699** tergantung angka mana
+yang benar. **Jangan tulis salah satunya ke whitepaper sebelum diputuskan** —
+angka yang tidak bisa direkonsiliasi dengan penjumlahannya sendiri adalah hal
+pertama yang ditemukan pembaca teliti.
 
-**Yang benar: 50 miliar.** Dibaca dari rantai hari ini. Kalau angka 10 triliun
-masuk whitepaper, ia akan bertabrakan dengan block explorer pada hari pertama
-ada yang memeriksa — dan yang memeriksa pertama biasanya calon investor.
+*(Catatan kecil terpisah: 20% × 120.907.014 membulat ke 24.181.403, sehingga
+sirkulasi migrasi di TGE berjumlah 49.257.690 secara murni terhadap 49.257.689
+di tabel. Selisih satu token, tidak material, dicatat agar tidak dikira salah
+ketik.)*
 
----
+### 2.4 Kolam keterlambatan — TODO, jangan dikarang
+
+±13,3 juta IDM disisihkan untuk pemegang yang terlambat. **Mekanismenya
+pro-rata dan belum ditentukan.** Whitepaper boleh menyebut keberadaannya;
+tidak boleh menjelaskan cara kerjanya, karena caranya belum ada. Kolam yang
+aturannya ditebak lebih buruk daripada kolam yang belum ada — yang pertama
+terlihat resmi.
+
+### 2.5 Treasury
+
+100 juta IDM, multisig **2-dari-3** di BNB Chain. Ambang 2-dari-3 dipilih
+sadar: dengan 3-dari-3, satu kunci hilang membekukan treasury permanen.
+
+🧑 **Alamat Safe belum ada** dan harus dibuat PO. Lampiran whitepaper yang
+menyebut treasury wajib memuat alamatnya — treasury tanpa alamat publik adalah
+klaim yang tidak bisa diperiksa.
 
 ## 3. Arsitektur ekonomi dua token — inti teknis whitepaper
 
@@ -230,8 +234,8 @@ kerugian berhenti di satu hari, bukan seluruh kolam. Ongkosnya diakui terbuka
 
 ## 4. Inventaris kontrak — dibaca dari rantai hari ini ✅
 
-Enam kontrak hidup di testnet sejak 21 Agustus 2026, source terverifikasi
-31 Agustus. Alamat lengkap, argumen konstruktor, dan setelan kompilasi ada di
+**Tujuh** kontrak di testnet. Enam kontrak inti hidup sejak 21 Agustus 2026
+dengan source terverifikasi 31 Agustus; kontrak ketujuh menyusul 9 September. Alamat lengkap, argumen konstruktor, dan setelan kompilasi ada di
 `contracts/ALAMAT-DAN-CATATAN.md`.
 
 | Kontrak | Jaringan | Fungsi |
@@ -242,6 +246,13 @@ Enam kontrak hidup di testnet sejak 21 Agustus 2026, source terverifikasi
 | `SwapInitiator` | opBNB 5611 | Bakar IDMX, terbitkan permintaan swap |
 | `IDMReborn` | BSC testnet 97 | Token nilai, 1 miliar |
 | `SwapClaim` | BSC 97 | Tebus voucher → lepas IDM dari kolam |
+| `MigrationVesting` 🆕 | BSC 97 | Melepas alokasi Migrasi Holder v1 sesuai jadwal §0.1 |
+
+> **`MigrationVesting` di testnet memakai pohon merkle DEMO**, bukan data
+> migrasi nyata — daftar 487 alamat belum ada di repositori. `merkleRoot`
+> immutable, jadi daftar final wajib ada sebelum deploy mainnet; kontrak ini
+> tidak bisa "diisi belakangan". Itu bukan keterbatasan melainkan sifat yang
+> dituju: alokasi yang bisa diganti owner bukan kewajiban, melainkan janji.
 
 **Keadaan on-chain, dibaca 9 September 2026:**
 
@@ -443,6 +454,8 @@ yang sudah diputuskan, bukan kehati-hatian umum.
 | **Pasokan IDMX 10 triliun** | Angka usang. Yang benar 50 miliar (§2.3). |
 | **Plafon global sebagai anti-Sybil** | Ia pembatas radius ledakan, bukan pertahanan Sybil. Menyebutnya begitu menciptakan rasa aman yang salah. |
 | **Proyeksi pengguna sebagai capaian** | 18 pengguna nyata. Proyeksi boleh, asal jelas ditandai proyeksi. |
+| **Vesting/buyback sebagai cara menjaga atau menaikkan HARGA** | Aturan bahasa mengikat (§0.1). Rumusan yang dipakai: **ketertiban distribusi** dan **kedalaman pasar**. Kalimat yang menyebut harga menempatkan penerbit sebagai pengelola harga — posisi yang tidak bisa dipertahankan di hadapan regulator mana pun. |
+| **Mekanisme kolam keterlambatan** | Belum ditentukan. Sebut keberadaannya, jangan jelaskan cara kerjanya. |
 
 ---
 

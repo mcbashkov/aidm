@@ -357,7 +357,7 @@ Alasan: biaya AI riset 50–200× lebih mahal daripada parsing pencatatan (inges
 ## 8. Ekonomi Token & Langganan
 
 ### 8.1 Struktur 3 Token
-**Tidak berubah dari v2.0** — Native Token (IDM lama, tidak disentuh) · Token IDM Reborn (BSC, 1 miliar, pair BNB) · IDMX (opBNB, 10 triliun, reward in-app). Alur nilai dan pemisahan rel uang/token tetap sama persis. Angka tokenomics final: `docs/PERINTAH-AGEN-FINAL.md` §0.1 — satu-satunya sumber.
+**Tidak berubah dari v2.0** — Native Token (IDM lama, tidak disentuh) · Token IDM Reborn (BSC, 1 miliar, pair BNB) · IDMX (opBNB, 50 miliar, reward in-app). Alur nilai dan pemisahan rel uang/token tetap sama persis. Angka tokenomics final: `docs/PERINTAH-AGEN-FINAL.md` §0.1 — satu-satunya sumber.
 
 ### 8.2 Langganan Premium (dikunci PO 2026-08-28)
 

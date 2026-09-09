@@ -5,6 +5,11 @@
 > + Claude setelah diskusi penuh. Semua angka di sini FINAL — jangan tebak,
 > jangan "perbaiki".
 >
+> **Ekonomi token: §0.1 versi 2, dikunci PO 9 September 2026.** Versi
+> 28 Agustus 2026 MATI. Tabel §0 di bawah memuat parameter operasional kontrak
+> (cap, minimum, fee) yang TIDAK berubah; alokasi, vesting, harga, dan treasury
+> seluruhnya ada di §0.1.
+>
 > **Target deploy batch ini: TESTNET saja** — opBNB Testnet (5611) + BSC
 > Testnet (97). Mainnet (204/56) menyusul setelah verifikasi manual PO.
 
@@ -30,64 +35,171 @@
 | Gas | opBNB disponsori (dust top-up); klaim BSC dibayar user |
 
 
-### 0.1 Tokenomics IDM Reborn — FINAL (dikunci PO 2026-08-28)
+### 0.1 Tokenomics IDM Reborn — FINAL v2 (dikunci PO 2026-09-09)
 
-> **Ini blok kanonik.** PRD, README, PROGRESS, dan BRIEF-EKONOMI-TOKEN merujuk
-> ke sini, tidak menyalin angkanya. Empat salinan angka tokenomics adalah empat
-> tempat untuk menyimpang.
+> **Ini blok kanonik.** PRD, README, PROGRESS, BRIEF-EKONOMI-TOKEN, laporan
+> pra-audit, landing page, dan whitepaper merujuk ke sini — **tidak menyalin
+> angkanya**. Salinan yang tersebar adalah tempat-tempat untuk menyimpang.
+> Bila penyalinan tidak terhindarkan, wajib menyertakan baris
+> *"snapshot §0.1 per 9 Sep 2026"*.
 >
-> **Diverifikasi terhadap on-chain 2026-08-28 — nol perbedaan.**
-> `IDMReborn.totalSupply` = 1.000.000.000 · kolam di `SwapClaim` = 150.000.000 ·
-> `rateIdmxPerIdm` = 50 · `IDMX.totalSupply` = 50.000.000.000. Ratchet satu arah
-> ditegakkan kode (`setRate` menolak nilai yang memburuk bagi pengguna).
+> **Versi 28 Agustus 2026 DINYATAKAN MATI** — bukan alternatif, bukan varian.
+> Alokasi lamanya (30/20/15/15/12/5/3, tanpa pos migrasi) tidak boleh dipakai
+> lagi di berkas mana pun.
+>
+> Perubahan pokok v1 → v2: **pos Migrasi Holder v1 (16%) lahir**, dan seluruh
+> pos lain menyusut untuk memberi ruang. Private sale turun harga
+> ($0,00333 → $0,003571 — diskon 28,6%, bukan 33%). Treasury turun 15% → 10%
+> dan multisig 3-dari-5 → **2-dari-3**.
+
+**Parameter dasar** *(tidak berubah dari v1, terverifikasi on-chain)*
 
 | Parameter | Nilai |
 |---|---|
-| Suplai | **1.000.000.000 IDM** — tetap, tanpa mint, tanpa tax |
+| Suplai IDM Reborn | **1.000.000.000** tetap, tanpa mint |
 | Jaringan | BNB Chain |
+| Fee transfer | 1 IDM flat, 100% burn |
+| Tax beli/jual | **Tidak ada** — ERC-20 standar murni (kompatibilitas listing) |
+| Suplai IDMX | **50.000.000.000** di opBNB |
+| Kurs IDMX → IDM | **50 : 1**, one-way ratchet, **sudah terpasang on-chain** |
 | Harga launch | **$0,005** · FDV **$5.000.000** |
-| Private sale | **$500.000 @ $0,00333** (diskon 33%) |
-| Likuiditas | **$400.000** masuk pool · **$100.000** operasional launch |
-| Fee transfer | **1 IDM flat, 100% burn** |
-| Kurs IDMX→IDM | **50 : 1**, one-way ratchet |
+| Private sale | **$500.000 @ $0,003571** (diskon **28,6%**) |
 
-**Alokasi**
+#### Alokasi suplai
 
 | Pos | % | Token | Rincian |
 |---|---:|---:|---|
-| Ecosystem & Rewards | 30% | 300.000.000 | 150 jt kolam swap (unlock TGE, terkunci kontrak) + 150 jt reward vesting 48 bln |
-| Liquidity | 20% | 200.000.000 | 80 jt DEX LP (locked 12–24 bln) + 120 jt CEX reserve |
-| Private Sale | 15% | 150.000.000 | $500k @ $0,00333 |
-| Treasury | 15% | 150.000.000 | Multisig 3-of-5 + timelock |
-| Team & Founders | 12% | 120.000.000 | Cliff 12 bln + vesting 24 bln |
-| Marketing | 5% | 50.000.000 | TGE 15%, vesting 12 bln |
-| Advisors | 3% | 30.000.000 | Cliff 6 bln + vesting 18 bln |
+| Ecosystem & Rewards | 26% | 260.000.000 | 150.000.000 kolam swap (SwapClaim, BSC) + 110.000.000 cadangan reward |
+| Liquidity | 18% | 180.000.000 | 80.000.000 DEX LP + 100.000.000 CEX reserve |
+| **Migrasi Holder v1** | **16%** | **160.000.000** | 146.668.760 kewajiban terverifikasi + ±13.331.240 kolam keterlambatan |
+| Private Sale | 14% | 140.000.000 | $500.000 @ $0,003571 |
+| Treasury | 10% | 100.000.000 | Multisig **2-dari-3** |
+| Team & Founders | 10% | 100.000.000 | Cliff 12 bulan + vesting 24 bulan |
+| Marketing | 4% | 40.000.000 | |
+| Advisors | 2% | 20.000.000 | Cliff 6 bulan + vesting 18 bulan |
 
-**Vesting**
+Diperiksa: persen berjumlah **100%**, token berjumlah **1.000.000.000**.
+
+**Pos "Migrasi Holder v1" adalah pos BARU.** Versi lama tidak memilikinya sama
+sekali — jangan mencoba mencocokkannya dengan struktur lama.
+
+#### Jadwal pelepasan
 
 | Pos | TGE | Cliff | Linear |
 |---|---|---|---|
-| Private Sale | 5% (7.500.000) | 3 bln | 12 bln |
-| Team | 0% | 12 bln | 24 bln |
-| Advisors | 0% | 6 bln | 18 bln |
-| Ecosystem reward (150 jt) | 5% | — | 48 bln |
-| Kolam swap (150 jt) | **unlock penuh**, terkunci di kontrak SwapClaim | — | — |
-| Treasury | 10% | — | 36 bln |
-| Marketing | 15% | — | 12 bln |
-| DEX LP (80 jt) | **unlock penuh**, LP token di-lock 12–24 bln | — | — |
-| CEX Reserve (120 jt) | 0% | — | cair hanya dengan perjanjian listing resmi |
+| DEX LP (80 jt) | penuh, LP token di-lock | — | — |
+| CEX Reserve (100 jt) | 0% | — | hanya dengan perjanjian listing resmi |
+| Kolam swap (150 jt) | terkunci di kontrak, dilepas per klaim | — | — |
+| Cadangan reward (110 jt) | 5% | — | 48 bulan |
+| **Migrasi — saldo < 250.000 IDM** | **100%** | — | — |
+| **Migrasi — saldo ≥ 250.000 IDM** | **20%** | — | **6 bulan, dihitung dari TGE** |
+| Private Sale | 5% | 3 bulan | 12 bulan |
+| Treasury | 10% | — | 36 bulan |
+| Team | 0% | 12 bulan | 24 bulan |
+| Marketing | 15% | — | 12 bulan |
+| Advisors | 0% | 6 bulan | 18 bulan |
 
-**Sirkulasi TGE = 117.500.000 (11,75%)** · market cap awal **$587.500**.
+> **Vesting migrasi dihitung dari TGE, BUKAN dari tanggal klaim.** Ini bukan
+> detail implementasi — ia menentukan siapa yang dirugikan. Bila dihitung dari
+> tanggal klaim, pemegang yang mengklaim terlambat justru selesai vesting
+> paling akhir; keterlambatan membaca pengumuman berubah menjadi hukuman.
 
-> **Dinyatakan terbuka, bukan disembunyikan:** kolam swap 150 juta **tidak**
-> dihitung sebagai sirkulasi (belum diklaim siapa pun) tetapi **tetap masuk
-> FDV**. Menyembunyikannya dari FDV akan membuat angka FDV lebih cantik dan
-> lebih bohong.
+**Angka turunan dari data migrasi aktual (487 alamat):**
 
-**Treasury.** Gnosis Safe **3-of-5**, alamat dipublikasikan. Timelock **48–72
-jam** untuk pengeluaran > 1 juta IDM. Alokasi internal: Operasional 40% ·
-Kemitraan 25% · Cadangan darurat 20% (butuh **4-of-5**) · Buyback & burn 15%.
-**Tidak untuk gaji founder/C-level.** Laporan treasury tiap kuartal.
+| | Alamat | Token | Di TGE | Linear |
+|---|---:|---:|---:|---:|
+| Saldo < 250.000 | 357 (73,3%) | 25.076.287 | 25.076.287 | — |
+| Saldo ≥ 250.000 | 130 | 120.907.014 | 24.181.403 | 96.725.611 |
+
+Emisi bulanan migrasi: **16.120.935 token/bulan selama 6 bulan**.
+
+> ⚠️ **PERLU KONFIRMASI PO — selisih 685.459 token.**
+> Jumlah kedua kohort di atas adalah **145.983.301**
+> (25.076.287 + 120.907.014), sedangkan baris alokasi menyebut kewajiban
+> terverifikasi **146.668.760**. Keduanya sama-sama dinyatakan berasal dari
+> data migrasi aktual, jadi salah satunya perlu diperbaiki di sumbernya.
+>
+> Konsekuensinya nyata, bukan kosmetik: kolam keterlambatan adalah sisa
+> setelah kewajiban, sehingga ia **13.331.240** bila memakai 146.668.760 dan
+> **14.016.699** bila memakai jumlah kohort. Angka kohort juga yang menopang
+> seluruh jadwal vesting DAN merkle root `MigrationVesting.sol`, sementara
+> 146.668.760 hanya muncul sekali di tabel alokasi.
+>
+> Sampai diputuskan, **daftar alamat terverifikasi adalah rujukan yang
+> mengikat** — kontrak dibangun dari daftar itu, bukan dari angka ringkasan
+> mana pun. Jangan menyamakan keduanya secara diam-diam.
+
+#### Sirkulasi TGE
+
+| Sumber | Token |
+|---|---:|
+| DEX LP | 80.000.000 |
+| Migrasi (saldo kecil + 20% saldo besar) | 49.257.689 |
+| Treasury 10% | 10.000.000 |
+| Private Sale 5% | 7.000.000 |
+| Marketing 15% | 6.000.000 |
+| Cadangan reward 5% | 5.500.000 |
+| **Total** | **157.757.689 (15,78%)** |
+| **Market cap awal** | **$788.788** |
+
+*(Aritmetika 20% × 120.907.014 membulat ke 24.181.403, sehingga penjumlahan
+murni menghasilkan 49.257.690 — selisih satu token terhadap angka tabel.
+Dicatat supaya tidak dikira salah ketik saat diperiksa ulang.)*
+
+> **Dinyatakan terbuka, bukan disembunyikan:** kolam swap 150 juta dan sisa
+> kolam migrasi **tidak** dihitung sebagai sirkulasi (belum diklaim siapa pun)
+> tetapi **tetap masuk FDV**. Mengeluarkannya dari FDV akan membuat angkanya
+> lebih cantik dan lebih bohong.
+
+#### Treasury
+
+100.000.000 token pada dompet multisig **2-dari-3** di BNB Chain.
+
+| Peruntukan | % | Token |
+|---|---:|---:|
+| Operasional | 45% | 45.000.000 |
+| Kemitraan & grant | 20% | 20.000.000 |
+| Cadangan darurat | 20% | 20.000.000 |
+| Buyback | 15% | 15.000.000 |
+
+Ambang **2-dari-3, bukan 3-dari-3**: dengan 3-dari-3 satu kunci hilang
+membekukan treasury secara permanen.
+
+> 🧑 **Alamat Safe: BELUM ADA — butuh tangan PO.** Membuat Gnosis Safe menuntut
+> tanda tangan pemilik kunci dan dana gas; tidak bisa dikerjakan agen. Setelah
+> Safe dibuat, tempelkan alamatnya di baris ini dan di
+> `contracts/ALAMAT-DAN-CATATAN.md` §4. **Jangan diisi alamat sementara** —
+> alamat treasury yang salah di dokumen publik adalah kesalahan yang dibaca
+> orang sebagai instruksi mengirim uang.
+
+#### Koreksi yang berlaku, bukan untuk diperdebatkan
+
+1. **Kolam MissionRewards 100.000.000 adalah IDMX, BUKAN IDM Reborn.** Ia
+   diambil dari suplai 50 miliar IDMX di opBNB dan tidak menyentuh suplai
+   1 miliar sama sekali. **Tidak ada selisih 10 juta yang perlu dijelaskan.**
+   Dokumen yang menyandingkan keduanya seolah satu suplai adalah dokumen yang
+   salah.
+2. **Suplai IDMX = 50.000.000.000.** Angka 10 triliun sudah dihapus dari
+   `BRIEF-EKONOMI-TOKEN.md` dan `PROGRESS.md` — bukan sekadar ditandai usang.
+3. **Kurs swap 50 IDMX : 1 IDM sudah terpasang on-chain.** Bukan parameter
+   terbuka.
+
+#### Aturan bahasa yang mengikat seluruh repo
+
+Jangan menulis kalimat yang menyebut vesting, buyback, atau mekanisme apa pun
+sebagai cara **menjaga atau menaikkan harga**. Rumusan yang dipakai:
+**ketertiban distribusi** dan **kedalaman pasar**. Alasannya bukan gaya
+bahasa — kalimat yang menyebut harga menempatkan penerbit sebagai pengelola
+harga, dan itu posisi yang tidak bisa dipertahankan di hadapan regulator mana
+pun.
+
+Larangan lain yang tetap berlaku di seluruh repo:
+
+- "Laporan siap diajukan ke bank" atau klaim kelayakan kredit apa pun
+- "Kontrak sudah live" tanpa kata **testnet**
+- "Sudah diaudit" — yang ada pra-audit **internal**
+- Klaim desentralisasi atau tata kelola aman selama peran istimewa terpusat
+- Nilai rupiah dari reward — token belum diperdagangkan
 
 **Parameter yang masih perlu ditinjau sebelum mainnet:**
 `maxIdmxPerVoucher` kini **2.000 IDMX** (= 40 IDM per klaim) — setelan

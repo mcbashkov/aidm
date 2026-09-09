@@ -1,6 +1,6 @@
 # Kontrak IDM — Alamat & Catatan Deployment
 
-Berkas rujukan tunggal untuk keenam kontrak ekosistem IDM. Semua nilai di sini
+Berkas rujukan tunggal untuk **ketujuh** kontrak ekosistem IDM. Semua nilai di sini
 **dibaca langsung dari chain**, bukan disalin dari dokumentasi atau skrip —
 lihat §9 untuk cara memverifikasi ulang sendiri.
 
@@ -35,6 +35,33 @@ lihat §9 untuk cara memverifikasi ulang sendiri.
 |---|---|---|
 | `IDMReborn` | `0x78c7e68142e7e1b564c0fd342954aa515a3d2f5b` | Token IDM, 1 miliar, tanpa owner |
 | `SwapClaim` | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` | Memegang kolam 150 juta IDM, membayar voucher swap |
+| `MigrationVesting` 🆕 | `0xecfa619024526040e321816e200cf5a78e6bf573` | Melepas alokasi Migrasi Holder v1 sesuai jadwal §0.1. **Ter-deploy 2026-09-09 dengan POHON DEMO** — lihat §1.1 |
+
+### 1.1 ⚠️ `MigrationVesting` testnet memakai pohon DEMO
+
+Kontrak ketujuh ter-deploy dan terverifikasi berperilaku benar di BSC Testnet,
+**tetapi `merkleRoot`-nya bukan data migrasi nyata.** Daftar 487 alamat
+terverifikasi tidak ada di repositori ini; yang ada hanya angka ringkasannya di
+§0.1. Pohon demo dipakai supaya perilaku kontrak bisa diuji di rantai
+sungguhan, bentuknya meniru kedua kohort (di bawah & di atas ambang 250.000)
+dengan nominal kecil.
+
+| | |
+|---|---|
+| `merkleRoot` demo | `0x59cd7d1615415891773eb0cc6bb11719301eb23c72a459318713a0e0fc09c472` |
+| `totalAlokasi` demo | 400.100 IDM (terdanai dari treasury) |
+| `t0` | disetel 2026-09-09; percobaan kedua **ditolak** `T0SudahDisetel` |
+
+> **`merkleRoot` IMMUTABLE.** Konsekuensinya keras dan disengaja: daftar
+> alokasi final **wajib ada sebelum deploy**, karena tidak ada jalan
+> menukarnya sesudahnya. Deployment mainnet menuntut daftar 487 alamat yang
+> sudah terverifikasi — kontrak ini tidak bisa "diisi belakangan".
+>
+> Alasan desainnya: alokasi yang bisa diganti owner bukan kewajiban, melainkan
+> janji. Pos migrasi adalah utang kepada pemegang lama, dan utang tidak boleh
+> punya tombol batal.
+
+---
 
 > **Bukan salah ketik:** `IDMX` (opBNB) dan `SwapClaim` (BSC) memang berbagi
 > alamat `0xccf955…f09a`. Deployer dan nonce yang sama menghasilkan alamat
@@ -160,6 +187,8 @@ tidak boleh masuk ke repo mana pun.
 | `relayer` (`ReportAttestation`) | `0x1842498b06c146b5360d4b8d863a04a7c33fb2f3` | Menyegel atas nama user |
 | `swapSigner` (`SwapClaim`) | `0xbc2bfb1a2765700b846abad68328b15093763c97` | Menandatangani voucher swap |
 | Treasury IDMX (opBNB) | `0x1842498b06c146b5360d4b8d863a04a7c33fb2f3` | Memegang sisa ±49,9 miliar IDMX |
+| `owner` (`MigrationVesting`) | `0x1842498b06c146b5360d4b8d863a04a7c33fb2f3` | HANYA `setT0` (sekali) + `sweep` kelebihan. **Tidak bisa** mengubah alokasi, tidak bisa pause |
+| **Treasury IDM Reborn (Safe 2-dari-3)** | 🧑 **BELUM ADA** | §0.1 menetapkan multisig 2-dari-3 di BNB Chain untuk 100 juta IDM. Membuat Safe menuntut tanda tangan pemilik kunci — tidak bisa dikerjakan agen. **Jangan diisi alamat sementara.** |
 | Treasury IDM (BSC) | `0xf573081596d39d45e20e570e9a23e17a709b70a6` | Memegang sisa ±850 juta IDM |
 | `owner` `IDMX` / `IDMReborn` | — | **Tidak ada.** Kedua token tanpa owner. |
 
@@ -217,7 +246,7 @@ tertinggi dalam sistem ini belum pernah dilalui transaksi nyata.
 
 ## 7. Setelan kompilasi
 
-Wajib cocok persis untuk verifikasi ulang. Seragam untuk keenam kontrak.
+Wajib cocok persis untuk verifikasi ulang. Seragam untuk ketujuh kontrak.
 
 | Item | Nilai |
 |---|---|
@@ -352,7 +381,7 @@ tidak pernah di-commit — badan kodenya identik, hanya hash metadata yang beda.
 **Menjalankan ulang verifikasi:**
 ```bash
 # butuh ETHERSCAN_API_KEY di .env.local
-node scripts/verify-contracts.mjs              # keenam kontrak
+node scripts/verify-contracts.mjs              # ketujuh kontrak
 node scripts/verify-contracts.mjs SwapClaim    # satu saja
 ```
 
