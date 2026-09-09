@@ -27,13 +27,13 @@ const TEKS = {
     pengumuman:
       "Draf dalam pengembangan. Seluruh angka, alamat, dan jadwal dapat berubah hingga penerapan mainnet.",
     versi: "v0.1 — DRAF",
-    produk: "Produk",
+    proyek: "Proyek",
   },
   en: {
     pengumuman:
       "Work-in-progress draft. All figures, addresses, and schedules may change until mainnet deployment.",
     versi: "v0.1 — DRAFT",
-    produk: "Products",
+    proyek: "Projects",
   },
 }[LOCALE];
 
@@ -110,13 +110,13 @@ const config: Config = {
       items: [
         {
           type: "dropdown",
-          label: TEKS.produk,
+          label: TEKS.proyek,
           position: "left",
           items: [
-            { to: "/produk/aidm", label: "AIDM" },
-            { to: "/produk/skemguard", label: "SkemGuard" },
-            { to: "/produk/film", label: "IDM Film" },
-            { to: "/produk/idm-chain", label: "IDM Chain" },
+            { to: "/projects/aidm", label: "AIDM" },
+            { to: "/projects/skemguard", label: "SkemGuard" },
+            { to: "/projects/film", label: "IDM Film" },
+            { to: "/projects/idm-chain", label: "IDM Chain" },
           ],
         },
         { type: "localeDropdown", position: "right" },

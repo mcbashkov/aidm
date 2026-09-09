@@ -1,6 +1,6 @@
 {
-  "sidebar.whitepaper.category.Produk": {
-    "message": "Produk",
-    "description": "Label kategori produk di sidebar"
+  "sidebar.whitepaper.category.Projects": {
+    "message": "Proyek",
+    "description": "Label kategori proyek di sidebar"
   }
 }

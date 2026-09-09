@@ -1,0 +1,114 @@
+{
+  "_catatan": "Diturunkan dari lib/missions/index.ts di repo AIDM. Jangan diketik ulang.",
+  "unit": "IDMX",
+  "missions": [
+    {
+      "code": "first_tx_today",
+      "label": {
+        "id": "Catat transaksi pertama hari ini",
+        "en": "Record the first transaction today"
+      },
+      "reward": 20,
+      "period": {
+        "id": "harian",
+        "en": "daily"
+      }
+    },
+    {
+      "code": "five_tx_today",
+      "label": {
+        "id": "Catat 5 transaksi dalam sehari",
+        "en": "Record five transactions in a day"
+      },
+      "reward": 50,
+      "period": {
+        "id": "harian",
+        "en": "daily"
+      }
+    },
+    {
+      "code": "both_sides_today",
+      "label": {
+        "id": "Catat pemasukan dan pengeluaran",
+        "en": "Record both income and spending"
+      },
+      "reward": 20,
+      "period": {
+        "id": "harian",
+        "en": "daily"
+      }
+    },
+    {
+      "code": "voice_tx_today",
+      "label": {
+        "id": "Catat pakai suara",
+        "en": "Record using voice"
+      },
+      "reward": 15,
+      "period": {
+        "id": "harian",
+        "en": "daily"
+      }
+    },
+    {
+      "code": "streak_7_days",
+      "label": {
+        "id": "Catat 7 hari beruntun",
+        "en": "Record seven days in a row"
+      },
+      "reward": 100,
+      "period": {
+        "id": "mingguan",
+        "en": "weekly"
+      }
+    },
+    {
+      "code": "open_report_weekly",
+      "label": {
+        "id": "Buka Laporan minggu ini",
+        "en": "Open this week's report"
+      },
+      "reward": 30,
+      "period": {
+        "id": "mingguan",
+        "en": "weekly"
+      }
+    },
+    {
+      "code": "streak_30_days",
+      "label": {
+        "id": "Catat 30 hari beruntun",
+        "en": "Record thirty days in a row"
+      },
+      "reward": 300,
+      "period": {
+        "id": "bulanan",
+        "en": "monthly"
+      }
+    },
+    {
+      "code": "seal_monthly_report",
+      "label": {
+        "id": "Segel laporan bulanan",
+        "en": "Seal the monthly report"
+      },
+      "reward": 150,
+      "period": {
+        "id": "bulanan",
+        "en": "monthly"
+      }
+    },
+    {
+      "code": "complete_profile",
+      "label": {
+        "id": "Lengkapi profil usaha",
+        "en": "Complete the business profile"
+      },
+      "reward": 50,
+      "period": {
+        "id": "sekali",
+        "en": "one-off"
+      }
+    }
+  ]
+}

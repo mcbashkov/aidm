@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-slug: /produk/skemguard
+slug: /projects/skemguard
 id: skemguard
 title: "SkemGuard — pemindai keamanan token"
 description: "SkemGuard secara rinci: produk, pengukuran nyata, lapisan reputasi deployer, dan tegangan utilitas token yang dinyatakan terbuka."
@@ -47,6 +47,49 @@ tetapi menandai LP yang tidak terkunci; USDC di Base terdeteksi otomatis.
 
 **Yang belum selesai, dan dinyatakan terbuka di repositori:** kalibrasi bobot
 skor, ringkasan AI, dan pengemasan aplikasi terpasang.
+
+## Apa yang benar-benar diperiksa pemindainya
+
+Mesinnya menarik dari tiga sumber independen — penyedia data keamanan,
+pembacaan RPC langsung, dan simulasi jual — dan mencatat status masing-masing
+(`ok`, `timeout`, `error`, `skipped`). Status itu diterbitkan bersama hasilnya,
+karena pemeriksaan yang diam-diam tidak berjalan lebih buruk daripada
+pemeriksaan yang gagal dengan terang.
+
+Temuan dikeluarkan sebagai flag bertipe dalam empat tingkat keparahan. Di
+rantai EVM ini mencakup pita pajak jual dan beli, fungsi cetak yang masih
+hidup, hak istimewa pemilik yang masih aktif, kepemilikan yang belum
+dilepaskan, likuiditas yang tidak atau baru sebagian terkunci, kode sumber yang
+belum terverifikasi, dan kontrak yang bisa ditingkatkan. Di Solana mencakup
+otoritas cetak yang aktif, otoritas pembekuan yang aktif, transfer hook atau
+kemampuan menjeda, metadata yang bisa diubah, serta likuiditas tipis atau tidak
+terkunci. Berlaku di keduanya: dugaan honeypot, likuiditas rendah, dan
+konsentrasi ekstrem pada pemegang teratas.
+
+## Dua aturan yang membentuk setiap vonis
+
+**Critical override.** Tiga temuan memaksa vonis terburuk dan menekan skornya
+langsung: honeypot terkonfirmasi, pajak jual ekstrem, dan fungsi cetak tak
+terbatas yang aktif. Tidak ada kombinasi sinyal baik yang bisa mengalahkannya,
+sebab ketiganya sama-sama berarti pembeli mungkin tidak bisa menarik uangnya
+kembali.
+
+**Honeypot terkonfirmasi dibedakan dari yang baru diduga.** Flag statis dari
+penyedia data berarti *diduga*; hanya simulasi jual yang benar-benar berjalan
+yang menghasilkan *terkonfirmasi*, dan hanya *terkonfirmasi* yang memicu
+override. Pembedaan itu penting karena flag statis bisa keliru, dan menuduh
+token yang sah adalah kerugian ke arah sebaliknya.
+
+**Kemampuan jual yang tidak terverifikasi menahan vonis.** Bila simulasi jual
+gagal atau timeout, hasilnya tidak pernah bisa naik melampaui peringatan —
+sebersih apa pun sisanya. Sistem menolak berkata "aman" tentang sesuatu yang
+tidak bisa ia uji.
+
+## Tingkat keyakinan dilaporkan, bukan disembunyikan
+
+Setiap hasil membawa tingkat keyakinan di samping skornya. Pemindai yang
+melaporkan angka tanpa menyatakan seberapa yakin ia mengundang pembaca
+memperlakukan tebakan sebagai pengukuran.
 
 ## Tanpa kontrak pintar — dan itu memang desainnya
 

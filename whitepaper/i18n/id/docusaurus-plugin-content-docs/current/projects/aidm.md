@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-slug: /produk/aidm
+slug: /projects/aidm
 id: aidm
 title: "AIDM — pencatatan keuangan UMKM"
 description: "AIDM secara rinci: produknya, komponen on-chain, dan apa yang terukur hari ini."
@@ -8,6 +8,7 @@ description: "AIDM secara rinci: produknya, komponen on-chain, dan apa yang teru
 
 import StatusBadge from '@site/src/components/StatusBadge';
 import OnChainStat from '@site/src/components/OnChainStat';
+import MissionTable from '@site/src/components/MissionTable';
 
 # AIDM <StatusBadge pillar="aidm" />
 
@@ -54,6 +55,55 @@ harga token.
 **4. Laporan disegel on-chain — sidik jarinya saja.** Laporan disusun menjadi
 bentuk kanonik lalu di-hash; hanya hash-nya yang ditulis ke opBNB. Data
 keuangan tidak pernah menyentuh rantai.
+
+## Bagaimana imbalan benar-benar bekerja
+
+<MissionTable />
+
+Tiga sifatnya lebih penting daripada angkanya:
+
+- **Setiap misi diturunkan dari data sumber.** Tidak ada penanda yang bisa
+  disetel server. Menghapus transaksi menurunkan kembali progresnya.
+- **Satu misi tidak bisa diturunkan, dan itu ditangani jujur.** Membaca laporan
+  tidak meninggalkan jejak di tabel mana pun — ia peristiwa, dan peristiwa
+  harus dicatat saat terjadi atau hilang. Yang dicatat hanya satu bit per
+  pekan: *pengguna ini membuka Laporan*. Tidak ada periode yang dilihat, tidak
+  ada durasi.
+- **Plafon ditegakkan on-chain**, berlapis tiga: per dompet per hari, per
+  dompet per bulan kalender untuk imbalan bernilai besar, dan plafon global
+  harian yang berlaku untuk seluruh pengguna.
+
+## Langganan, dan apa yang tidak disentuhnya
+
+Premium adalah langganan bulanan yang dibayar dengan uang biasa lewat gerbang
+pembayaran lokal, dengan masa coba sekali seumur akun. Ia membuka fitur riset
+dan generator konten dengan kuota wajar bulanan.
+
+**Mencatat, laporan, misi, dan segel tetap gratis dan berada di luar
+langganan.** Lapisan berbayar tidak boleh berdiri di antara pengguna dan
+pembukuannya sendiri.
+
+Pembayarannya sekali beli untuk 30 hari, bukan tagihan berulang — instrumen
+lokal yang dipakai sebagian besar pelaku usaha mikro tidak bisa ditagih
+otomatis, dan memaksakan tagihan berulang berarti memaksakan kartu kredit pada
+orang yang tidak punya.
+
+## Keputusan rekayasa yang membentuk produknya
+
+**Angka tidak pernah ditampilkan sebelum diketahui.** Layar yang menggambar
+keadaan memuat seolah ia fakta bukan kekurangan kosmetik di aplikasi
+pembukuan; angka uang yang salah selama satu detik tetap angka yang salah.
+Setiap layar data membedakan *memuat*, *gagal*, dan *kosong* — dan tidak pernah
+merender yang satu sebagai yang lain.
+
+**Jam transaksi tidak ditampilkan sama sekali.** AIDM tidak pernah tahu jam
+kejadiannya, jadi ia tidak berpura-pura tahu. Pelaku usaha mikro lazim mencatat
+sehari penuh pada malam hari; menampilkan jam itu sama menyesatkannya dengan
+mengarangnya. Tanggal saja.
+
+**Mencatat tetap jalan saat offline.** Entri diantrekan lokal dan disinkronkan
+kemudian. Namun membaca angka uang saat offline gagal secara terlihat, bukan
+menampilkan nol yang basi.
 
 ## Yang terukur hari ini
 

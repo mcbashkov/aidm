@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-slug: /produk/skemguard
+slug: /projects/skemguard
 id: skemguard
 title: "SkemGuard — token security scanner"
 description: "SkemGuard in detail: the product, real measurements, the deployer reputation layer, and the honest token-utility tension."
@@ -46,6 +46,46 @@ unlocked LP; USDC on Base is detected automatically.
 
 **Not yet done, and stated openly in the repository:** score-weight calibration,
 AI summaries, and the installable app packaging.
+
+## What the scanner actually checks
+
+The engine draws on three independent sources — a security data provider, direct
+RPC reads, and a sell simulation — and records the status of each
+(`ok`, `timeout`, `error`, `skipped`). That status is published with the result,
+because a check that silently did not run is worse than a check that failed
+loudly.
+
+Findings are emitted as typed flags at four severities. On EVM chains these
+include sell and buy tax bands, mint still enabled, active owner privileges,
+ownership not renounced, liquidity unlocked or only partially locked,
+unverified contract source, and upgradeable contracts. On Solana they include
+active mint authority, active freeze authority, transfer hooks or pausability,
+mutable metadata, and thin or unlocked liquidity. Shared across both: suspected
+honeypot, low liquidity, and extreme concentration among top holders.
+
+## Two rules that shape every verdict
+
+**Critical override.** Three findings force the worst verdict and cap the score
+outright: a confirmed honeypot, an extreme sell tax, and an active unlimited
+mint. No combination of good signals can outweigh them, because each of the
+three means the buyer may be unable to get their money back out.
+
+**A confirmed honeypot is distinguished from a suspected one.** A static flag
+from a data provider is *suspected*; only a sell simulation that actually ran
+produces *confirmed*, and only *confirmed* triggers the override. The
+distinction matters because a static flag can be wrong, and wrongly branding a
+legitimate token is a harm in the other direction.
+
+**Unverified sellability caps the verdict.** If the sell simulation fails or
+times out, the result can never rise above a warning — regardless of how clean
+everything else looks. The system refuses to say "safe" about something it could
+not test.
+
+## Confidence is reported, not hidden
+
+Every result carries a confidence level alongside the score. A scanner that
+reports a number without saying how sure it is invites the reader to treat a
+guess as a measurement.
 
 ## No smart contracts — by design
 

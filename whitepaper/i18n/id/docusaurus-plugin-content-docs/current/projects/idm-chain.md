@@ -1,6 +1,6 @@
 ---
 sidebar_position: 4
-slug: /produk/idm-chain
+slug: /projects/idm-chain
 id: idm-chain
 title: "IDM Chain — rencana, dan apa yang belum ada"
 description: "IDM Chain secara rinci: rencana tanpa spesifikasi, pertanyaan yang harus dijawab lebih dulu, dan komitmen yang mengikatnya."

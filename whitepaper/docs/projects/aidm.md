@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-slug: /produk/aidm
+slug: /projects/aidm
 id: aidm
 title: "AIDM — bookkeeping for micro-businesses"
 description: "AIDM in detail: the product, the on-chain components, and what is measurable today."
@@ -8,6 +8,7 @@ description: "AIDM in detail: the product, the on-chain components, and what is 
 
 import StatusBadge from '@site/src/components/StatusBadge';
 import OnChainStat from '@site/src/components/OnChainStat';
+import MissionTable from '@site/src/components/MissionTable';
 
 # AIDM <StatusBadge pillar="aidm" />
 
@@ -54,6 +55,54 @@ compliance intact and stops product revenue from depending on token price.
 **4. Reports are sealed on-chain — fingerprint only.** The report is reduced to
 a canonical form and hashed; only the hash is written to opBNB. Financial data
 never touches the chain.
+
+## How rewards actually work
+
+<MissionTable />
+
+Three properties matter more than the amounts:
+
+- **Every mission is derived from source data.** There is no flag a server can
+  set. Deleting a transaction lowers the progress again.
+- **One mission cannot be derived, and is handled honestly.** Reading a report
+  leaves no trace in any table — it is an event, and an event must be recorded
+  when it happens or it is lost. It is recorded as a single bit per week:
+  *this user opened Reports*. No period viewed, no duration.
+- **Caps are enforced on-chain**, in three layers: per wallet per day, per
+  wallet per calendar month for higher-value rewards, and a global daily
+  ceiling across all users.
+
+## Subscription, and what it does not touch
+
+Premium is a monthly subscription paid in ordinary money through a local
+payment gateway, with a one-time trial per account. It unlocks research and
+content-generation features with fair-use monthly quotas.
+
+**Recording, reports, missions, and sealing stay free and outside the
+subscription.** The paid tier must never sit between a user and their own
+bookkeeping.
+
+Payment is a single 30-day purchase rather than a recurring charge — the local
+instruments most micro-businesses use cannot be billed automatically, and
+forcing recurring payment would mean forcing a credit card on users who do not
+have one.
+
+## Engineering decisions that shaped the product
+
+**Numbers are never displayed before they are known.** A screen that draws a
+loading state as though it were a fact is not a cosmetic flaw in a bookkeeping
+app; a wrong money figure shown for one second is still a wrong money figure.
+Every data screen distinguishes *loading*, *failed*, and *empty* — and never
+renders one as another.
+
+**Transaction times are not shown at all.** AIDM never knows the hour something
+happened, so it does not pretend to. Micro-business owners commonly record a
+whole day in the evening; showing that timestamp would be as misleading as
+inventing one. Dates only.
+
+**Offline recording keeps working.** Entries are queued locally and synced
+later. Reading money figures offline, however, fails visibly rather than
+showing a stale zero.
 
 ## What is measurable today
 

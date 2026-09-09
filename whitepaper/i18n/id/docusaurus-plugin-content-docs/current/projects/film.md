@@ -1,6 +1,6 @@
 ---
 sidebar_position: 3
-slug: /produk/film
+slug: /projects/film
 id: film
 title: "IDM Film — produksi & distribusi"
 description: "IDM Film secara rinci: dua judul yang sudah tayang, dua peran berbeda, dan alasan tidak ada skema pendanaan lewat token."

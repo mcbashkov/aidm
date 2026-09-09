@@ -1,6 +1,6 @@
 ---
 sidebar_position: 4
-slug: /produk/idm-chain
+slug: /projects/idm-chain
 id: idm-chain
 title: "IDM Chain — the plan, and what does not exist yet"
 description: "IDM Chain in detail: a plan without a specification, the question that must be answered first, and the commitments that bind it."

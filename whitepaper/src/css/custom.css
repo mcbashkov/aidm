@@ -90,12 +90,11 @@
   --ifm-table-stripe-background: rgba(237, 180, 21, 0.05);
 }
 
-/* Judul halaman memakai serif seperti heading AIDM — kontras dengan tubuh
-   teks sans membuat dokumen panjang lebih mudah dipindai. */
-.markdown h1:first-child {
-  font-family: Georgia, "Times New Roman", serif;
-  letter-spacing: -0.015em;
-}
+/* Judul memakai keluarga huruf yang SAMA dengan tubuh teks (keputusan PO
+   9 Sep 2026). Pembedaannya lewat ukuran dan berat, bukan lewat serif —
+   dokumen teknis yang mencampur dua keluarga huruf membuat mata berpindah
+   konteks di tiap judul, dan pada dokumen sepanjang ini itu melelahkan. */
+.markdown h1:first-child { letter-spacing: -0.015em; }
 
 /* Bilah pengumuman: emas penuh dengan tinta di atasnya. Kontras tertinggi
    yang bisa dicapai palet ini, dan memang perlu — isinya peringatan bahwa
@@ -155,3 +154,5 @@ div[class^="announcementBar_"] {
 .idm-kurva figcaption {
   font-size: .84rem; color: var(--ifm-color-emphasis-700); margin-top: .45rem;
 }
+
+.idm-misi { width: 100%; font-size: .92rem; display: table; }

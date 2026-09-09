@@ -1,6 +1,6 @@
 ---
 sidebar_position: 3
-slug: /produk/film
+slug: /projects/film
 id: film
 title: "IDM Film — production & distribution"
 description: "IDM Film in detail: two released titles, the two distinct roles, and why no token funding scheme exists."
