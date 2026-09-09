@@ -1,0 +1,21 @@
+{
+  "aidm": {
+    "state": "live",
+    "since": "2026-08-08"
+  },
+  "skemguard": {
+    "state": "live",
+    "since": "2026-09"
+  },
+  "film": {
+    "state": "live",
+    "titles": 2
+  },
+  "idmchain": {
+    "state": "concept"
+  },
+  "contracts": {
+    "state": "testnet",
+    "count": 7
+  }
+}

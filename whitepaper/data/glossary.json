@@ -1,0 +1,28 @@
+{
+  "_catatan": "Istilah terkunci ID→EN. Istilah yang diterjemahkan berbeda di dua halaman lebih merusak daripada halaman yang belum diterjemahkan.",
+  "istilah": {
+    "kolam swap": "swap pool",
+    "pos alokasi": "allocation",
+    "segel laporan": "report seal",
+    "kolam keterlambatan": "late-claim pool",
+    "cadangan reward": "reward reserve",
+    "ambang": "threshold",
+    "jadwal pelepasan": "unlock schedule",
+    "sirkulasi TGE": "TGE circulating supply",
+    "kewajiban terverifikasi": "verified obligation",
+    "daftar alokasi": "allocation list",
+    "pohon merkle": "merkle tree",
+    "bukti merkle": "merkle proof",
+    "dompet tertanam": "embedded wallet",
+    "pencatatan": "bookkeeping",
+    "pelaku usaha mikro": "micro-business owner",
+    "rekam usaha": "business record",
+    "tukar": "swap",
+    "bakar": "burn",
+    "plafon": "cap",
+    "peran istimewa": "privileged role",
+    "pra-audit internal": "internal pre-audit",
+    "kontrak pintar": "smart contract",
+    "jaringan uji": "testnet"
+  }
+}

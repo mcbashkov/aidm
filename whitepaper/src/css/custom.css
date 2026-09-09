@@ -1,0 +1,66 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+:root {
+  --ifm-color-primary: #2e8555;
+  --ifm-color-primary-dark: #29784c;
+  --ifm-color-primary-darker: #277148;
+  --ifm-color-primary-darkest: #205d3b;
+  --ifm-color-primary-light: #33925d;
+  --ifm-color-primary-lighter: #359962;
+  --ifm-color-primary-lightest: #3cad6e;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: #25c2a0;
+  --ifm-color-primary-dark: #21af90;
+  --ifm-color-primary-darker: #1fa588;
+  --ifm-color-primary-darkest: #1a8870;
+  --ifm-color-primary-light: #29d5b0;
+  --ifm-color-primary-lighter: #32d8b4;
+  --ifm-color-primary-lightest: #4fddbf;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* ── Komponen whitepaper ──────────────────────────────────────────────────
+   Gaya minimal dan sengaja: dokumen ini dibaca berjam-jam, dicetak, dan
+   diekspor ke PDF. Yang tidak terbaca di kertas hitam-putih tidak dipakai. */
+
+.idm-receipt {
+  border-left: 3px solid var(--ifm-color-primary);
+  background: var(--ifm-color-emphasis-100);
+  padding: .75rem 1rem; margin: 1rem 0; border-radius: 0 6px 6px 0;
+}
+.idm-receipt__claim { margin: 0 0 .35rem; font-weight: 600; }
+.idm-receipt__meta { margin: 0; font-size: .85rem; color: var(--ifm-color-emphasis-700); }
+.idm-receipt__date { white-space: nowrap; }
+
+/* Warna berbeda per status DAN teksnya menyebut statusnya sendiri —
+   warna saja gagal di cetakan hitam-putih dan bagi pembaca buta warna. */
+.idm-badge {
+  display: inline-block; padding: .1rem .5rem; border-radius: 999px;
+  font-size: .78rem; font-weight: 700; letter-spacing: .02em;
+  border: 1px solid currentColor;
+}
+.idm-badge--live    { color: #1a7f37; background: #1a7f3714; }
+.idm-badge--testnet { color: #9a6700; background: #9a670014; }
+.idm-badge--concept { color: #57606a; background: #57606a14; }
+
+.idm-stat__tanggal { font-size: .82rem; color: var(--ifm-color-emphasis-600); }
+.idm-stat--basi .idm-stat__tanggal { color: #9a6700; font-weight: 600; }
+.idm-stat--kosong { color: var(--ifm-color-emphasis-600); font-style: italic; }
+
+.idm-alokasi { width: 100%; font-size: .92rem; }
+.idm-alokasi__total td { font-weight: 700; border-top: 2px solid var(--ifm-color-emphasis-300); }
+
+.idm-kurva svg { width: 100%; height: auto; color: var(--ifm-color-primary); }
+.idm-kurva figcaption {
+  font-size: .84rem; color: var(--ifm-color-emphasis-700); margin-top: .4rem;
+}

@@ -1,0 +1,69 @@
+{
+  "_catatan": "Ditegakkan scripts/lint-claims.ts di prebuild. Tambah di sini, jangan sentuh skripnya.",
+  "aturan": [
+    {
+      "id": "janji-bank",
+      "pola": [
+        "siap diajukan ke bank",
+        "layak kredit",
+        "kelayakan kredit",
+        "bankable",
+        "ready for bank submission",
+        "creditworthy"
+      ],
+      "alasan": "Janji dicabut PO 2026-08-15. Penerimaan berkas adalah wewenang penilai kredit, bukan sesuatu yang bisa dijanjikan pembuat alat."
+    },
+    {
+      "id": "audit",
+      "pola": [
+        "sudah diaudit",
+        "has been audited",
+        "fully audited"
+      ],
+      "kecuali": [
+        "internal",
+        "pra-",
+        "pre-"
+      ],
+      "alasan": "Yang ada pra-audit internal; fase 2-4 belum dijalankan."
+    },
+    {
+      "id": "live-tanpa-testnet",
+      "pola": [
+        "kontrak live",
+        "kontrak sudah live",
+        "contracts are live",
+        "contract is live"
+      ],
+      "kecuali": [
+        "testnet"
+      ],
+      "alasan": "Keenam kontrak inti + kontrak ketujuh ada di testnet. Explorer akan membantahnya."
+    },
+    {
+      "id": "harga",
+      "pola": [
+        "menjaga harga",
+        "menaikkan harga",
+        "imbal hasil",
+        "dividen",
+        "bagi hasil",
+        "ROI",
+        "price support",
+        "guaranteed return",
+        "yield"
+      ],
+      "alasan": "Kalimat yang menyebut harga menempatkan penerbit sebagai pengelola harga — posisi yang tidak bisa dipertahankan di hadapan regulator."
+    },
+    {
+      "id": "rupiah-reward",
+      "pola": [
+        "Rp\\\\s?[0-9][0-9.,]*\\\\s*(per|/)\\\\s*(IDMX|IDM)",
+        "IDMX\\\\s*=\\\\s*Rp",
+        "IDM\\\\s*=\\\\s*Rp"
+      ],
+      "regex": true,
+      "alasan": "Token belum diperdagangkan; nilai rupiah reward tidak bisa dijanjikan."
+    }
+  ]
+}

@@ -1,0 +1,256 @@
+{
+  "snapshot": "2026-09-09",
+  "sourceDoc": "docs/PERINTAH-AGEN-FINAL.md#0.1",
+  "sourceVersion": "§0.1 v2 — dikunci PO 2026-09-09",
+  "totalSupply": 1000000000,
+  "launchPrice": 0.005,
+  "fdv": 5000000,
+  "allocations": [
+    {
+      "id": "ecosystem",
+      "label": {
+        "id": "Ekosistem & Reward",
+        "en": "Ecosystem & Rewards"
+      },
+      "pct": 26,
+      "tokens": 260000000,
+      "components": [
+        {
+          "label": {
+            "id": "Kolam swap",
+            "en": "Swap pool"
+          },
+          "tokens": 150000000,
+          "locked": true
+        },
+        {
+          "label": {
+            "id": "Cadangan reward",
+            "en": "Reward reserve"
+          },
+          "tokens": 110000000
+        }
+      ],
+      "vesting": {
+        "tge": 5,
+        "cliffMonths": 0,
+        "linearMonths": 48
+      },
+      "circulatingAtTge": 5500000
+    },
+    {
+      "id": "liquidity",
+      "label": {
+        "id": "Likuiditas",
+        "en": "Liquidity"
+      },
+      "pct": 18,
+      "tokens": 180000000,
+      "components": [
+        {
+          "label": {
+            "id": "DEX LP",
+            "en": "DEX LP"
+          },
+          "tokens": 80000000,
+          "locked": true
+        },
+        {
+          "label": {
+            "id": "Cadangan CEX",
+            "en": "CEX reserve"
+          },
+          "tokens": 100000000
+        }
+      ],
+      "vesting": {
+        "tge": 100,
+        "cliffMonths": 0,
+        "linearMonths": 0,
+        "note": {
+          "id": "DEX LP terbuka penuh di TGE, token LP dikunci; cadangan CEX hanya cair dengan perjanjian listing resmi.",
+          "en": "DEX LP fully unlocked at TGE with LP tokens locked; CEX reserve released only under a signed listing agreement."
+        }
+      },
+      "circulatingAtTge": 80000000
+    },
+    {
+      "id": "migration",
+      "label": {
+        "id": "Migrasi Holder v1",
+        "en": "v1 Holder Migration"
+      },
+      "pct": 16,
+      "tokens": 160000000,
+      "components": [
+        {
+          "label": {
+            "id": "Kewajiban terverifikasi",
+            "en": "Verified obligation"
+          },
+          "tokens": 146082699.41
+        },
+        {
+          "label": {
+            "id": "Alokasi belum beralamat",
+            "en": "Allocation without recipient"
+          },
+          "tokens": 586060.85,
+          "pending": true
+        },
+        {
+          "label": {
+            "id": "Kolam keterlambatan",
+            "en": "Late-claim pool"
+          },
+          "tokens": 13331239.74,
+          "mechanism": null
+        }
+      ],
+      "vesting": {
+        "tge": null,
+        "cliffMonths": 0,
+        "linearMonths": 6,
+        "note": {
+          "id": "Dua tier menurut ambang 250.000 IDM, dihitung on-chain dari jumlah alokasi.",
+          "en": "Two tiers by a 250,000 IDM threshold, derived on-chain from the allocation amount."
+        }
+      },
+      "circulatingAtTge": 49357088.17
+    },
+    {
+      "id": "private",
+      "label": {
+        "id": "Private Sale",
+        "en": "Private Sale"
+      },
+      "pct": 14,
+      "tokens": 140000000,
+      "unitPrice": 0.003571,
+      "discountPct": 28.6,
+      "vesting": {
+        "tge": 5,
+        "cliffMonths": 3,
+        "linearMonths": 12
+      },
+      "circulatingAtTge": 7000000
+    },
+    {
+      "id": "treasury",
+      "label": {
+        "id": "Treasury",
+        "en": "Treasury"
+      },
+      "pct": 10,
+      "tokens": 100000000,
+      "vesting": {
+        "tge": 10,
+        "cliffMonths": 0,
+        "linearMonths": 36
+      },
+      "circulatingAtTge": 10000000
+    },
+    {
+      "id": "team",
+      "label": {
+        "id": "Tim & Pendiri",
+        "en": "Team & Founders"
+      },
+      "pct": 10,
+      "tokens": 100000000,
+      "vesting": {
+        "tge": 0,
+        "cliffMonths": 12,
+        "linearMonths": 24
+      },
+      "circulatingAtTge": 0
+    },
+    {
+      "id": "marketing",
+      "label": {
+        "id": "Marketing",
+        "en": "Marketing"
+      },
+      "pct": 4,
+      "tokens": 40000000,
+      "vesting": {
+        "tge": 15,
+        "cliffMonths": 0,
+        "linearMonths": 12
+      },
+      "circulatingAtTge": 6000000
+    },
+    {
+      "id": "advisors",
+      "label": {
+        "id": "Advisor",
+        "en": "Advisors"
+      },
+      "pct": 2,
+      "tokens": 20000000,
+      "vesting": {
+        "tge": 0,
+        "cliffMonths": 6,
+        "linearMonths": 18
+      },
+      "circulatingAtTge": 0
+    }
+  ],
+  "migration": {
+    "source": "data/migration-allocations.csv",
+    "merkleRoot": "0xabeba6c7cff72122fd8e9740e10e350c775f5712ffedfd6c1385034eb9fc1ce4",
+    "merkleRootScope": "testnet-only",
+    "merkleRootWarning": {
+      "id": "Root ini untuk testnet saja: satu alokasi 586.060,85 IDM belum punya alamat penerima sehingga tidak ada di pohon. merkleRoot immutable di kontrak.",
+      "en": "This root is testnet-only: one allocation of 586,060.85 IDM has no recipient address yet and is therefore absent from the tree. merkleRoot is immutable in the contract."
+    },
+    "verifiedObligation": 146082699.41,
+    "addresses": 490,
+    "threshold": 250000,
+    "belowThreshold": {
+      "addresses": 360,
+      "tokens": 25175685.35
+    },
+    "aboveThreshold": {
+      "addresses": 130,
+      "tokens": 120907014.06,
+      "tgePct": 20,
+      "linearMonths": 6
+    },
+    "tgeCirculating": 49357088.17,
+    "linearTotal": 96725611.25,
+    "monthlyEmission": 16120935.21,
+    "unassignedAllocation": {
+      "tokens": 586060.85,
+      "recipient": null
+    },
+    "latePool": {
+      "tokens": 13331239.74,
+      "mechanism": null,
+      "note": {
+        "id": "Mekanisme pro-rata belum ditentukan — sengaja tidak dikarang.",
+        "en": "Pro-rata mechanism not yet decided — deliberately not invented."
+      }
+    }
+  },
+  "tge": {
+    "circulating": 157857088.17,
+    "circulatingPct": 15.79,
+    "marketCapUsd": 789285.44
+  },
+  "treasury": {
+    "tokens": 100000000,
+    "multisig": "2-of-3",
+    "address": null,
+    "addressNote": {
+      "id": "Alamat dipublikasikan setelah dompet dibuat.",
+      "en": "Address will be published once the wallet is created."
+    },
+    "split": {
+      "operations": 45,
+      "partnerships": 20,
+      "emergency": 20,
+      "buyback": 15
+    }
+  }
+}
