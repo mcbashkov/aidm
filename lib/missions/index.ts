@@ -88,6 +88,37 @@ export const DEFAULT_MISSIONS: DefaultMission[] = [
     tipe: "once",
     target: 1,
   },
+  // Rantai "Siap Bank" (PERINTAH-AGEN-PREMIUM §Batch 7, migrasi 0036): hari
+  // aktif KUMULATIF dalam 365 hari terakhir — definisi §1.4, yaitu baris
+  // `daily_rollups` dengan jml_transaksi > 0 — bukan runtun. Sekali seumur
+  // akun; ikut cap harian seperti `complete_profile`. 100+150+250 = 500 ≈ 9%
+  // dari 12 × CAP_BULANAN_IDMX; FINAL §0.1 tidak menetapkan angka untuk misi
+  // once, jadi angka di sini mengikuti perintah. CAP dan kontrak tidak diubah.
+  {
+    code: "aktif_30",
+    judul: "30 hari aktif",
+    deskripsi: "Mencatat di 30 hari berbeda dalam setahun terakhir",
+    reward: 100,
+    tipe: "once",
+    target: 30,
+  },
+  {
+    code: "aktif_90",
+    judul: "90 hari aktif",
+    deskripsi: "Mencatat di 90 hari berbeda dalam setahun terakhir",
+    reward: 150,
+    tipe: "once",
+    target: 90,
+  },
+  {
+    code: "aktif_180",
+    judul: "180 hari aktif",
+    deskripsi:
+      "Mencatat di 180 hari berbeda dalam setahun terakhir — cukup untuk Berkas Pengajuan",
+    reward: 250,
+    tipe: "once",
+    target: 180,
+  },
 ];
 
 /**

@@ -1156,6 +1156,39 @@ async function main() {
     }
   }
 
+  console.log("\n── 20. Misi rantai \"Siap Bank\" (Batch 7, migrasi 0036) ──");
+  {
+    // Hari aktif kumulatif 365 hari (definisi §1.4) dari daily_rollups —
+    // bukan runtun. 5 bulan penuh × 8 hari = 40, ditambah satu hari 200 hari
+    // lalu (ikut dihitung) dan satu hari 400 hari lalu (di luar jendela).
+    const uidH = sql(`insert into users (privy_did, earner_type) values ('${PREFIX}H', 'ojol') returning id`);
+    for (const m of [1, 2, 3, 4, 5]) seedRollups(uidH, m, 8);
+    sql(`insert into daily_rollups (user_id, tanggal, total_masuk, total_keluar, jml_transaksi, masuk_terverifikasi)
+         values ('${uidH}', (now() at time zone 'Asia/Jakarta')::date - 200, 10000, 0, 1, 0),
+                ('${uidH}', (now() at time zone 'Asia/Jakarta')::date - 400, 10000, 0, 1, 0)
+         on conflict (user_id, tanggal) do nothing`);
+    const r = await api("/api/missions", { cookie: sessionCookie(uidH, `${PREFIX}H`) });
+    cek("GET /api/missions → 200", r.status === 200, `dapat ${r.status}`);
+    const misi = Object.fromEntries((r.body?.misi ?? []).map((m) => [m.code, m]));
+    const tiga = ["aktif_30", "aktif_90", "aktif_180"].map((c) => misi[c]);
+    cek("tiga misi Siap Bank hadir, tipe once, periodKey once",
+      tiga.every((m) => m && m.tipe === "once" && m.periodKey === "once"), JSON.stringify(tiga.map((m) => m?.code)));
+    cek("imbalan 100 / 150 / 250 (dari DB 0036)",
+      tiga.map((m) => m?.reward).join("/") === "100/150/250", tiga.map((m) => m?.reward).join("/"));
+    cek("aktif_30 selesai, progres dipotong di target 30",
+      misi.aktif_30?.selesai === true && misi.aktif_30?.progress === 30, JSON.stringify(misi.aktif_30));
+    cek("aktif_90 progres 41 (40 + hari ke-200), belum selesai",
+      misi.aktif_90?.progress === 41 && misi.aktif_90?.selesai === false, JSON.stringify(misi.aktif_90));
+    cek("aktif_180 progres 41 dari target 180; hari ke-400 tidak dihitung",
+      misi.aktif_180?.progress === 41 && misi.aktif_180?.target === 180, JSON.stringify(misi.aktif_180));
+    cek("deskripsi 180 hari menyebut Berkas Pengajuan",
+      typeof misi.aktif_180?.deskripsi === "string" && misi.aktif_180.deskripsi.includes("Berkas Pengajuan"));
+    cek("misi lama tetap ada (complete_profile, streak_30_days)",
+      Boolean(misi.complete_profile) && Boolean(misi.streak_30_days));
+    cek("misi once ikut cap harian: capHarian.batas 250, capBulanan.batas 450 tidak berubah",
+      r.body?.capHarian?.batas === 250 && r.body?.capBulanan?.batas === 450, JSON.stringify({ h: r.body?.capHarian, b: r.body?.capBulanan }));
+  }
+
   console.log("\n── 12. DELETE /api/akun (§12 hak penghapusan) ──");
   {
     const uidC = sql(

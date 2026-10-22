@@ -2,7 +2,8 @@
  * Mesin progres misi (§7.6) — sisi server.
  *
  * **Progres DITURUNKAN, tidak disimpan.** Setiap pembacaan menghitung ulang
- * dari tabel sumber (`transactions`, `users`, `report_seals`). Konsekuensinya
+ * dari tabel sumber (`transactions`, `users`, `report_seals`, `daily_rollups`).
+ * Konsekuensinya
  * persis yang diminta AC §7.6: menghapus transaksi langsung menurunkan progres,
  * tanpa satu baris pemeliharaan pun di jalur hapus/edit/sinkron-offline.
  *
@@ -162,6 +163,7 @@ export async function evaluasiMisi(
     { data: misiDb },
     { data: klaim },
     { data: peristiwa },
+    { count: hariAktif365Raw },
   ] =
     await Promise.all([
       // 45 hari lebih dari cukup untuk runtun TERPANJANG yang ada (30 hari)
@@ -196,6 +198,18 @@ export async function evaluasiMisi(
         .from("mission_events")
         .select("mission_id, progress")
         .eq("user_id", userId),
+      // Rantai "Siap Bank" (0036): hari aktif kumulatif 365 hari terakhir =
+      // baris `daily_rollups` dengan jml_transaksi > 0 (definisi §1.4, sama
+      // dengan Kesiapan Catatan). Berbeda dari `misi_sinyal_harian` (0032)
+      // yang mengabaikan pelunasan kasbon: di sini baris pelunasan ikut
+      // dihitung — ia hari pencatatan yang nyata bagi bank. Hanya COUNT
+      // (head: true), tanpa menarik 365 baris.
+      supa
+        .from("daily_rollups")
+        .select("tanggal", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .gt("jml_transaksi", 0)
+        .gte("tanggal", geserHari(hariIni, -365)),
     ]);
 
   const misiById = new Map<string, { code: string }>();
@@ -258,6 +272,7 @@ export async function evaluasiMisi(
       user?.earner_type,
   );
   const sudahSegel = ((segel ?? []) as unknown[]).length > 0;
+  const hariAktif365 = hariAktif365Raw ?? 0;
 
   function progresUntuk(code: string): number {
     if (code === "first_tx_today" || code === "five_tx_today") return jmlHariIni;
@@ -272,6 +287,9 @@ export async function evaluasiMisi(
     if (code === "open_report_weekly") return bacaLaporanPekanIni ? 1 : 0;
     if (code === "seal_monthly_report") return sudahSegel ? 1 : 0;
     if (code === "complete_profile") return profilLengkap ? 1 : 0;
+    if (code === "aktif_30" || code === "aktif_90" || code === "aktif_180") {
+      return hariAktif365;
+    }
     return 0;
   }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   Target,
   Info,
@@ -18,6 +19,8 @@ import {
 } from "@/lib/missions";
 import { bisaDicobaLagi } from "@/lib/missions/galat";
 import { ambilMisi, klaimMisi } from "@/lib/missions/client";
+import { useMe } from "@/components/providers/me-provider";
+import { labelPintu } from "@/lib/langganan/katalog";
 import { cn } from "@/lib/utils";
 
 const TIPE_LABEL: Record<string, string> = {
@@ -48,6 +51,7 @@ function KartuMisi({
   memproses,
   galatLokal,
   onKlaim,
+  pintuBerkas,
 }: {
   m: MisiProgress;
   memproses: boolean;
@@ -56,6 +60,9 @@ function KartuMisi({
    *  ditolak lagi hanya memindahkan kegagalan, bukan menghilangkannya. */
   galatLokal?: string;
   onKlaim: () => void;
+  /** Langkah terakhir rantai "Siap Bank": tautan ke pintu Berkas di Laporan
+   *  (§Batch 7) — bukan pembelian di dalam Misi. Teksnya label per peran. */
+  pintuBerkas?: string;
 }) {
   // HANYA `confirmed` yang berarti IDMX sudah berpindah. Selama belum, tidak
   // ada centang dan tidak ada kata "Diklaim" — layar tidak boleh mendahului
@@ -95,6 +102,14 @@ function KartuMisi({
             </span>
           </div>
           <p className="text-[12px] text-ink-subtle">{m.deskripsi}</p>
+          {pintuBerkas ? (
+            <Link
+              href="/laporan#kesiapan"
+              className="mt-1 inline-block text-[12px] font-semibold text-gold-deep"
+            >
+              {pintuBerkas} →
+            </Link>
+          ) : null}
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-1.5">
@@ -183,6 +198,10 @@ function KartuMisi({
  * dibayar.
  */
 export function MisiView() {
+  const me = useMe();
+  // Label pintu Berkas per peran (ojol → "Buat Riwayat Pendapatan", dst.);
+  // sebelum identitas terbaca memakai label umum, sama seperti kartu Kesiapan.
+  const labelBerkasPintu = labelPintu(me?.user?.earner_type);
   const [data, setData] = useState<MisiResponse | null>(null);
   const [memuat, setMemuat] = useState(true);
   const [demo, setDemo] = useState(false);
@@ -360,6 +379,7 @@ export function MisiView() {
             <KartuMisi
               key={m.code}
               m={m}
+              pintuBerkas={m.code === "aktif_180" ? labelBerkasPintu : undefined}
               memproses={sedangKlaim === m.code}
               galatLokal={kunciGagal[m.code]}
               onKlaim={() => void klaim(m.code)}
