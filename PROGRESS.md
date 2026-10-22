@@ -54,11 +54,11 @@ perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
 | M6 mainnet & beta | ⬜ belum mulai | tokenomics terbuka, tapi **audit pra-mainnet menemukan 1 Critical + 4 High** (semua Terbuka) — lihat Titik lanjut |
 | M7 Play & App Store | ⬜ belum mulai | — |
 
-**Gerbang otomatis terkini (2026-10-22, Batch 10):** `test:parser` 200/200 +
-korpus kasbon 29/29 + korpus ojol 30/30 · `test:swap` 36/36 · `test:canonical` 27/27 ·
+**Gerbang otomatis terkini (2026-10-23, Batch 11):** `test:parser` 200/200 +
+korpus kasbon 29/29 + korpus ojol 30/30 + jasa 6/6 · `test:swap` 36/36 · `test:canonical` 27/27 ·
 `test:kesiapan` 22/22 · `test:pajak` 17/17 · `test:misi` 30/30 · `test:api`
-**291/291** (env produksi, 23 seksi) · typecheck bersih · lint bersih · build
-Vercel READY (`a0f8490`). Uji browser produksi terakhir: 17/17 (P2-6 + guardrail,
+**320/320** (env produksi, 24 seksi) · typecheck bersih · lint bersih · build
+Vercel READY (`71891fc`). Uji browser produksi terakhir: 17/17 (P2-6 + guardrail,
 2026-09-07) dan 11/11 (perbaikan "Menyiapkan…" + identitas ber-cache).
 
 **Produksi 2026-09-07:** 16 pengguna · 128 transaksi · 13 klaim misi ·
@@ -1987,6 +1987,41 @@ Berkas + impor CSV), `a0f8490` (harness seksi 23) · deploy `dpl_9zHEmMsEawvwzPM
 Catat "narik gojek 150rb", "grab 80rb", "isi bensin 30rb" → Laporan: kartu
 "Pendapatan per platform" (Gojek/Grab, BBM, bersih harian rata-rata); buat
 Berkas → halaman ringkasan memuat tabel per platform.
+
+### 7t. Batch 11 — Freelance/jasa: Klien, Invoice, bukti potong ✅ **TAYANG 2026-10-23**
+
+Perintah: `PERINTAH-AGEN-PREMIUM` §Batch 11. Commit `d7a1f3e`..`71891fc`
+(lib/invoice + 0040 + parser uang_muka; UI + harness seksi 24) · deploy
+`dpl_8L8SfSjrjQxhcBWa1S2kRhoKfEcS` READY.
+
+- [x] Migrasi **0040**: `invoices`, `kasbon.invoice_id`, `bukti_potong`
+      (nihil|terpotong, nomor bukti = nomor dokumen; tanpa NPWP/NIK). Dua
+      kali di Postgres sekali pakai → dry-run tepat satu → `db:migrate`.
+- [x] Gratis: `GET/POST /api/invoice`, `PATCH /api/invoice/:id`
+      (lunas|batal), `GET /api/invoice/:id/pdf?jenis=invoice|kuitansi`.
+      Invoice terbit = kasbon piutang; lunas lewat RPC `kasbon_lunasi`
+      (transaksi pemasukan `jasa`, satu transaksi DB); PDF dirender saat
+      diminta (tidak disimpan), kuitansi hanya setelah lunas (409); Web
+      Share berkas, fallback unduh; tanpa e-Meterai.
+- [x] DP/deposit = `sub_kategori = 'uang_muka'` pada pemasukan `jasa` (tanpa
+      kolom baru): fallback semua peran, validator, prompt LLM.
+- [x] Premium (`pajak`/Plus): `/api/pajak/bukti-potong` (402 tanpa paket),
+      tracker di kartu Pajak usaha; rekap per klien masuk PDF Rincian.
+
+**Gerbang §0.3:** typecheck bersih · lint bersih · `test:parser` 200/200 +
+29/29 + ojol 30/30 + jasa 6/6 · `test:canonical` 27/27 · `test:invoice`
+16/16 · `test:pajak` 17/17 · `test:api` **320/320** (seksi 24: 29 cek) · 0040
+diterapkan sebelum push · deploy READY · asap: `/api/invoice`,
+`/api/pajak/bukti-potong`, `/api/invoice/:id/pdf` → 401 tanpa sesi.
+
+**Keputusan yang saya ambil sendiri:**
+- Nomor invoice `INV-YYYYMM-XXXnnnn` (3 karakter id pengguna): kolom unik
+  global, urutan per pengguna; alternatif ditolak: deret global.
+- Invoice tidak ikut purge 90 hari kasbon (dokumen harus bisa dicetak ulang).
+- Pelunasan invoice selalu lewat kasbon, tanpa jalur kedua pembuat transaksi.
+- `uang_muka` untuk semua peran; kuitansi `KW-` turunan nomor invoice.
+
+**Butuh tangan PO:** UI Batch 9–11 belum diperiksa visual (diuji di API).
 
 ### 8. 🤖 M5 — premium di balik LANGGANAN
 
