@@ -1594,6 +1594,71 @@ dengan `NODE_OPTIONS=--max-old-space-size=2048` (konfigurasi lokal
 
 **Butuh tangan PO:** tidak ada.
 
+### 7n. Batch 5 — Berkas Pengajuan ✅ **TAYANG 2026-10-22**
+
+Perintah: `PERINTAH-AGEN-PREMIUM` §1.1, §1.2, §1.5, §Batch 5. Commit
+`74cea8f` (0035 + katalog + lib/berkas + rute + webhook + cron), `190a8bf`
+(UI), `b2cb68a` + `8b8946d` (harness) · deploy
+`dpl_5216WuVUcLSPdf9ve4nGWbqoTMPb` READY.
+
+- [x] Migrasi **0035**: `berkas_pengajuan`, `premium_events`,
+      `subscription_orders.kode` (NULL = pesanan lama tetap sah), bucket
+      privat Storage `berkas` dibuat dari migrasi (dijaga "hanya bila skema
+      storage ada"). Dua kali di Postgres sekali pakai (9 bukti + trigger
+      lintas transaksi) → dry-run tepat satu → `db:migrate` → bucket
+      terverifikasi `public=false`.
+- [x] `lib/langganan/katalog.ts`: satu-satunya tempat harga/nama produk;
+      `syaratBeli` berkas6 ≥ siap3, berkas12 ≥ 6 bulan aktif/12.
+- [x] PDF (`lib/berkas/render.tsx`, pola pdf.tsx, tanpa library PDF baru):
+      sampul + QR (Svg/Rect dari matriks `qrcode`), ringkasan per bulan +
+      grafik batang, rincian per bulan (bulan kosong tetap berhalaman),
+      penutup (pernyataan baku, dokumen pendamping, notarisasi). Diperiksa
+      VISUAL: tanda air PRATINJAU miring, QR, tabel & grafik tampil benar.
+- [x] Alur: nomor → render → bucket → SHA-256 → `attestFor(keccak(
+      "berkas:<nomor>"))` → status; cron menyapu `gagal` (maks 3×) dan segel
+      menggantung. Rute pratinjau/pesan/daftar/unduh (signed URL 10 menit)/
+      verifikasi publik (tanpa data keuangan). Webhook sadar `kode`.
+- [x] UI: tombol "Buat <label peran>" di kartu Kesiapan (Laporan) → sheet
+      pratinjau (halaman 1 nyata, halaman lain terkunci, harga, beli);
+      Akun: daftar berkas + unduh ulang; `/verifikasi/<kode>` publik dengan
+      pencocokan hash di perangkat pembaca.
+
+**Gerbang §0.3:** typecheck bersih · lint bersih · `test:parser` 200/200 +
+29/29 · `test:canonical` 27/27 (wajib: segel/PDF) · `test:kesiapan` 22/22 ·
+`test:api` **206/206** (seksi 18: 33 cek + cascade `premium_events`) ·
+0035 diterapkan sebelum push · deploy READY · cek asap tanpa sesi:
+`/api/berkas*` 401, `/api/verifikasi/<asing>` 404, `/verifikasi/<kode>` 200.
+Tiga jalan `test:api`: ke-1 gugur di harness (bersih-bersih SQL ke
+`storage.objects` ditolak trigger Supabase `storage.protect_delete`, dan
+galat `finally` itu menutupi putusnya soket sesaat); ke-2 202/206 — empat
+assertion keliru (tanda air tak terekstrak `pdftotext`, "idmtoken" di
+domain, "kriptografis" yang wajib, boolean `'true'`); ke-3 206/206.
+
+**Keputusan yang saya ambil sendiri:**
+- Periode berkas = N bulan PENUH yang berakhir di bulan lalu (bulan berjalan
+  belum lengkap); "nama pemilik" tampil "—" (profil tidak menyimpan nama).
+- Sidik jari SHA-256 tidak dicetak di dalam PDF (sirkular): penutup
+  menyatakan di mana ia dicatat; pembaca mencocokkan di halaman verifikasi.
+- Pesanan berkas memakai `periode_hari = 1` (kolom `check > 0`; berkas
+  bukan langganan). Pratinjau mencetak "Terbit setelah pembelian" di tempat
+  nomor — nomor baru lahir saat dokumen dibuat.
+- Baris berkas lahir `gagal` lalu diproses: proses yang mati di tengah
+  terlihat dan dicoba ulang cron, bukan "setengah jadi" yang tersembunyi.
+  Tanpa dompet/segel → `dibuat` + galat yang menyebut sebabnya; dokumen
+  tetap bisa diunduh, notarisasi menyusul.
+- Halaman verifikasi publik TANPA tautan explorer rantai (§0.2: dibaca
+  bank/pejabat); tautan itu tersedia di dalam aplikasi.
+- `qrcode` 1.5.4 ditambahkan (sudah di store pnpm sebagai transitif; bukan
+  library PDF). Label bulan dipisah ke `lib/berkas/label.ts` agar komponen
+  klien tidak menarik react-pdf ke bundel.
+- Pembersihan PDF uji di harness lewat Storage API (SQL dilarang).
+
+**Butuh tangan PO:** kunci Midtrans produksi masih 401 (Memblokir #1) —
+jalur bayar per dokumen hanya bisa hidup setelah itu; sampai saat itu
+tombol beli menjawab "sedang disiapkan". Uji di HP: Laporan → "Buat Berkas
+Usaha" → pratinjau → (Plus) buat → unduh; buka `/verifikasi/<kode>` dari HP
+dan cocokkan PDF-nya.
+
 ### 8. 🤖 M5 — premium di balik LANGGANAN
 
 Model kredit **dibatalkan sebelum sempat rilis** (keputusan PO 2026-08-28).
