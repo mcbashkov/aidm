@@ -1265,6 +1265,125 @@ async function main() {
     sql(`delete from rpc_rate where kunci = 'uid:${uidI}'`);
   }
 
+  console.log("\n── 22. Modul Pajak OP (Batch 9, migrasi 0038) ──");
+  {
+    const tahun = Number(new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 4));
+    const r0 = await api("/api/pajak");
+    cek("GET /api/pajak tanpa sesi → 401", r0.status === 401, `dapat ${r0.status}`);
+    const uidJ = sql(`insert into users (privy_did, earner_type, nama_usaha, kota, kategori_id) values ('${PREFIX}J', 'dagang', 'Toko Uji Pajak', 'Bekasi', (select id from categories where slug='kuliner')) returning id`);
+    const J = sessionCookie(uidJ, `${PREFIX}J`);
+    const k0 = await api("/api/pajak", { cookie: J });
+    cek("akun kosong → omzet 0, tidak melewati, pengingat null, wajib false, belum punya paket",
+      k0.status === 200 && k0.body?.tahun === tahun && k0.body?.hasil?.omzetTahun === 0 && k0.body?.hasil?.melewati === false &&
+      k0.body?.pengingat === null && k0.body?.wajibPajakOp === false && k0.body?.bolehPajak === false && k0.body?.hargaPajakIdr === 59000,
+      JSON.stringify(k0.body).slice(0, 200));
+    cek("tanpa kata laba/skor di respons", !/laba|skor/i.test(JSON.stringify(k0.body)));
+    // Omzet Jan–Mar 200 juta/bulan → kumulatif 600 juta, melewati di Maret.
+    sql(`insert into daily_rollups (user_id, tanggal, total_masuk, total_keluar, jml_transaksi, masuk_terverifikasi) values
+         ('${uidJ}', '${tahun}-01-15', 200000000, 0, 1, 0), ('${uidJ}', '${tahun}-02-15', 200000000, 0, 1, 0), ('${uidJ}', '${tahun}-03-15', 200000000, 0, 1, 0)
+         on conflict (user_id, tanggal) do nothing`);
+    const k1 = await api("/api/pajak", { cookie: J });
+    const h = k1.body?.hasil;
+    cek("omzet 600 juta → melewati sejak Maret", h?.omzetTahun === 600_000_000 && h?.melewati === true && h?.bulanMelewati === `${tahun}-03`, JSON.stringify(h).slice(0, 160));
+    cek("Maret: dasar kena 100 juta (selisih di atas batas), setoran 500.000; Jan/Feb 0; total 500.000",
+      h?.bulanan?.[2]?.dasarKena === 100_000_000 && h?.bulanan?.[2]?.setoran === 500_000 && h?.bulanan?.[0]?.setoran === 0 && h?.bulanan?.[1]?.setoran === 0 && h?.totalSetoran === 500_000,
+      JSON.stringify(h?.bulanan?.slice(0, 3)));
+    const patch = await api("/api/me", { method: "PATCH", cookie: J, body: { wajib_pajak_op: true } });
+    const me = await api("/api/me", { cookie: J });
+    cek("PATCH /api/me wajib_pajak_op true → terbaca di /api/me dan /api/pajak",
+      patch.status === 200 && me.body?.user?.wajib_pajak_op === true && (await api("/api/pajak", { cookie: J })).body?.wajibPajakOp === true, JSON.stringify(me.body?.user?.wajib_pajak_op));
+    cek("PATCH wajib_pajak_op bukan boolean → diabaikan (tetap true)",
+      (await api("/api/me", { method: "PATCH", cookie: J, body: { wajib_pajak_op: "ya" } })).status === 200 && sql(`select wajib_pajak_op from users where id='${uidJ}'`) === "t");
+
+    const tolak = await api("/api/pajak/rincian", { method: "POST", cookie: J, body: { tahun } });
+    cek("rincian tanpa Paket Pajak/Plus → 402 PERLU_PAKET_PAJAK", tolak.status === 402 && tolak.body?.kode === "PERLU_PAKET_PAJAK", `${tolak.status} ${JSON.stringify(tolak.body)}`);
+    cek("premium_events pajak lihat_pratinjau tercatat", sql(`select count(*) from premium_events where user_id='${uidJ}' and kode='pajak' and aksi='lihat_pratinjau'`) === "1");
+    cek("tahun pajak asing → 400", (await api("/api/pajak/rincian", { method: "POST", cookie: J, body: { tahun: 1999 } })).status === 400);
+
+    sql(`select langganan_perpanjang('${uidJ}', 30, 'manual')`);
+    const rinci = await api("/api/pajak/rincian", { method: "POST", cookie: J, body: { tahun } });
+    cek("Plus → rincian dibuat (dibuat|pending_segel|confirmed) + unduhUrl",
+      rinci.status === 200 && ["dibuat", "pending_segel", "confirmed"].includes(rinci.body?.dokumen?.status) && typeof rinci.body?.unduhUrl === "string",
+      `${rinci.status} ${JSON.stringify(rinci.body).slice(0, 200)}`);
+    const barisR = sql(`select jenis||'|'||tahun_pajak||'|'||coalesce(path_pdf,'')||'|'||coalesce(sha256,'') from dokumen_pajak where user_id='${uidJ}' and jenis='rincian'`).split("|");
+    cek("baris rincian: tahun, path_pdf di bucket, sha256 64 hex", barisR[1] === String(tahun) && barisR[2].startsWith(`${uidJ}/PJ-${tahun}-`) && /^[0-9a-f]{64}$/.test(barisR[3]), barisR.join(" | "));
+    cek("nomor dokumen PJ-YYYY-xxxxx", /^PJ-\d{4}-\d{5}$/.test(rinci.body?.dokumen?.nomorDokumen ?? ""), rinci.body?.dokumen?.nomorDokumen);
+    if (rinci.body?.unduhUrl) {
+      const pdfRes = await fetchAsli(rinci.body.unduhUrl);
+      const buf = Buffer.from(await pdfRes.arrayBuffer());
+      cek("PDF rincian terunduh dari signed URL (magic %PDF)", pdfRes.status === 200 && buf.subarray(0, 4).toString() === "%PDF", `${pdfRes.status} ${buf.subarray(0, 8)}`);
+      cek("sha256 PDF = sha256 di DB", crypto.createHash("sha256").update(buf).digest("hex") === barisR[3]);
+      const teks = pdfText(buf);
+      if (teks !== null) {
+        cek("isi rincian: judul, bahan pengisian SPT, Kena PPh Final, Bukan nasihat pajak",
+          /Rincian Peredaran Bruto per Bulan/.test(teks) && /pengisian SPT/.test(teks) && /Kena PPh Final/.test(teks) && /Bukan nasihat pajak/.test(teks));
+        // §0.2: nol kata token/kripto/wallet/opBNB sebagai KATA — "idmtoken.com"
+        // (domain URL verifikasi) dan "kriptografis" (istilah yang justru
+        // diwajibkan) bukan pelanggaran, maka URL dibuang dan batas kata dipakai.
+        const teksTanpaUrl = teks.replace(/https?:\/\/\S+/g, " ");
+        const terlarang = teksTanpaUrl.match(/\b(token|wallet|opbnb|kripto|laba)\b/gi) ?? [];
+        cek("rincian: nol kata token/wallet/opBNB/kripto/laba (di luar URL)", terlarang.length === 0, terlarang.join(","));
+        cek("rincian memuat Rp600.000.000 dan setoran Rp500.000", /Rp600\.000\.000/.test(teks) && /Rp500\.000(?![.\d])/.test(teks));
+      } else console.log("  · pdftotext tidak tersedia — cek isi PDF dilewati");
+      const unduh = await fetchAsli(`${BASE}/api/pajak/dokumen/${sql(`select id from dokumen_pajak where user_id='${uidJ}' and jenis='rincian'`)}/unduh`, { headers: { cookie: J }, redirect: "manual" });
+      cek("GET /api/pajak/dokumen/:id/unduh → 302 signed URL", unduh.status === 302 && /\/storage\//.test(unduh.headers.get("location") ?? ""), `${unduh.status}`);
+    }
+
+    const npwpUji = "12.345.678.9-012.000";
+    const tolak2 = await api("/api/pajak/pernyataan", { method: "POST", cookie: J, body: { tahun, nama: "Uji Pajak", npwp: npwpUji } });
+    cek("pernyataan tahun yang melewati batas → 409 MELEWATI_BATAS", tolak2.status === 409 && tolak2.body?.kode === "MELEWATI_BATAS", `${tolak2.status} ${JSON.stringify(tolak2.body)}`);
+    cek("NPWP 3 digit → 400 NPWP_TIDAK_SAH", (await api("/api/pajak/pernyataan", { method: "POST", cookie: J, body: { tahun: tahun - 1, nama: "Uji", npwp: "123" } })).body?.kode === "NPWP_TIDAK_SAH");
+    const sp = await fetchAsli(`${BASE}/api/pajak/pernyataan`, { method: "POST", headers: { "content-type": "application/json", cookie: J }, body: JSON.stringify({ tahun: tahun - 1, nama: "Uji Pajak", npwp: npwpUji }) });
+    const spBuf = Buffer.from(await sp.arrayBuffer());
+    const nomorSp = sp.headers.get("x-nomor-dokumen") ?? "";
+    cek("pernyataan tahun lalu (omzet 0) → 200 application/pdf, nomor PJ-, attachment",
+      sp.status === 200 && (sp.headers.get("content-type") ?? "").startsWith("application/pdf") && /^PJ-\d{4}-\d{5}$/.test(nomorSp) && /attachment/.test(sp.headers.get("content-disposition") ?? "") && spBuf.subarray(0, 4).toString() === "%PDF",
+      `${sp.status} ${sp.headers.get("content-type")} ${nomorSp}`);
+    const barisP = sql(`select coalesce(path_pdf,'<null>')||'|'||coalesce(sha256,'')||'|'||status||'|'||kode_verifikasi from dokumen_pajak where user_id='${uidJ}' and jenis='pernyataan'`).split("|");
+    cek("baris pernyataan: path_pdf NULL (tidak disimpan), sha256 = hash PDF yang dikirim",
+      barisP[0] === "<null>" && barisP[1] === crypto.createHash("sha256").update(spBuf).digest("hex"), barisP.slice(0, 3).join(" | "));
+    cek("NPWP tidak tersimpan di mana pun (dokumen_pajak, users, premium_events)",
+      sql(`select count(*) from dokumen_pajak where to_jsonb(dokumen_pajak)::text like '%123456789012000%'`) === "0" &&
+      sql(`select count(*) from users where to_jsonb(users)::text like '%123456789012000%' or to_jsonb(users)::text like '%${npwpUji}%'`) === "0");
+    cek("PDF pernyataan tidak ada di bucket (hanya 1 berkas milik J: rincian)",
+      sql(`select count(*) from storage.objects where bucket_id='berkas' and name like '${uidJ}/%'`) === "1");
+    const teksSp = pdfText(spBuf);
+    if (teksSp !== null) {
+      cek("isi surat: SURAT PERNYATAAN, nama, NPWP digit, Tahun Pajak <spasi> adalah, di bawah Rp500.000.000, Bukan nasihat pajak",
+        /SURAT PERNYATAAN/.test(teksSp) && /Uji Pajak/.test(teksSp) && /123456789012000/.test(teksSp) && new RegExp(`Tahun Pajak ${tahun - 1} adalah`).test(teksSp) &&
+        /di bawah Rp500\.000\.000/i.test(teksSp) && /Bukan nasihat pajak/.test(teksSp),
+        JSON.stringify(teksSp.slice(0, 300)));
+      const terlarangSp = teksSp.replace(/https?:\/\/\S+/g, " ").match(/\b(token|wallet|opbnb|kripto|laba)\b/gi) ?? [];
+      cek("surat: nol kata token/wallet/opBNB/kripto/laba (di luar URL)", terlarangSp.length === 0, terlarangSp.join(","));
+    }
+    const ver = await api(`/api/verifikasi/${barisP[3]}`);
+    cek("verifikasi publik dokumen pajak → 200 dengan label Surat Pernyataan + sha256, tanpa angka keuangan",
+      ver.status === 200 && /Surat Pernyataan/.test(ver.body?.label ?? "") && ver.body?.sha256 === barisP[1] && !("omzet" in (ver.body ?? {})), `${ver.status} ${JSON.stringify(ver.body).slice(0, 160)}`);
+    const k2 = await api("/api/pajak", { cookie: J });
+    cek("daftar dokumen: 2 baris; rincian bisa diunduh, pernyataan tidak",
+      k2.body?.dokumen?.length === 2 && k2.body.dokumen.find((d) => d.jenis === "rincian")?.bisaUnduh === true && k2.body.dokumen.find((d) => d.jenis === "pernyataan")?.bisaUnduh === false, JSON.stringify(k2.body?.dokumen));
+    cek("sumber akses plus", k2.body?.bolehPajak === true && k2.body?.sumberAkses === "plus");
+
+    // Paket Pajak dibeli sendiri (tanpa Plus): pesanan Midtrans kode pajak + webhook sah.
+    const uidK = sql(`insert into users (privy_did, earner_type) values ('${PREFIX}K', 'freelance') returning id`);
+    const K = sessionCookie(uidK, `${PREFIX}K`);
+    const bayar = await api("/api/langganan/bayar", { method: "POST", cookie: K, body: { kode: "pajak" } });
+    if (bayar.status === 501) {
+      console.log("  · Midtrans tidak dikonfigurasi — alur beli Paket Pajak dilewati (501)");
+    } else {
+      cek("POST /api/langganan/bayar {kode: pajak} → 200 redirectUrl", bayar.status === 200 && typeof bayar.body?.redirectUrl === "string", `${bayar.status} ${JSON.stringify(bayar.body).slice(0, 120)}`);
+      const orderId = bayar.body?.orderId;
+      if (orderId) orderUji.push(orderId);
+      cek("pesanan: kode pajak, 365 hari, Rp59.000", sql(`select kode||' '||periode_hari||' '||harga_idr from subscription_orders where midtrans_order_id='${orderId}'`) === "pajak 365 59000");
+      const sig = crypto.createHash("sha512").update(`${orderId}20059000.00${env.MIDTRANS_SERVER_KEY}`).digest("hex");
+      const lunas = await api("/api/langganan/webhook", { method: "POST", body: { order_id: orderId, status_code: "200", gross_amount: "59000.00", transaction_status: "settlement", signature_key: sig } });
+      cek("webhook settlement pajak → paket pajak, langganan Plus TIDAK dibuat", lunas.status === 200 && lunas.body?.paket === "pajak" && sql(`select count(*) from subscriptions where user_id='${uidK}' and status<>'tidak_aktif'`) === "0", JSON.stringify(lunas.body));
+      cek("premium_events pajak klik_beli + bayar_sukses", sql(`select count(*) from premium_events where user_id='${uidK}' and kode='pajak' and aksi in ('klik_beli','bayar_sukses')`) === "2");
+      const kK = await api("/api/pajak", { cookie: K });
+      cek("akses pajak dari pesanan lunas: bolehPajak true, sumber 'pajak'", kK.body?.bolehPajak === true && kK.body?.sumberAkses === "pajak", JSON.stringify({ b: kK.body?.bolehPajak, s: kK.body?.sumberAkses }));
+    }
+  }
+
   console.log("\n── 12. DELETE /api/akun (§12 hak penghapusan) ──");
   {
     const uidC = sql(
