@@ -71,6 +71,10 @@ globalThis.fetch = (input, init = {}) =>
     headers: { connection: "close", ...(init.headers ?? {}) },
   });
 const PREFIX = "did:privy:__test__";
+// Pesanan Midtrans yang dibuat harness. `subscription_orders` sengaja
+// BERTAHAN saat pengguna dihapus (0030: catatan pembayaran), jadi pesanan
+// uji harus dihapus eksplisit di akhir — bukan ikut cascade.
+const orderUji = [];
 
 // Alamat & nonce uji swap. Dibuat mencolok supaya mustahil tertukar dengan
 // data nyata, dan supaya pembersihannya bisa menyasar tepat baris ini —
@@ -102,15 +106,36 @@ function sessionCookie(uid, did) {
   return `aidm_session=${body}.${sig}`;
 }
 
+/** Galat TRANSPORT (soket ditutup sebelum menjawab, bukan status HTTP):
+ *  diulang sekali setelah jeda. Yang diuji adalah aplikasinya, bukan soketnya —
+ *  lihat catatan `connection: close` di atas untuk kelas kegagalan ini. */
+function galatTransport(err) {
+  const cause = err && typeof err === "object" ? err.cause : null;
+  return (
+    (err instanceof Error && err.message === "fetch failed") ||
+    (cause && typeof cause === "object" && String(cause.code ?? "").startsWith("UND_ERR"))
+  );
+}
+
 async function api(path, { method = "GET", body, cookie } = {}) {
-  const res = await fetch(`${BASE}${path}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      ...(cookie ? { cookie } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  const kirim = () =>
+    fetch(`${BASE}${path}`, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        ...(cookie ? { cookie } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  let res;
+  try {
+    res = await kirim();
+  } catch (err) {
+    if (!galatTransport(err)) throw err;
+    console.log(`  (soket ditutup saat ${method} ${path} — diulang sekali)`);
+    await new Promise((r) => setTimeout(r, 750));
+    res = await kirim();
+  }
   let json = null;
   try {
     json = await res.json();
@@ -124,14 +149,25 @@ async function api(path, { method = "GET", body, cookie } = {}) {
 async function hapusPdfUji() {
   const url = env.NEXT_PUBLIC_SUPABASE_URL;
   const kunci = env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !kunci) return;
+  if (!url || !kunci) {
+    console.log("  (bersih-bersih bucket dilewati: NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY tidak terbaca dari .env.local)");
+    return;
+  }
   const uids = sql(`select string_agg(id::text, ' ') from users where privy_did like '${PREFIX}%'`)
     .split(" ")
     .filter(Boolean);
+  console.log(`  (bersih-bersih bucket: ${uids.length} pengguna uji diperiksa)`);
   if (uids.length === 0) return;
-  const storage = createClient(url, kunci, { auth: { persistSession: false } }).storage.from("berkas");
+  // `fetchAsli`, bukan fetch global: pembungkus `connection: close` di atas
+  // menyebar `init.headers` dengan spread, dan objek Headers milik storage-js
+  // tidak enumerable — content-type hilang, Storage menjawab "body must be object".
+  const storage = createClient(url, kunci, {
+    auth: { persistSession: false },
+    global: { fetch: fetchAsli },
+  }).storage.from("berkas");
   for (const uid of uids) {
-    const { data } = await storage.list(uid);
+    const { data, error } = await storage.list(uid);
+    if (error) throw error;
     const nama = (data ?? []).map((o) => `${uid}/${o.name}`);
     if (nama.length > 0) {
       const { error } = await storage.remove(nama);
@@ -1066,6 +1102,60 @@ async function main() {
     cek("kode panjang salah → 404", pendek.status === 404, `dapat ${pendek.status}`);
   }
 
+  console.log("\n── 19. AIDM Plus tahunan (Batch 6, §1.1) ──");
+  {
+    const uidG = sql(`insert into users (privy_did, earner_type, nama_usaha, kota, kategori_id) values ('${PREFIX}G', 'freelance', 'Jasa Uji Plus', 'Bogor', (select id from categories where slug='jasa')) returning id`);
+    const G = sessionCookie(uidG, `${PREFIX}G`);
+    for (const m of [1, 2, 3]) seedRollups(uidG, m, 8);
+    const bayar = await api("/api/langganan/bayar", { method: "POST", cookie: G });
+    if (bayar.status === 501) {
+      console.log("  · Midtrans tidak dikonfigurasi di .env.local — seksi 19 dilewati (bayar → 501)");
+    } else {
+      cek("POST /api/langganan/bayar → 200 dengan redirectUrl (Snap sandbox)",
+        bayar.status === 200 && typeof bayar.body?.redirectUrl === "string" && typeof bayar.body?.orderId === "string",
+        `${bayar.status} ${JSON.stringify(bayar.body).slice(0, 120)}`);
+      const orderId = bayar.body?.orderId;
+      if (orderId) orderUji.push(orderId);
+      const baris = sql(`select kode||' '||periode_hari||' '||harga_idr||' '||status from subscription_orders where midtrans_order_id='${orderId}'`);
+      cek("pesanan: kode plus, 365 hari, Rp149.000, pending", baris === "plus 365 149000 pending", baris);
+      cek("premium_events klik_beli plus", sql(`select count(*) from premium_events where user_id='${uidG}' and kode='plus' and aksi='klik_beli'`) === "1");
+
+      // Notifikasi Midtrans disimulasikan dengan tanda tangan yang sah
+      // (sha512(order_id + status_code + gross_amount + server_key)) — tanpa
+      // jaringan Midtrans, tanpa uang nyata.
+      const kunci = env.MIDTRANS_SERVER_KEY;
+      const gross = "149000.00";
+      const palsu = await api("/api/langganan/webhook", { method: "POST", body: { order_id: orderId, status_code: "200", gross_amount: gross, transaction_status: "settlement", signature_key: "0".repeat(128) } });
+      cek("webhook tanda tangan palsu → 401", palsu.status === 401, `dapat ${palsu.status}`);
+      const salahNominal = await api("/api/langganan/webhook", { method: "POST", body: { order_id: orderId, status_code: "200", gross_amount: "49000.00", transaction_status: "settlement", signature_key: crypto.createHash("sha512").update(`${orderId}20049000.00${kunci}`).digest("hex") } });
+      cek("webhook nominal tidak cocok → ditolak (pesanan failed, tidak memperpanjang)",
+        salahNominal.status === 200 && sql(`select status from subscription_orders where midtrans_order_id='${orderId}'`) === "failed", JSON.stringify(salahNominal.body));
+      // Nominal salah menandai failed; untuk alur sukses pakai pesanan baru.
+      const bayar2 = await api("/api/langganan/bayar", { method: "POST", cookie: G });
+      const orderId2 = bayar2.body?.orderId;
+      if (orderId2) orderUji.push(orderId2);
+      const sig2 = crypto.createHash("sha512").update(`${orderId2}200${gross}${kunci}`).digest("hex");
+      const lunas = await api("/api/langganan/webhook", { method: "POST", body: { order_id: orderId2, status_code: "200", gross_amount: gross, transaction_status: "settlement", signature_key: sig2 } });
+      cek("webhook settlement sah → 200 berakhir", lunas.status === 200 && typeof lunas.body?.berakhir === "string", JSON.stringify(lunas.body));
+      const hari = Number(sql(`select round(extract(epoch from (berakhir_at - now()))/86400) from subscriptions where user_id='${uidG}'`));
+      cek("langganan aktif ≈365 hari", hari >= 364 && hari <= 366, `dapat ${hari} hari`);
+      cek("pesanan paid + premium_events bayar_sukses plus",
+        sql(`select status from subscription_orders where midtrans_order_id='${orderId2}'`) === "paid" &&
+        sql(`select count(*) from premium_events where user_id='${uidG}' and kode='plus' and aksi='bayar_sukses'`) === "1");
+      const ulang = await api("/api/langganan/webhook", { method: "POST", body: { order_id: orderId2, status_code: "200", gross_amount: gross, transaction_status: "settlement", signature_key: sig2 } });
+      const hari2 = Number(sql(`select round(extract(epoch from (berakhir_at - now()))/86400) from subscriptions where user_id='${uidG}'`));
+      cek("notifikasi diulang → 'sudah diproses', masa tidak bertambah", ulang.body?.catatan === "sudah diproses" && hari2 === hari, `${JSON.stringify(ulang.body)} ${hari2}`);
+      const st = await api("/api/langganan", { cookie: G });
+      cek("GET /api/langganan: status aktif + riwayat memuat plus Rp149.000",
+        st.body?.langganan?.status === "aktif" && st.body?.riwayat?.[0]?.kode === "plus" && st.body?.riwayat?.[0]?.hargaIdr === 149000, JSON.stringify(st.body?.riwayat));
+      const pesan = await api("/api/berkas/pesan", { method: "POST", cookie: G, body: { kode: "berkas6" } });
+      cek("Plus dari pesanan Midtrans memberi berkas tanpa bayar (jalur plus, dibuat)",
+        pesan.status === 200 && pesan.body?.jalur === "plus" && pesan.body?.berkas?.status === "dibuat", `${pesan.status} ${JSON.stringify(pesan.body)}`);
+      cek("label peran freelance di daftar berkas → Bukti Penghasilan 6 Bulan",
+        (await api("/api/berkas", { cookie: G })).body?.items?.[0]?.label === "Bukti Penghasilan 6 Bulan");
+    }
+  }
+
   console.log("\n── 12. DELETE /api/akun (§12 hak penghapusan) ──");
   {
     const uidC = sql(
@@ -1141,6 +1231,10 @@ try {
     console.error("(bersih-bersih PDF uji gagal — periksa bucket `berkas` secara manual)", err);
   }
   sql(`delete from users where privy_did like '${PREFIX}%'`);
+  if (orderUji.length > 0) {
+    sql(`delete from subscription_orders where midtrans_order_id in (${orderUji.map((o) => `'${o}'`).join(",")})`);
+    console.log(`  (pesanan uji dihapus: ${orderUji.length})`);
+  }
   console.log("(user uji dibersihkan)");
 }
 process.exit(gagal.length === 0 ? 0 : 1);
