@@ -4,6 +4,8 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { CheckCircle2, Circle, Info } from "lucide-react";
 import { ambilKesiapan, type KesiapanResponse } from "@/lib/kesiapan/client";
 import { JENDELA_6 } from "@/lib/kesiapan/hitung";
+import { labelPintu, syaratBeli } from "@/lib/langganan/katalog";
+import { BerkasSheet } from "@/components/laporan/berkas-sheet";
 import { cn } from "@/lib/utils";
 
 /**
@@ -21,6 +23,7 @@ export function KesiapanCard() {
   const [data, setData] = useState<KesiapanResponse | null>(null);
   const [galat, setGalat] = useState<string | null>(null);
   const [demo, setDemo] = useState(false);
+  const [sheet, setSheet] = useState(false);
 
   const muat = useCallback(async () => {
     const res = await ambilKesiapan();
@@ -81,6 +84,7 @@ export function KesiapanCard() {
   }
 
   return (
+    <>
     <section
       id="kesiapan"
       aria-labelledby={judulId}
@@ -134,6 +138,31 @@ export function KesiapanCard() {
           </li>
         ))}
       </ul>
+
+      {/* Pintu premium utama (§1.3 poin 1): tombol selalu tampil; di bawah
+          syarat ia nonaktif dengan kalimat yang menyebut angka sekarang. */}
+      {(() => {
+        const syarat = syaratBeli("berkas6", data);
+        return (
+          <div className="space-y-1.5">
+            <button
+              type="button"
+              onClick={() => setSheet(true)}
+              className="btn-primary"
+            >
+              {labelPintu(data.earnerType)}
+            </button>
+            {!syarat.boleh ? (
+              <p className="text-[12px] leading-relaxed text-ink-subtle">
+                {syarat.alasan} — pratinjaunya tetap bisa dibuka.
+              </p>
+            ) : null}
+          </div>
+        );
+      })()}
     </section>
+
+    <BerkasSheet terbuka={sheet} onClose={() => setSheet(false)} kesiapan={data} />
+    </>
   );
 }

@@ -10,6 +10,7 @@ import { VoucherPanel } from "@/components/wallet/voucher-panel";
 import { SettingsList } from "@/components/account/settings-list";
 import { LogoutButton } from "@/components/account/logout-button";
 import { DeleteAccount } from "@/components/account/delete-account";
+import { BerkasList } from "@/components/account/berkas-list";
 import { earnerLabel } from "@/lib/earner";
 import { panggil } from "@/lib/api/panggil";
 import { isPrivyConfigured } from "@/lib/privy/config";
@@ -144,6 +145,8 @@ export default function AkunPage() {
           pemicuMuat={pemicuMuat}
         />
       ) : null}
+
+      <BerkasList />
 
       {/* Pintu masuk fitur premium — bukan bottom-nav lagi (§7.8 / §13 #10) */}
       <Link
