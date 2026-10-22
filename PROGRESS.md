@@ -54,11 +54,11 @@ perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
 | M6 mainnet & beta | ⬜ belum mulai | tokenomics terbuka, tapi **audit pra-mainnet menemukan 1 Critical + 4 High** (semua Terbuka) — lihat Titik lanjut |
 | M7 Play & App Store | ⬜ belum mulai | — |
 
-**Gerbang otomatis terkini (2026-10-22, Batch 8):** `test:parser` 200/200 +
+**Gerbang otomatis terkini (2026-10-22, Batch 9):** `test:parser` 200/200 +
 korpus kasbon 29/29 · `test:swap` 36/36 · `test:canonical` 27/27 ·
-`test:kesiapan` 22/22 · `test:misi` 30/30 · `test:api` **247/247** (env
-produksi, 21 seksi) · typecheck bersih · lint bersih · build Vercel READY
-(`fb4e31e`). Uji browser produksi terakhir: 17/17 (P2-6 + guardrail,
+`test:kesiapan` 22/22 · `test:pajak` 17/17 · `test:misi` 30/30 · `test:api`
+**282/282** (env produksi, 22 seksi) · typecheck bersih · lint bersih · build
+Vercel READY (`cb9f391`). Uji browser produksi terakhir: 17/17 (P2-6 + guardrail,
 2026-09-07) dan 11/11 (perbaikan "Menyiapkan…" + identitas ber-cache).
 
 **Produksi 2026-09-07:** 16 pengguna · 128 transaksi · 13 klaim misi ·
@@ -1850,6 +1850,82 @@ terkirim; perbaikannya satu baris (`lib/privy/provider.tsx`: kembalikan
 `supportedChains`/`defaultChain` tanpa `denganProxy`), pembacaan sheet tidak
 terpengaruh. (2) Bila ingin kunci penyedia berbayar: isi `*_RPC_URL_SERVER`
 di env Vercel → redeploy; kosong = endpoint resmi.
+
+### 7r. Batch 9 — Modul Pajak OP ("Paket Pajak Tahunan") ✅ **TAYANG 2026-10-22**
+
+Perintah: `PERINTAH-AGEN-PREMIUM` §1.1 (`pajak` Rp59.000/tahun pajak,
+termasuk Plus), §Batch 9. Commit `164d60c` (0038 + lib/pajak + rute),
+`afc2e75` (UI Laporan/Beranda/Akun//premium + bayar/webhook), `cb9f391`
+(harness seksi 22) · deploy `dpl_CN3K13udcKkmH4FcVYbqHRA5MDHx` READY.
+
+- [x] Migrasi **0038**: `users.wajib_pajak_op` (boolean, default mati) +
+      tabel `dokumen_pajak` (`rincian` | `pernyataan`, nomor `PJ-YYYY-xxxxx`,
+      kode verifikasi 12 huruf, RLS, cascade). Tabel BARU, bukan memperluas
+      CHECK `berkas_pengajuan.kode` (DROP CONSTRAINT dilarang §0.3). Tidak
+      ada kolom NPWP/NIK di mana pun (dibuktikan harness). Dua kali di
+      Postgres sekali pakai (12 bukti) → dry-run tepat satu → `db:migrate`.
+- [x] `lib/pajak/hitung.ts` murni + `pnpm test:pajak` **17/17**: batas bebas
+      Rp500 juta kumulatif per tahun pajak, PPh Final 0,5% atas BAGIAN di
+      atas batas (bulan terlampaui hanya selisihnya, bulan berikutnya
+      seluruh omzet), jatuh tempo tanggal 15 bulan berikutnya, pengingat
+      tanggal 1–15.
+- [x] Gratis: `GET /api/pajak` + kartu "Pajak usaha" di Laporan — baris
+      "Omzet tahun ini: Rp X dari batas bebas Rp500 juta" + alarm non-blokir
+      saat melewati (hanya bila wajib pajak OP ditandai); toggle "Saya wajib
+      pajak orang pribadi" di Akun (`PATCH /api/me`, boolean murni).
+- [x] Premium `pajak` (Plus atau pesanan `pajak` lunas <365 hari —
+      `bolehPajak`): kalkulator setoran bulan terakhir yang kena; pengingat
+      tanggal 15 di Beranda + Laporan (in-app; push belum ada infrastruktur);
+      `POST /api/pajak/rincian` → PDF "Rincian Peredaran Bruto per Bulan
+      (bahan pengisian SPT)" di bucket privat, hash dinotarisasi
+      (`pajak:<nomor>`); `POST /api/pajak/pernyataan` → PDF "Surat Pernyataan
+      Omzet di Bawah Rp500 Juta" dikirim LANGSUNG (nama & NPWP diketik saat
+      membuat, tidak disimpan; `path_pdf` NULL; yang tersimpan hash +
+      metadata), 409 bila omzet tahun itu sudah mencapai batas; verifikasi
+      publik `/verifikasi/<kode>` mengenali dokumen pajak; cron menyapu
+      render gagal & segel menggantung.
+- [x] Katalog: `pajak.tersedia = true` → kartu Paket Pajak di `/premium`
+      setelah Plus; `POST /api/langganan/bayar {kode: "pajak"}`; webhook
+      `pajak` lunas → jejak `bayar_sukses` tanpa memperpanjang Plus.
+- [x] Setiap layar/PDF pajak memuat "Bukan nasihat pajak. Cocokkan dengan
+      Coretax atau konsultan pajak." PDF pajak: nol kata token/wallet/
+      opBNB/kripto/laba (dibuktikan `pdftotext` di harness).
+
+**Gerbang §0.3:** typecheck bersih · lint bersih · `test:parser` 200/200 +
+29/29 · `test:canonical` 27/27 (PDF) · `test:kesiapan` 22/22 ·
+`test:pajak` 17/17 · `test:api` **282/282** (seksi 22: 35 cek; jalan ke-1 278/282 — empat
+assertion isi PDF keliru: "idmtoken.com" dan "kriptografis" terbaca
+sebagai kata terlarang, `\\b` sebelum "Rp500.000", dan spasi JSX yang
+hilang di surat — regex diperketat ke batas kata di luar URL, spasi
+diperbaiki; jalan ke-2 282/282) · 0038
+diterapkan sebelum push · deploy READY · cek asap: `/api/pajak` 401 tanpa
+sesi, `/api/pajak/rincian` 401, kartu Paket Pajak tampil di `/premium`.
+
+**Keputusan yang saya ambil sendiri:**
+- PPh dihitung atas BAGIAN omzet di atas Rp500 juta (bulan terlampaui =
+  selisih), mengikuti pasal pengecualian "bagian peredaran bruto s.d.
+  Rp500 juta tidak dikenai PPh"; alternatif ditolak: mengenakan seluruh omzet
+  bulan terlampaui (lebih sederhana, tetapi melebihkan setoran).
+- "Omzet" = `total_masuk` `daily_rollups` (seluruh pemasukan confirmed);
+  tidak ada pemisahan usaha/pribadi di skema, jadi tidak dipisahkan di sini.
+- Surat Pernyataan hanya bisa dibuat bila omzet tahun itu menurut catatan
+  memang di bawah batas (409 kalau tidak) — AIDM tidak mencetak pernyataan
+  yang bertentangan dengan catatannya sendiri.
+- PDF pernyataan tidak disimpan sama sekali (bukan "disimpan di bucket
+  privat"): "NPWP tidak disimpan" dibaca sebagai mencakup salinan di dalam
+  PDF. Pengguna menyimpan berkasnya sendiri; hash tetap bisa diverifikasi.
+- Pengingat in-app saja (Beranda + Laporan): infrastruktur push belum ada
+  (Akun → Notifikasi masih "Belum tersedia"); WA memang dilarang perintah.
+- Hak akses `pajak` dari pesanan lunas <365 hari, bukan tabel/kolom baru.
+- Pembantu PDF (`Qr`, `Footer`, gaya, warna) diekspor dari
+  `lib/berkas/render.tsx` alih-alih diduplikasi.
+
+**Butuh tangan PO:** format resmi lampiran SPT belum diverifikasi (judul PDF
+sudah menyatakan "bahan pengisian"); Midtrans produksi masih 401 → beli Paket
+Pajak di produksi menjawab "sedang disiapkan". Uji di HP: Akun → nyalakan
+"Saya wajib pajak orang pribadi" → Laporan → kartu Pajak usaha (omzet vs
+batas); (Plus) buat Rincian → unduh; buat Surat Pernyataan → berkas terunduh
+ke HP, tidak tersimpan di Akun.
 
 ### 8. 🤖 M5 — premium di balik LANGGANAN
 
