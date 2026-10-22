@@ -116,7 +116,14 @@ export type BarisCatat = Transaction & { rawInput?: string | null };
  * karena pertanyaan nominal yang belum dijawab adalah bagian percakapan yang
  * belum selesai.
  */
-export function hidrasiCatat(): Promise<ApiHasil<{ items: BarisCatat[] }>> {
+export interface HidrasiCatat {
+  items: BarisCatat[];
+  /** Kalimat pengguna sendiri dari seminggu terakhir — chip personal
+   *  (lib/catat/chip.ts). Opsional: server lama tidak mengirimnya. */
+  chips?: string[];
+}
+
+export function hidrasiCatat(): Promise<ApiHasil<HidrasiCatat>> {
   return panggil("/api/transaksi?untuk=catat");
 }
 

@@ -12,6 +12,7 @@ import {
 // dan di Laporan harus memotong rentang yang sama persis, kalau tidak daftar
 // dan ringkasannya bercerita beda tentang periode yang sama.
 import { rentangIso } from "@/lib/laporan/periode";
+import { chipPersonal } from "@/lib/catat/chip";
 
 export const runtime = "nodejs";
 // Data milik satu pengguna: tidak boleh pernah dirender statis maupun
@@ -162,6 +163,14 @@ export async function GET(req: Request) {
  *  jadi angka ini tidak pernah benar-benar memotong sebuah hari yang sah. */
 const CATAT_MAKS = 200;
 
+/** Jendela chip personal: kalimat yang diucapkan dalam seminggu terakhir.
+ *  Lebih lama dari itu, kebiasaannya sudah berubah; lebih pendek, Senin pagi
+ *  tidak punya apa-apa untuk diulang. Jauh di bawah retensi raw_input 90 hari
+ *  (§16 #10), jadi purge tidak pernah mengosongkannya lebih dulu. */
+const CHIP_HARI = 7;
+/** Baris terbaru yang dipindai untuk menemukan 3 kalimat berbeda. */
+const CHIP_BARIS_MAKS = 40;
+
 /**
  * Hidrasi thread tab Catat: percakapan HARI INI, milik pemanggil.
  *
@@ -187,6 +196,13 @@ const CATAT_MAKS = 200;
  *     gelembung percakapannya. Ia sengaja tidak ada di `TX_COLUMNS` umum:
  *     tidak ada layar lain yang membutuhkannya.
  *
+ *  4. **`chips`: kalimat pengguna sendiri dari seminggu terakhir** (3 berbeda,
+ *     terbaru dulu) — chip personal di atas kolom input (lib/catat/chip.ts).
+ *     Dibaca di sini, bukan lewat endpoint baru, karena ia dibutuhkan pada
+ *     saat yang persis sama dengan thread dan dari kolom yang sama. Hanya
+ *     `confirmed`: kalimat yang melahirkan draft belum tentu lengkap, dan
+ *     kalimat yang entrinya dihapus bukan contoh yang ingin diulang.
+ *
  * Urut NAIK (created_at) karena thread dibaca dari atas ke bawah.
  */
 async function daftarCatatHariIni(
@@ -195,21 +211,46 @@ async function daftarCatatHariIni(
 ) {
   try {
     const maps = await getKategoriMaps(supa);
-    const { data, error } = await supa
-      .from("transactions")
-      .select(`${TX_COLUMNS}, raw_input`)
-      .eq("user_id", uid)
-      .in("status", ["confirmed", "draft"])
-      .gte("created_at", wibDayStartIso())
-      .order("created_at", { ascending: true })
-      .limit(CATAT_MAKS);
-    if (error) {
+    const awalHariIni = wibDayStartIso();
+    const awalJendelaChip = new Date(
+      Date.parse(awalHariIni) - CHIP_HARI * 86_400_000,
+    ).toISOString();
+
+    const [thread, kalimat] = await Promise.all([
+      supa
+        .from("transactions")
+        .select(`${TX_COLUMNS}, raw_input`)
+        .eq("user_id", uid)
+        .in("status", ["confirmed", "draft"])
+        .gte("created_at", awalHariIni)
+        .order("created_at", { ascending: true })
+        .limit(CATAT_MAKS),
+      supa
+        .from("transactions")
+        .select("raw_input")
+        .eq("user_id", uid)
+        .eq("status", "confirmed")
+        .not("raw_input", "is", null)
+        .gte("created_at", awalJendelaChip)
+        .order("created_at", { ascending: true })
+        .limit(CHIP_BARIS_MAKS),
+    ]);
+    if (thread.error) {
       return jsonPribadi({ error: "Gagal membaca catatan." }, { status: 500 });
     }
+    // Chip hanya pemanis: kegagalan membacanya TIDAK boleh menggagalkan thread.
+    const chips = kalimat.error
+      ? []
+      : chipPersonal(
+          ((kalimat.data ?? []) as { raw_input: string | null }[]).map(
+            (r) => r.raw_input,
+          ),
+        );
     return jsonPribadi({
-      items: ((data ?? []) as (TxRow & { raw_input: string | null })[]).map(
-        (r) => ({ ...rowToTx(r, maps.byId), rawInput: r.raw_input }),
-      ),
+      items: (
+        (thread.data ?? []) as (TxRow & { raw_input: string | null })[]
+      ).map((r) => ({ ...rowToTx(r, maps.byId), rawInput: r.raw_input })),
+      chips,
     });
   } catch {
     return jsonPribadi(

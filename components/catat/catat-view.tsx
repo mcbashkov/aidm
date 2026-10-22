@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUp, CloudOff, MessageSquarePlus } from "lucide-react";
 import { MicButton } from "@/components/catat/mic-button";
 import { EntryCard } from "@/components/catat/entry-card";
 import { TransactionSheet } from "@/components/transaksi/transaction-sheet";
 import { useMe } from "@/components/providers/me-provider";
 import { catatChips, type EarnerType } from "@/lib/earner";
+import { chipPersonal, gabungChips } from "@/lib/catat/chip";
 import { parseFallback, bacaNominalJawaban } from "@/lib/parse/fallback";
 import { pesanPertanyaan, pesanTidakDikenali } from "@/lib/catat/pesan";
 import {
@@ -16,6 +17,7 @@ import {
   hapusTransaksi,
   hidrasiCatat,
   type BarisCatat,
+  type HidrasiCatat,
 } from "@/lib/catat/client";
 import {
   useKueri,
@@ -113,6 +115,8 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
   const me = useMe();
   // Chip & parser lokal mengikuti peran dari profil begitu /api/me termuat.
   const earnerType = (me?.user?.earner_type as EarnerType) ?? earnerProp;
+  // Bidang usaha ikut menentukan chip contoh (peran × bidang, lib/earner.ts).
+  const kategoriUsaha = me?.user?.kategori_slug ?? null;
 
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const [draft, setDraft] = useState("");
@@ -133,10 +137,7 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
    * bukan kesimpulan yang salah; ia keadaan awal yang dipajang sebagai fakta,
    * kelas bug P0-1 yang sama.
    */
-  const hidrasi = useKueri<{ items: BarisCatat[] }>(
-    "catat:hari-ini",
-    hidrasiCatat,
-  );
+  const hidrasi = useKueri<HidrasiCatat>("catat:hari-ini", hidrasiCatat);
   const batalkanKueri = useBatalkanKueri();
   const sudahHidrasi = useRef(false);
 
@@ -167,7 +168,26 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
   });
   const [fade, setFade] = useState({ left: false, right: false });
 
-  const chips = catatChips(earnerType);
+  /**
+   * Chip: kalimat pengguna sendiri dari seminggu terakhir di depan (ulang
+   * kemarin dengan satu ketukan), lalu contoh peran × bidang. Chip personal
+   * datang bersama hidrasi thread dan dipegang di state sendiri: cache thread
+   * dibuang setiap kali pengguna menulis (`segarkanSetelahTulis`), dan chip
+   * tidak boleh ikut lenyap pada detik itu. Kalimat yang baru saja tersimpan
+   * langsung masuk ke depan — tanpa menunggu server membacanya ulang.
+   * Sebelum hidrasi, dan di mode demo/offline, yang tampil hanya contoh —
+   * persis seperti sebelumnya.
+   */
+  const [chipsPersonal, setChipsPersonal] = useState<string[]>([]);
+  useEffect(() => {
+    if (hidrasi.keadaan === "terbaca" && hidrasi.data.chips) {
+      setChipsPersonal(hidrasi.data.chips);
+    }
+  }, [hidrasi]);
+  const chips = useMemo(
+    () => gabungChips(chipsPersonal, catatChips(earnerType, kategoriUsaha)),
+    [chipsPersonal, earnerType, kategoriUsaha],
+  );
 
   // Status koneksi dibaca setelah mount — `navigator` tidak ada di server.
   useEffect(() => {
@@ -464,6 +484,12 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
             });
           }
           setBubbles((prev) => [...prev, ...baru]);
+          // Kalimat yang melahirkan entri tersimpan layak diulang besok —
+          // masukkan ke chip personal sekarang juga. Draft (nominal belum
+          // ada) dan kalimat tak dikenali tidak ikut: bukan contoh yang baik.
+          if (entries.length > 0 && !draftBaru) {
+            setChipsPersonal((p) => chipPersonal([...[...p].reverse(), text]));
+          }
           segarkanSetelahTulis();
           return;
         }
