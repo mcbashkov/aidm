@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Search, PenLine, Check, ChevronRight, Sparkles } from "lucide-react";
 import {
-  HARGA_TAMPIL,
   KUOTA_BULANAN,
   MASA_COBA_HARI,
   AMBANG_PERINGATAN,
@@ -17,6 +16,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GagalMuat } from "@/components/ui/gagal-muat";
 import { TautanLegal } from "@/components/layout/tautan-legal";
+import { useMe } from "@/components/providers/me-provider";
+import { KATALOG, PLUS_BERKAS_MAKS, formatHargaIdr, labelBerkasPeran } from "@/lib/langganan/katalog";
+
+const HARGA_PLUS = formatHargaIdr(KATALOG.plus.hargaIdr);
 
 /**
  * Etalase Premium — satu harga, satu tombol.
@@ -59,11 +62,14 @@ const FITUR = [
 const GRATIS_SELAMANYA = [
   "Catat transaksi — ketik atau ucapkan",
   "Laporan keuangan & unduh PDF",
+  "Kesiapan Catatan",
   "Misi & reward IDMX",
   "Segel laporan on-chain",
 ];
 
 export function PremiumView() {
+  const me = useMe();
+  const earnerType = me?.user?.earner_type ?? null;
   const [keadaan, setKeadaan] = useState<Keadaan>({ k: "memuat" });
   const [sibuk, setSibuk] = useState(false);
   const [galat, setGalat] = useState<string | null>(null);
@@ -146,6 +152,10 @@ export function PremiumView() {
     <div className="space-y-section">
       <Kepala />
 
+      {/* Urutan §1.3 poin 6: Berkas (label peran) → Plus → Pajak (Fase B) →
+          "Termasuk dalam Plus" → yang tetap gratis. */}
+      <KartuBerkas earnerType={earnerType} />
+
       {aktif ? (
         <KartuAktif langganan={langganan} sisa={sisa} onBayar={() => void bayar()} sibuk={sibuk} />
       ) : (
@@ -164,6 +174,7 @@ export function PremiumView() {
       ) : null}
 
       <div className="space-y-2">
+        <h2 className="px-1">Termasuk dalam Plus</h2>
         {FITUR.map(({ href, icon: Icon, judul, desc }) => (
           <Link
             key={href}
@@ -199,8 +210,8 @@ export function PremiumView() {
           ))}
         </ul>
         <p className="text-[12px] leading-relaxed text-ink-subtle">
-          Premium hanya menambah Riset Tren dan Generator Konten. Mencatat dan
-          melihat laporan tidak pernah dipungut biaya.
+          Yang berbayar hanya dokumen untuk pihak luar dan Plus. Mencatat,
+          laporan, dan Kesiapan Catatan tidak pernah dipungut biaya.
         </p>
       </div>
     </div>
@@ -212,9 +223,31 @@ function Kepala() {
     <header>
       <h1>Premium</h1>
       <p className="mt-1 text-[13px] text-ink-subtle">
-        Riset pasar & pembuat konten untuk usahamu.
+        Berkas untuk pengajuan ke bank, dan Plus setahun untuk semuanya.
       </p>
     </header>
+  );
+}
+
+/**
+ * Berkas Pengajuan di etalase (§1.3 poin 6). Dibuat lewat pintu Laporan —
+ * di sana pratinjaunya dari data nyata; di sini hanya harga dan tautan.
+ */
+function KartuBerkas({ earnerType }: { earnerType: string | null }) {
+  return (
+    <div className="card space-y-3 p-5">
+      <h3>{labelBerkasPeran(earnerType, 6)} · {labelBerkasPeran(earnerType, 12).replace(/^.*?(\d+ Bulan)$/, "$1")}</h3>
+      <p className="text-[13px] leading-relaxed text-ink-muted">
+        Rekap bulanan, rincian harian, dan halaman notarisasi dalam satu PDF
+        yang bisa langsung dibaca bank. Sekali bayar per dokumen:{" "}
+        <span className="tnum font-semibold text-ink">{formatHargaIdr(KATALOG.berkas6.hargaIdr)}</span> (6 bulan) ·{" "}
+        <span className="tnum font-semibold text-ink">{formatHargaIdr(KATALOG.berkas12.hargaIdr)}</span> (12 bulan).
+        Termasuk dalam Plus (maks {PLUS_BERKAS_MAKS} dokumen setahun).
+      </p>
+      <Link href="/laporan#kesiapan" className="btn-primary">
+        Lihat pratinjau di Laporan
+      </Link>
+    </div>
   );
 }
 
@@ -242,20 +275,20 @@ function KartuAktif({
     <div className="card space-y-3 p-5">
       <div className="flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-gold-deep" aria-hidden />
-        <h3>{coba ? "Masa coba berjalan" : "Premium aktif"}</h3>
+        <h3>{coba ? "Masa coba berjalan" : "AIDM Plus aktif"}</h3>
       </div>
       <p className="text-[13px] leading-relaxed text-ink-muted">
         {coba
-          ? `Kamu sedang mencoba Premium gratis. ${sisa !== null ? `Sisa ${sisa} hari` : ""}${tanggal ? ` — sampai ${tanggal}` : ""}.`
+          ? `Kamu sedang mencoba Plus gratis. ${sisa !== null ? `Sisa ${sisa} hari` : ""}${tanggal ? ` — sampai ${tanggal}` : ""}.`
           : `Aktif sampai ${tanggal ?? "—"}${sisa !== null ? ` (${sisa} hari lagi)` : ""}.`}
       </p>
       <Button size="lg" fullWidth onClick={onBayar} disabled={sibuk}>
-        {sibuk ? "Membuka pembayaran…" : coba ? `Lanjut Premium ${HARGA_TAMPIL}/bulan` : `Perpanjang ${HARGA_TAMPIL}`}
+        {sibuk ? "Membuka pembayaran…" : coba ? `Lanjut Plus ${HARGA_PLUS}/tahun` : `Perpanjang ${HARGA_PLUS}/tahun`}
       </Button>
       <p className="text-center text-[12px] text-ink-subtle">
         {coba
           ? "Masa coba berhenti sendiri. Tidak ada tagihan otomatis."
-          : "Perpanjangan menambah 30 hari dari sisa yang masih berjalan."}
+          : "Perpanjangan menambah 365 hari dari sisa yang masih berjalan."}
       </p>
     </div>
   );
@@ -276,18 +309,19 @@ function KartuTawaran({
     <div className="card space-y-4 p-5">
       <div className="flex items-baseline gap-2">
         <span className="font-serif text-[32px] font-semibold leading-none text-ink">
-          {HARGA_TAMPIL}
+          {HARGA_PLUS}
         </span>
-        <span className="text-[14px] text-ink-muted">/bulan</span>
+        <span className="text-[14px] text-ink-muted">/tahun</span>
       </div>
       <p className="text-[13px] leading-relaxed text-ink-muted">
-        Buka Riset Tren dan Generator Konten. Berhenti kapan saja — tidak ada
-        tagihan otomatis, tidak ada kontrak.
+        AIDM Plus: Berkas Pengajuan tanpa bayar per dokumen (maks {PLUS_BERKAS_MAKS} setahun),
+        Riset Tren, dan Generator Konten. Sekali bayar untuk satu tahun — tidak
+        ada tagihan otomatis, tidak ada kontrak.
       </p>
 
       {cobaDipakai ? (
         <Button size="lg" fullWidth onClick={onBayar} disabled={sibuk}>
-          {sibuk ? "Membuka pembayaran…" : `Langganan ${HARGA_TAMPIL}/bulan`}
+          {sibuk ? "Membuka pembayaran…" : `Plus ${HARGA_PLUS}/tahun`}
         </Button>
       ) : (
         <>
@@ -300,14 +334,14 @@ function KartuTawaran({
             disabled={sibuk}
             className="w-full py-1 text-center text-[13px] font-semibold text-gold-deep disabled:opacity-40"
           >
-            Langsung berlangganan {HARGA_TAMPIL}/bulan
+            Langsung Plus {HARGA_PLUS}/tahun
           </button>
         </>
       )}
 
       <p className="text-center text-[12px] text-ink-subtle">
         {cobaDipakai
-          ? "Sekali bayar untuk 30 hari. Tidak ada tagihan otomatis."
+          ? "Sekali bayar untuk 365 hari. Tidak ada tagihan otomatis."
           : "Tanpa kartu kredit. Masa coba berhenti sendiri."}
       </p>
 

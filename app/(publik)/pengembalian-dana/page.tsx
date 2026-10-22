@@ -90,7 +90,7 @@ export default function PengembalianDanaPage() {
         <ul className="list-disc space-y-1.5 pl-5">
           <li>Pengajuan melewati 7 hari sejak pembayaran</li>
           <li>Fitur Premium telah digunakan lebih dari 5 kali</li>
-          <li>Masa langganan 30 hari telah berakhir secara normal</li>
+          <li>Masa langganan telah berakhir secara normal</li>
           <li>Akun ditangguhkan karena melanggar Syarat &amp; Ketentuan</li>
           <li>
             Ketidakpuasan disebabkan oleh kesalahan input data oleh pengguna
@@ -180,7 +180,7 @@ export default function PengembalianDanaPage() {
       <Bagian judul="8. Pembatalan Langganan">
         <p>
           Langganan AIDM bersifat{" "}
-          <b className="text-ink">sekali bayar untuk 30 hari</b> dan{" "}
+          <b className="text-ink">sekali bayar untuk 365 hari</b> dan{" "}
           <b className="text-ink">tidak diperpanjang otomatis</b>. Anda tidak
           perlu melakukan pembatalan — cukup tidak melakukan pembayaran
           berikutnya, dan akses Premium akan berhenti dengan sendirinya pada

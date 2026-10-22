@@ -92,9 +92,12 @@ export default function SyaratKetentuanPage() {
             </thead>
             <tbody>
               <tr className="border-b border-line">
-                <td className="py-2 pr-3">Harga Premium</td>
+                <td className="py-2 pr-3">Harga</td>
                 <td className="py-2">
-                  <b className="text-ink">Rp49.000</b> per bulan (30 hari)
+                  AIDM Plus <b className="text-ink">Rp149.000</b> per tahun (365
+                  hari); Berkas Pengajuan <b className="text-ink">Rp49.000</b> (6
+                  bulan) atau <b className="text-ink">Rp79.000</b> (12 bulan),
+                  sekali bayar per dokumen
                 </td>
               </tr>
               <tr className="border-b border-line">
@@ -114,7 +117,7 @@ export default function SyaratKetentuanPage() {
               <tr>
                 <td className="py-2 pr-3">Sistem penagihan</td>
                 <td className="py-2">
-                  Sekali bayar untuk 30 hari,{" "}
+                  Sekali bayar — Plus untuk 365 hari, Berkas per dokumen —{" "}
                   <b className="text-ink">tidak otomatis diperpanjang</b>
                 </td>
               </tr>
@@ -127,8 +130,8 @@ export default function SyaratKetentuanPage() {
         </p>
         <p>
           Langganan <b className="text-ink">tidak diperpanjang otomatis</b>. Anda
-          tidak akan ditagih tanpa melakukan pembayaran baru. Setelah 30 hari
-          berakhir, akses Premium berhenti dan akun Anda kembali ke versi Gratis
+          tidak akan ditagih tanpa melakukan pembayaran baru. Setelah masa aktif
+          berakhir, akses Plus berhenti dan akun Anda kembali ke versi Gratis
           — seluruh data dan fitur gratis tetap dapat diakses.
         </p>
       </Bagian>

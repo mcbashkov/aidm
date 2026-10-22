@@ -10,7 +10,7 @@ import { VoucherPanel } from "@/components/wallet/voucher-panel";
 import { SettingsList } from "@/components/account/settings-list";
 import { LogoutButton } from "@/components/account/logout-button";
 import { DeleteAccount } from "@/components/account/delete-account";
-import { BerkasList } from "@/components/account/berkas-list";
+import { LanggananBerkas } from "@/components/account/langganan-berkas";
 import { earnerLabel } from "@/lib/earner";
 import { panggil } from "@/lib/api/panggil";
 import { isPrivyConfigured } from "@/lib/privy/config";
@@ -146,26 +146,9 @@ export default function AkunPage() {
         />
       ) : null}
 
-      <BerkasList />
-
-      {/* Pintu masuk fitur premium — bukan bottom-nav lagi (§7.8 / §13 #10) */}
-      <Link
-        href="/premium"
-        className="card flex items-center gap-4 p-5 transition-shadow hover:shadow-float"
-      >
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gold-tint">
-          <Sparkles className="h-6 w-6 text-gold-deep" aria-hidden />
-        </span>
-        <span className="flex-1">
-          <span className="block font-serif text-card-title font-semibold text-ink">
-            Fitur premium
-          </span>
-          <span className="mt-0.5 block text-[13px] leading-snug text-ink-muted">
-            Riset tren, peluang usaha, dan generator konten.
-          </span>
-        </span>
-        <ChevronRight className="h-5 w-5 shrink-0 text-ink-subtle" aria-hidden />
-      </Link>
+      {/* Langganan & berkas (§1.3 poin 5) — bukan lagi pintu penjualan utama;
+          pintu utama ada di Laporan. */}
+      <LanggananBerkas />
 
       <section className="space-y-2">
         <h2 className="px-1">Pengaturan</h2>
