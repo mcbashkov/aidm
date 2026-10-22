@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { cocokCronSecret, TIDAK_DITEMUKAN } from "@/lib/api/cron";
 import { sapuBerkas } from "@/lib/berkas/server";
+import { sapuDokumenPajak } from "@/lib/pajak/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -135,6 +136,18 @@ async function purge(req: Request) {
     console.error("[pemeliharaan] sapu berkas gagal:", err);
   }
 
+  // Dokumen pajak (0038): rincian yang gagal dirender dicoba ulang (maks 3×),
+  // notarisasi menggantung dituntaskan — pola yang sama dengan Berkas.
+  let pajak: { dicoba: number; segel: number } | null = null;
+  try {
+    pajak = await sapuDokumenPajak(supa);
+    if (pajak.dicoba > 0 || pajak.segel > 0) {
+      console.log(`[pemeliharaan] dokumen pajak: ${pajak.dicoba} dicoba ulang, ${pajak.segel} segel dicek`);
+    }
+  } catch (err) {
+    console.error("[pemeliharaan] sapu dokumen pajak gagal:", err);
+  }
+
   // Proxy RPC (0037): baris batas laju yang tidak tersentuh 24 jam dibuang.
   // Jendelanya hanya 60 detik, jadi baris yang lebih tua dari sehari pasti
   // sudah tidak berarti apa-apa. Gagal di sini dicatat, tidak menggagalkan.
@@ -156,6 +169,7 @@ async function purge(req: Request) {
     kasbonDibersihkan,
     langgananDisapu,
     berkas,
+    pajak,
     rpcRateDisapu,
   });
 }

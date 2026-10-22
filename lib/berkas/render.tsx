@@ -41,7 +41,7 @@ export interface BerkasPdfInput {
   pratinjau: boolean;
 }
 
-const WARNA = {
+export const WARNA = {
   ink: "#211C15",
   muted: "#6B6154",
   garis: "#E4DED2",
@@ -51,6 +51,7 @@ const WARNA = {
 };
 
 const s = StyleSheet.create({
+
   page: { padding: 40, paddingBottom: 56, fontSize: 9.5, fontFamily: "Helvetica", color: WARNA.ink },
   judul: { fontSize: 20, fontFamily: "Helvetica-Bold" },
   subJudul: { fontSize: 11, color: WARNA.muted, marginTop: 4 },
@@ -76,6 +77,8 @@ const s = StyleSheet.create({
   tandaAir: { position: "absolute", top: 330, left: 60, fontSize: 64, fontFamily: "Helvetica-Bold", color: WARNA.tandaAir, opacity: 0.45, transform: "rotate(-28deg)" },
   kosong: { marginTop: 10, color: WARNA.muted, fontStyle: "italic" },
 });
+/** Gaya & pembantu dipakai ulang oleh lib/pajak/render.tsx (Batch 9). */
+export const gaya = s;
 
 function tanggalPanjang(ymd: string): string {
   const [y, m, d] = ymd.split("-").map(Number);
@@ -83,7 +86,7 @@ function tanggalPanjang(ymd: string): string {
 }
 
 /** QR sebagai kotak-kotak SVG — tanpa gambar raster, tanpa dependensi render. */
-function Qr({ teks, ukuran }: { teks: string; ukuran: number }) {
+export function Qr({ teks, ukuran }: { teks: string; ukuran: number }) {
   const qr = QRCode.create(teks, { errorCorrectionLevel: "M" });
   const n = qr.modules.size;
   const sel = ukuran / n;
@@ -103,7 +106,7 @@ function Qr({ teks, ukuran }: { teks: string; ukuran: number }) {
   );
 }
 
-function Footer({ nomor }: { nomor: string }) {
+export function Footer({ nomor }: { nomor: string }) {
   return (
     <View style={s.footer} fixed>
       <Text>{nomor}</Text>
