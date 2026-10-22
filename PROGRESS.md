@@ -4,7 +4,7 @@ Pelacak pekerjaan lintas sesi. **README** menjelaskan produk & cara menjalankan;
 berkas ini menjawab satu pertanyaan saja: *apa yang sudah beres, apa berikutnya,
 dan siapa yang mengerjakan.*
 
-Diperbarui: **2026-09-09** · cabang `main`
+Diperbarui: **2026-10-22** · cabang `main`
 
 > ⚠️ **Sisi token digantikan `docs/PERINTAH-AGEN-FINAL.md`.** Untuk apa pun yang
 > menyangkut IDMX/IDM Reborn/swap/kurs/tokenomics, dokumen itu sumber kebenaran
@@ -1258,6 +1258,116 @@ Android/iOS saat aplikasi diinstal.
       — keputusan PO 2026-09-08, opsi (b).
 
 **`og-image.jpg` sengaja TIDAK disentuh** atas instruksi PO.
+
+### 7j. ~~Tukar mati di HP · chip Catat personal · peran tak bisa diubah~~ ✅ **SELESAI 2026-10-22**
+
+Tiga temuan dari satu sesi uji PO di perangkat sungguhan. Yang paling mudah
+hilang kalau tidak ditulis sekarang: sebab (1) sama sekali bukan di kode
+kontrak, dan "sudah jalan di PC" justru yang menyesatkan selama berjam-jam.
+
+**(1) "Gagal membaca data dari jaringan" — hanya di HP, tidak di PC.**
+
+- [x] **Akar: satu endpoint, dan port yang difilter operator.** Pembacaan
+      keadaan kontrak dari browser menembak SATU alamat RPC, dan untuk BSC
+      testnet alamat itu `data-seed-prebsc-1-s1.bnbchain.org:8545`. Port 8545
+      lazim difilter jaringan seluler — permintaannya tidak pernah sampai,
+      sementara di WiFi rumah lewat. Bukan alamat kontrak, bukan ABI, bukan
+      chain yang salah dirakit; tidak satu pun dugaan awal itu.
+- [x] **RPC tiap chain kini DAFTAR, bukan satu alamat** (`lib/chains/rpc.ts`,
+      `daftarRpc`: env di depan bila terisi, endpoint resmi sebagai cadangan,
+      tanpa duplikat). Pemakai `http()` polos dan Privy tetap membaca entri
+      pertama — perilaku lama tidak berubah — sedangkan `publicClient()` di
+      `lib/swap/client.ts` memakai SELURUH daftar lewat `fallback()`.
+      Semua endpoint berjalan di 443; yang `:8545` dibuang.
+- [x] **`retryCount: 1` per endpoint, bukan bawaan viem (3).** Sekali buka
+      sheet ada delapan pembacaan: retry bawaan berarti sampai 32 permintaan
+      ke endpoint yang sedang menolak — bila sebabnya rate-limit, itu justru
+      memperparah. Timeout 6 detik; pembacaan normal dari seluler Indonesia
+      ada di kisaran 100–600 ms.
+- [x] **Dua env BSC di `.env.local.example` dikosongkan**, karena nilai
+      contohnya adalah endpoint `:8545` itu sendiri — siapa pun yang menyalin
+      berkas itu mewarisi bug-nya.
+- [x] **Sheet Tukar tidak lagi gagal total karena satu kaki.** Dua kaki
+      (opBNB: saldo/jatah/izin · BSC: kurs/fee) dibaca `Promise.allSettled`;
+      yang terbaca ditampilkan, yang gagal disebut NAMA JARINGANNYA, galat
+      muat dipisah dari galat kirim (jalan keluarnya beda: "baca ulang" vs
+      "coba kirim lagi"), ada tombol **Coba lagi**, dan satu percobaan ulang
+      otomatis 1,5 detik — sekali saja, supaya kegagalan menetap berhenti di
+      tombol, bukan di putaran permintaan yang membanjiri RPC. Tombol
+      konfirmasi tetap terkunci selama salah satu kaki kosong.
+- [x] **Sepuluh endpoint diverifikasi lewat 443 (sesi ini, bukan diasumsikan):**
+      `eth_chainId` cocok semua — 0x38 (56), 0x61 (97), 0xcc (204), 0x15eb
+      (5611) — **kecuali** `bsc-prebsc-dataseed.bnbchain.org`, yang menjawab
+      **503 di port 443** (dua kali) dan hanya hidup di `:8545`. Diganti
+      `bsc-testnet.publicnode.com` (terbukti 0x61 lewat 443). Entri yang
+      selalu gagal bukan cadangan, cuma satu lapis timeout di depan cadangan
+      sungguhan.
+- ⬜ **Utang yang disengaja, sebelum mainnet:** pembacaan RPC browser belum
+      dipindahkan ke `GET /api/swap/keadaan` + proxy same-origin. "Segar" tidak
+      mewajibkan "dari browser" — pembacaan server tanpa cache sama segarnya,
+      dan `lib/token/saldo.ts` sudah memakai pola itu dengan alasan yang
+      berlawanan (alamat pengguna tidak bocor ke penyedia RPC, tiap tab tidak
+      menembak RPC sendiri). `fallback()` membuat testnet bisa dipakai dari HP;
+      proxy itu yang menghapus seluruh kelas masalah ini.
+- ⬜ 🧑 **Belum diuji di HP dengan jaringan seluler sungguhan.** Hanya itu
+      yang membuktikan perbaikannya; gerbang otomatis tidak menyentuhnya.
+
+**(2) Chip Catat: kalimat pengguna sendiri, dan contoh yang cocok bidangnya.**
+
+- [x] **Chip personal** (`lib/catat/chip.ts`): tiga `raw_input` BERBEDA dari
+      tujuh hari terakhir, terbaru dulu, maksimal 48 karakter — "Jual 3 nasi
+      goreng 45rb bayar QRIS" kemarin tinggal diketuk hari ini. Satu ketukan =
+      satu catatan, persis gerakan yang menaikkan metrik utara, tanpa satu pun
+      panggilan AI tambahan.
+- [x] **Hanya `confirmed`.** Kalimat yang melahirkan draft belum tentu lengkap,
+      dan kalimat yang entrinya sudah dihapus bukan contoh yang ingin diulang.
+      Jendela 7 hari jauh di bawah retensi `raw_input` 90 hari (§16 #10), jadi
+      purge tidak pernah mengosongkannya lebih dulu.
+- [x] **Ikut di kueri hidrasi yang sudah ada** (`untuk=catat`), bukan endpoint
+      baru: dibutuhkan pada saat yang persis sama dengan thread dan dari kolom
+      yang sama. Kegagalan membaca chip TIDAK menggagalkan thread — chip cuma
+      pemanis.
+- [x] **Dipegang di state komponen sendiri**, karena cache thread dibuang
+      setiap kali pengguna menulis (`segarkanSetelahTulis`) dan chip tidak
+      boleh ikut lenyap pada detik itu. Kalimat yang baru saja melahirkan entri
+      langsung masuk ke depan, tanpa menunggu server membacanya ulang; draft
+      dan kalimat tak dikenali tidak ikut.
+- [x] **Chip contoh kini peran × bidang usaha** (`lib/earner.ts`): peran
+      menentukan BENTUK penghasilan, bidang menentukan BARANGNYA, dan keduanya
+      dipilih terpisah di onboarding. Hanya pasangan yang kalimatnya
+      benar-benar berbeda yang ditulis; sisanya jatuh ke chip peran, hasilnya
+      sama seperti sebelum perluasan. Ojol tidak punya baris: bidang usaha
+      tidak mengubah apa pun di sana.
+- [x] **76/76 chip baru diuji terhadap parser fallback** (sesi ini):
+      masing-masing dibaca sebagai SATU entri bernominal, tanpa memicu
+      pertanyaan dan tanpa "tidak dikenali". Contoh yang menghasilkan kartu
+      salah lebih buruk daripada tidak ada contoh. `chip.ts` diuji terpisah:
+      urutan terbaru-dulu, dedup tanpa memandang kapital/spasi, dan gerakan
+      state di `catat-view` (mengulang chip lama memindahkannya ke depan,
+      bukan menduplikasinya).
+
+**(3) Peran usaha tidak bisa diubah sesudah onboarding.**
+
+- [x] **Kasus nyata 2026-10-22:** akun "Warung Abadi" berperan "Freelance /
+      jasa", jadi chip Catat-nya "Beli lisensi software 300rb". Peran hanya
+      bisa dipilih sekali di `/onboarding/peran` dan tidak pernah lagi — salah
+      pilih berarti chip dan konteks parser salah selamanya.
+- [x] **Baris "Peran & profil usaha" di Akun** (peran, bidang, nama usaha,
+      kota). `PATCH /api/me` sudah menerima keempat field sejak v3.0 — yang
+      hilang cuma pintunya. Memakai kelas `chip` yang sama dengan layar
+      onboarding usaha, bukan lima kartu ikon: di dalam baris pengaturan,
+      keputusan satu ketukan tidak butuh satu layar penuh.
+- [x] **`meK.muatUlang()` menggantikan `batalkan(KUNCI_ME)`** di baris ini dan
+      di BarisGaya. Membuang entri cache menjatuhkan header Akun dan kartu
+      Wallet ke skeleton, dan tidak ada yang menjadwalkan pembacaan ulang
+      sampai jendela kembali fokus — "Menyiapkan…" tanpa akhir versi kecil
+      (§7c). `muatUlang` memaksa pembacaan sambil membiarkan salinan lama
+      tampil sampai yang baru tiba.
+
+**Gerbang batch ini:** `rm -rf .next` → typecheck bersih · lint bersih ·
+`test:parser` 200/200. `test:api`, `test:swap`, `test:misi` **tidak**
+dijalankan (butuh env produksi & anvil) — statusnya masih yang tercatat di
+"Keadaan sekarang".
 
 ### 8. 🤖 M5 — premium di balik LANGGANAN
 
