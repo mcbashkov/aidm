@@ -102,11 +102,31 @@ async function purge(req: Request) {
     );
   }
 
+  // Kasbon (0031): raw_input 90 hari setelah diterima, dan nama pihak +
+  // catatan 90 hari setelah kasbonnya selesai. Fungsi terpisah dari
+  // purge_raw_input supaya arti `dihapus` di atas tidak berubah diam-diam.
+  // Kegagalannya dicatat, bukan menggagalkan jalan ini — purge transaksi di
+  // atas sudah selesai dan tidak boleh terbaca gagal karena pekerjaan lain.
+  let kasbonDibersihkan: number | null = null;
+  const { data: kb, error: errKb } = await supa.rpc("purge_kasbon_pribadi", {
+    p_hari: RETENSI_HARI,
+    p_batas: BATAS_PER_JALAN,
+  });
+  if (errKb) {
+    console.error("[purge] kasbon gagal:", errKb);
+  } else {
+    kasbonDibersihkan = typeof kb === "number" ? kb : 0;
+    if (kasbonDibersihkan > 0) {
+      console.log(`[purge] kasbon: ${kasbonDibersihkan} baris dibersihkan`);
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     retensiHari: RETENSI_HARI,
     dihapus,
     sisa: sisa ?? null,
+    kasbonDibersihkan,
     langgananDisapu,
   });
 }

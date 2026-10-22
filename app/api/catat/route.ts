@@ -16,6 +16,12 @@ import {
   TX_COLUMNS,
   type TxRow,
 } from "@/lib/catat/server";
+import {
+  KASBON_COLUMNS,
+  kasbonDibuatHariIni,
+  kasbonKeEntri,
+  type KasbonRow,
+} from "@/lib/kasbon/server";
 
 export const runtime = "nodejs";
 
@@ -28,7 +34,12 @@ export const runtime = "nodejs";
  * GRATIS SELAMANYA (§7.2 prinsip #5): route ini TIDAK menyentuh langganan
  * maupun kuota premium sama sekali, dan tidak boleh. Mencatat adalah pengait
  * harian produk ini — memungutnya berarti memungut hal yang membuat seluruh
- * sisanya bernilai.
+ * sisanya bernilai. Kasbon lewat pintu yang sama, jadi ikut gratis.
+ *
+ * Kasbon (Batch 2): entri `status_bayar = "belum"` disimpan di tabel `kasbon`,
+ * BUKAN `transactions` — uangnya belum berpindah, jadi ia tidak boleh masuk
+ * rollup, laporan, maupun segel (migrasi 0031). `pihak` hanya disimpan di
+ * sana; transaksi biasa tidak menyimpan nama orang ketiga.
  */
 export async function POST(req: Request) {
   const uid = currentUserId();
@@ -90,8 +101,13 @@ export async function POST(req: Request) {
       );
     }
 
-    // Batas anti-abuse §7.2: 200 entri/user/hari.
-    const sudah = await entriDibuatHariIni(supa, uid);
+    // Batas anti-abuse §7.2: 200 entri/user/hari — transaksi DAN kasbon,
+    // karena keduanya entri yang lahir dari Catat.
+    const [sudahTx, sudahKasbon] = await Promise.all([
+      entriDibuatHariIni(supa, uid),
+      kasbonDibuatHariIni(supa, uid),
+    ]);
+    const sudah = sudahTx + sudahKasbon;
     if (sudah >= CATAT_DAILY_LIMIT) {
       return NextResponse.json(
         {
@@ -145,36 +161,106 @@ export async function POST(req: Request) {
 
     const maps = await getKategoriMaps(supa);
     const fallbackKategoriId = maps.bySlug.get("lainnya") ?? null;
-    const rows = entries.map((e) => ({
+    const kategoriId = (slug: string) =>
+      maps.bySlug.get(slug) ?? fallbackKategoriId;
+    // Parser memberi tanggal saja; jam dipatok 12:00 WIB supaya tanggal WIB
+    // baris ini stabil dilihat dari timezone mana pun.
+    const jamWib = (tgl: string) => `${tgl}T12:00:00+07:00`;
+
+    const kas = entries.filter((e) => e.statusBayar === "lunas");
+    const kasbon = entries.filter((e) => e.statusBayar === "belum");
+
+    const rowsTx = kas.map((e) => ({
       user_id: uid,
       jenis: e.jenis,
       amount: e.amount,
-      kategori_id: maps.bySlug.get(e.kategori) ?? fallbackKategoriId,
+      kategori_id: kategoriId(e.kategori),
       sub_kategori: e.subKategori,
       payment_method: e.paymentMethod,
       catatan: e.catatan || null,
-      // Parser memberi tanggal saja; jam dipatok 12:00 WIB supaya tanggal
-      // WIB baris ini stabil dilihat dari timezone mana pun.
-      occurred_at: `${e.occurredAt}T12:00:00+07:00`,
+      occurred_at: jamWib(e.occurredAt),
       source,
       parsed_by: hasil.parsedBy,
       raw_input: text,
       status: e.status,
+      items: e.items,
+    }));
+    const rowsKasbon = kasbon.map((e) => ({
+      user_id: uid,
+      tipe: e.jenis === "masuk" ? "piutang" : "utang",
+      pihak: e.pihak,
+      amount: e.amount,
+      kategori_id: kategoriId(e.kategori),
+      items: e.items,
+      catatan: e.catatan || null,
+      raw_input: text,
+      occurred_at: jamWib(e.occurredAt),
+      source,
+      parsed_by: hasil.parsedBy,
+      // Tanpa nominal → draft, persis seperti transaksi: satu pertanyaan
+      // nominal, dilengkapi lewat /api/catat/konfirmasi.
+      status: e.amount === null ? "draft" : "aktif",
     }));
 
-    const { data: inserted, error } = await supa
-      .from("transactions")
-      .insert(rows)
-      .select(TX_COLUMNS);
-    if (error || !inserted) {
-      return NextResponse.json(
-        { error: "Gagal menyimpan catatan." },
-        { status: 500 },
-      );
+    let insertedTx: TxRow[] = [];
+    if (rowsTx.length > 0) {
+      const { data, error } = await supa
+        .from("transactions")
+        .insert(rowsTx)
+        .select(TX_COLUMNS);
+      if (error || !data) {
+        return NextResponse.json(
+          { error: "Gagal menyimpan catatan." },
+          { status: 500 },
+        );
+      }
+      insertedTx = data as TxRow[];
     }
 
+    let insertedKasbon: KasbonRow[] = [];
+    if (rowsKasbon.length > 0) {
+      const { data, error } = await supa
+        .from("kasbon")
+        .insert(rowsKasbon)
+        .select(KASBON_COLUMNS);
+      if (error || !data) {
+        // Satu kalimat = satu catatan utuh. Transaksi dari kalimat yang sama
+        // ditarik kembali supaya pengguna yang mengirim ulang tidak
+        // mendapatkan penjualan tunainya tercatat dua kali. Ini baris yang
+        // baru dibuat permintaan ini sendiri (id-nya dari insert di atas),
+        // dan trigger rollup mengurangkannya kembali.
+        if (insertedTx.length > 0) {
+          await supa
+            .from("transactions")
+            .delete()
+            .eq("user_id", uid)
+            .in(
+              "id",
+              insertedTx.map((r) => r.id),
+            );
+        }
+        return NextResponse.json(
+          { error: "Gagal menyimpan catatan." },
+          { status: 500 },
+        );
+      }
+      insertedKasbon = data as KasbonRow[];
+    }
+
+    // Kembalikan dalam urutan kalimatnya, bukan dikelompokkan per tabel —
+    // "jual 45rb, Bu Ani ngebon 20rb" tampil sebagai dua kartu berurutan.
+    // Di dalam satu tabel urutannya mengikuti RETURNING; kalaupun suatu saat
+    // berbeda, yang bergeser hanya urutan tampil, bukan isi catatan.
+    let iTx = 0;
+    let iKb = 0;
+    const keluaran = entries.map((e) =>
+      e.statusBayar === "belum"
+        ? kasbonKeEntri(insertedKasbon[iKb++], maps.byId)
+        : rowToTx(insertedTx[iTx++], maps.byId),
+    );
+
     return NextResponse.json({
-      entries: (inserted as TxRow[]).map((r) => rowToTx(r, maps.byId)),
+      entries: keluaran,
       pertanyaan: hasil.pertanyaan,
       tidak_dikenali: null,
       parsed_by: hasil.parsedBy,

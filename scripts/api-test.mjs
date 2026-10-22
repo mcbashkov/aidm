@@ -772,6 +772,132 @@ async function main() {
     }
   }
 
+  console.log("\n── 16. Kasbon (Batch 2, migrasi 0031/0032) ──");
+  {
+    const r = await api("/api/kasbon");
+    cek("GET /api/kasbon tanpa sesi → 401", r.status === 401, `dapat ${r.status}`);
+  }
+  {
+    const rollupSebelum = sql(
+      `select coalesce(sum(total_masuk),0) from daily_rollups where user_id='${uidA}'`);
+    const r = await api("/api/catat", {
+      method: "POST", cookie: A, body: { text: "Bu Ani ngebon 3 nasi goreng 45rb" },
+    });
+    const e = r.body?.entries?.[0];
+    cek("kalimat kasbon → 200, 1 entri", r.status === 200 && r.body?.entries?.length === 1,
+      `dapat ${r.status} / ${r.body?.entries?.length}`);
+    cek("entri ditandai kasbon piutang", e?.kasbon?.tipe === "piutang", JSON.stringify(e?.kasbon));
+    // Nama dari LLM bisa "Bu Ani" atau "Ani" — yang dijaga: namanya tertangkap.
+    cek("pihak tertangkap", /ani/i.test(e?.kasbon?.pihak ?? ""), `dapat ${e?.kasbon?.pihak}`);
+    cek("nominal 45000 (bukan 3)", e?.amount === 45000, `dapat ${e?.amount}`);
+    cek("tersimpan di tabel kasbon, status aktif",
+      sql(`select status from kasbon where id='${e?.id}' and user_id='${uidA}'`) === "aktif");
+    cek("TIDAK ada baris transactions dari kalimat kasbon",
+      sql(`select count(*) from transactions where user_id='${uidA}'
+           and raw_input='Bu Ani ngebon 3 nasi goreng 45rb'`) === "0");
+    cek("rollup tidak berubah oleh kasbon aktif",
+      sql(`select coalesce(sum(total_masuk),0) from daily_rollups where user_id='${uidA}'`)
+        === rollupSebelum);
+
+    const daftar = await api("/api/kasbon", { cookie: A });
+    cek("GET /api/kasbon memuat kasbon aktif",
+      daftar.body?.piutang?.some((k) => k.id === e?.id), JSON.stringify(daftar.body?.piutang));
+    cek("total piutang dihitung server",
+      daftar.body?.totalPiutang ===
+        daftar.body?.piutang?.reduce((n, k) => n + k.amount, 0));
+    const hidrasi = await api("/api/transaksi?untuk=catat", { cookie: A });
+    cek("hidrasi Catat memuat kartu kasbon hari ini",
+      hidrasi.body?.items?.some((it) => it.id === e?.id && it.kasbon?.tipe === "piutang"));
+
+    const asing = await api(`/api/kasbon/${e?.id}`, {
+      method: "PATCH", cookie: B, body: { aksi: "lunas", catat: true },
+    });
+    cek("user lain melunasi → 404 (bukan 403: keberadaannya pun tidak dibocorkan)",
+      asing.status === 404, `dapat ${asing.status}`);
+    const tanpaPilihan = await api(`/api/kasbon/${e?.id}`, {
+      method: "PATCH", cookie: A, body: { aksi: "lunas" },
+    });
+    cek("tanpa pilihan catat → 400 (tidak ditebak)", tanpaPilihan.status === 400,
+      `dapat ${tanpaPilihan.status}`);
+
+    const misiSebelum = sql(
+      `select coalesce(sum(jml),0) from misi_sinyal_harian('${uidA}')`);
+    const lunas = await api(`/api/kasbon/${e?.id}`, {
+      method: "PATCH", cookie: A, body: { aksi: "lunas", catat: true, metode: "qris" },
+    });
+    const txId = lunas.body?.transaction_id;
+    cek("tandai lunas + catat → 200 dengan transaction_id",
+      lunas.status === 200 && typeof txId === "string", JSON.stringify(lunas.body));
+    cek("transaksi pelunasan: masuk 45000 qris confirmed",
+      sql(`select jenis||' '||amount||' '||payment_method||' '||status
+           from transactions where id='${txId}' and user_id='${uidA}'`)
+        === "masuk 45000 qris confirmed");
+    cek("kasbon tertutup & menunjuk transaksinya",
+      sql(`select status||' '||(transaction_id='${txId}') from kasbon where id='${e?.id}'`)
+        === "lunas true");
+    cek("rollup naik tepat 45000 di hari pelunasan",
+      Number(sql(`select coalesce(sum(total_masuk),0) from daily_rollups where user_id='${uidA}'`))
+        - Number(rollupSebelum) === 45000);
+    cek("misi TIDAK menghitung transaksi pelunasan (0032)",
+      sql(`select coalesce(sum(jml),0) from misi_sinyal_harian('${uidA}')`) === misiSebelum,
+      `${misiSebelum} → ${sql(`select coalesce(sum(jml),0) from misi_sinyal_harian('${uidA}')`)}`);
+    const lagi = await api(`/api/kasbon/${e?.id}`, {
+      method: "PATCH", cookie: A, body: { aksi: "lunas", catat: true },
+    });
+    cek("melunasi dua kali → 409", lagi.status === 409, `dapat ${lagi.status}`);
+  }
+  {
+    // "Sudah kucatat": kasbon ditutup TANPA transaksi baru.
+    const r = await api("/api/catat", {
+      method: "POST", cookie: A, body: { text: "ambil barang dari Pak Haji 500rb belum dibayar" },
+    });
+    const e = r.body?.entries?.[0];
+    cek("utang ke pemasok → kasbon utang", e?.kasbon?.tipe === "utang", JSON.stringify(e?.kasbon));
+    const nTx = sql(`select count(*) from transactions where user_id='${uidA}'`);
+    const tutup = await api(`/api/kasbon/${e?.id}`, {
+      method: "PATCH", cookie: A, body: { aksi: "lunas", catat: false },
+    });
+    cek("sudah kucatat → 200, transaction_id null",
+      tutup.status === 200 && tutup.body?.transaction_id === null, JSON.stringify(tutup.body));
+    cek("sudah kucatat tidak membuat transaksi",
+      sql(`select count(*) from transactions where user_id='${uidA}'`) === nTx);
+  }
+  {
+    // Draft kasbon: tanpa nominal → satu pertanyaan, dilengkapi lewat konfirmasi.
+    const r = await api("/api/catat", {
+      method: "POST", cookie: A, body: { text: "Bu Ani ngebon nasi goreng" },
+    });
+    const e = r.body?.entries?.[0];
+    cek("kasbon tanpa nominal → draft + pertanyaan",
+      e?.status === "draft" && e?.kasbon && r.body?.pertanyaan, JSON.stringify(r.body));
+    const k = await api("/api/catat/konfirmasi", {
+      method: "POST", cookie: A, body: { draft_id: e?.id, jawaban: "15rb" },
+    });
+    cek("konfirmasi draft kasbon → aktif 15000",
+      k.body?.ok === true && k.body?.entry?.amount === 15000 && k.body?.entry?.kasbon,
+      JSON.stringify(k.body));
+    cek("draft kasbon di DB menjadi aktif",
+      sql(`select status||' '||amount from kasbon where id='${e?.id}'`) === "aktif 15000");
+
+    const hapus = await api(`/api/kasbon/${e?.id}`, { method: "DELETE", cookie: A });
+    cek("hapus kasbon salah tangkap → 200", hapus.status === 200, `dapat ${hapus.status}`);
+    cek("soft delete: status dihapus + deleted_at",
+      sql(`select status||' '||(deleted_at is not null) from kasbon where id='${e?.id}'`)
+        === "dihapus true");
+    const hapusLagi = await api(`/api/kasbon/${e?.id}`, { method: "DELETE", cookie: A });
+    cek("hapus dua kali → 404", hapusLagi.status === 404, `dapat ${hapusLagi.status}`);
+    const idAneh = await api("/api/kasbon/bukan-uuid", { method: "DELETE", cookie: A });
+    cek("id bukan UUID → 404, bukan 500", idAneh.status === 404, `dapat ${idAneh.status}`);
+  }
+  {
+    // Penjualan tunai biasa tidak boleh pernah menjadi kasbon (pagar LLM).
+    const r = await api("/api/catat", {
+      method: "POST", cookie: A, body: { text: "jual es teh 5rb" },
+    });
+    cek("penjualan tunai tetap transaksi biasa",
+      r.body?.entries?.[0] && !r.body.entries[0].kasbon, JSON.stringify(r.body?.entries));
+  }
+
   console.log("\n── 12. DELETE /api/akun (§12 hak penghapusan) ──");
   {
     const uidC = sql(
@@ -780,6 +906,8 @@ async function main() {
     const C = sessionCookie(uidC, `${PREFIX}C`);
     sql(`insert into transactions (user_id, jenis, amount, payment_method, occurred_at, source, parsed_by, status)
       values ('${uidC}','masuk',90000,'tunai','${wibHariIni}T09:00:00+07:00','manual','manual','confirmed')`);
+    sql(`insert into kasbon (user_id, tipe, pihak, amount)
+      values ('${uidC}','piutang','Bu Uji',20000)`);
     const punyaRollup = sql(
       `select count(*) from daily_rollups where user_id='${uidC}'`);
     cek("user C punya rollup sebelum dihapus", punyaRollup === "1", `dapat ${punyaRollup}`);
@@ -804,6 +932,10 @@ async function main() {
       sql(`select count(*) from transactions where user_id='${uidC}'`) === "0");
     cek("rollup ikut terhapus (cascade)",
       sql(`select count(*) from daily_rollups where user_id='${uidC}'`) === "0");
+    // Kasbon menyimpan nama orang ketiga — hak hapus pemilik akun harus
+    // membawanya pergi juga (0031: on delete cascade).
+    cek("kasbon ikut terhapus (cascade)",
+      sql(`select count(*) from kasbon where user_id='${uidC}'`) === "0");
   }
   {
     const r = await api("/api/akun", { method: "DELETE", body: { konfirmasi: "HAPUS" } });

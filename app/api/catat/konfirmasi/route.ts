@@ -8,6 +8,12 @@ import {
   TX_COLUMNS,
   type TxRow,
 } from "@/lib/catat/server";
+import {
+  idSah,
+  KASBON_COLUMNS,
+  kasbonKeEntri,
+  type KasbonRow,
+} from "@/lib/kasbon/server";
 
 export const runtime = "nodejs";
 
@@ -18,6 +24,10 @@ const AMOUNT_MAX = 10_000_000_000;
  * POST /api/catat/konfirmasi (§11): {draft_id, jawaban} → lengkapi draft
  * jadi confirmed (§7.2 alur #6). Rollup harian terisi otomatis oleh trigger
  * saat status berpindah draft → confirmed.
+ *
+ * Draft kasbon ("Bu Ani ngebon nasi goreng" tanpa angka) dilengkapi lewat
+ * pintu yang sama — klien tidak perlu tahu di tabel mana draft-nya tinggal.
+ * Kasbon yang lengkap menjadi `aktif`, dan tetap tidak menyentuh rollup.
  */
 export async function POST(req: Request) {
   const uid = currentUserId();
@@ -51,6 +61,10 @@ export async function POST(req: Request) {
     );
   }
 
+  if (!idSah(draftId)) {
+    return NextResponse.json({ error: "Draft tidak ditemukan." }, { status: 404 });
+  }
+
   try {
     // Hanya draft MILIK user ini (otorisasi per-baris di lapisan API).
     const { data: draft } = await supa
@@ -60,7 +74,16 @@ export async function POST(req: Request) {
       .eq("user_id", uid)
       .eq("status", "draft")
       .maybeSingle();
-    if (!draft) {
+    const { data: draftKasbon } = draft
+      ? { data: null }
+      : await supa
+          .from("kasbon")
+          .select("id")
+          .eq("id", draftId)
+          .eq("user_id", uid)
+          .eq("status", "draft")
+          .maybeSingle();
+    if (!draft && !draftKasbon) {
       return NextResponse.json(
         { error: "Draft tidak ditemukan." },
         { status: 404 },
@@ -75,6 +98,28 @@ export async function POST(req: Request) {
       return NextResponse.json({
         ok: false,
         pertanyaan: { jenis: "nominal_tidak_terbaca" },
+      });
+    }
+
+    if (draftKasbon) {
+      const { data: kb, error: errKb } = await supa
+        .from("kasbon")
+        .update({ amount: nominal, status: "aktif" })
+        .eq("id", draftId)
+        .eq("user_id", uid)
+        .eq("status", "draft")
+        .select(KASBON_COLUMNS)
+        .maybeSingle();
+      if (errKb || !kb) {
+        return NextResponse.json(
+          { error: "Gagal melengkapi draft." },
+          { status: 500 },
+        );
+      }
+      const mapsKb = await getKategoriMaps(supa);
+      return NextResponse.json({
+        ok: true,
+        entry: kasbonKeEntri(kb as KasbonRow, mapsKb.byId),
       });
     }
 

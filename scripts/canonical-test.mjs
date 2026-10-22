@@ -131,6 +131,23 @@ console.log("\n── 3. Payload tertutup (audit §7.5) ──");
   cek("raw_input tidak pernah ikut", !kanonik.includes("raw_input"));
   cek("nama usaha tidak pernah ikut", !kanonik.includes("Warung"));
   cek("catatan bebas tidak pernah ikut", !kanonik.includes("rahasia"));
+  // Kasbon (Batch 2) tidak pernah boleh sampai ke segel on-chain: bukan
+  // namanya, bukan daftarnya, bukan totalnya, bukan barangnya.
+  const kasbonDisusupi = susunKanonik({
+    ...DASAR,
+    pihak: "Bu Ani",
+    status_bayar: "belum",
+    kasbon: [{ tipe: "piutang", pihak: "Bu Ani", amount: 45_000 }],
+    total_piutang: 45_000,
+    total_utang: 500_000,
+    items: [{ nama: "nasi goreng", jumlah: 3 }],
+  });
+  cek("nama pihak kasbon tidak pernah ikut", !kasbonDisusupi.includes("Ani"));
+  cek("daftar & total kasbon tidak pernah ikut",
+    !/kasbon|piutang|utang|status_bayar/.test(kasbonDisusupi));
+  cek("barang (items) tidak pernah ikut", !kasbonDisusupi.includes("nasi goreng"));
+  cek("kasbon disusupkan → kanonik identik dengan tanpa kasbon",
+    kasbonDisusupi === susunKanonik(DASAR));
   cek(
     "field kategori pun dipetik eksplisit",
     !susunKanonik({

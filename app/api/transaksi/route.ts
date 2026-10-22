@@ -13,6 +13,11 @@ import {
 // dan ringkasannya bercerita beda tentang periode yang sama.
 import { rentangIso } from "@/lib/laporan/periode";
 import { chipPersonal } from "@/lib/catat/chip";
+import {
+  KASBON_COLUMNS,
+  kasbonKeEntri,
+  type KasbonRow,
+} from "@/lib/kasbon/server";
 
 export const runtime = "nodejs";
 // Data milik satu pengguna: tidak boleh pernah dirender statis maupun
@@ -203,6 +208,12 @@ const CHIP_BARIS_MAKS = 40;
  *     `confirmed`: kalimat yang melahirkan draft belum tentu lengkap, dan
  *     kalimat yang entrinya dihapus bukan contoh yang ingin diulang.
  *
+ *  5. **Kasbon yang diucapkan hari ini ikut di thread** (migrasi 0031), digabung
+ *     dengan transaksi menurut `created_at`. Kasbon bukan transaksi, tetapi
+ *     kalimatnya bagian percakapan yang sama; tanpa ini, kartu "Bu Ani ngebon"
+ *     hilang dari thread setiap kali tab dibuka ulang. Kasbon yang dihapus
+ *     tidak ikut, sama seperti transaksi yang dihapus.
+ *
  * Urut NAIK (created_at) karena thread dibaca dari atas ke bawah.
  */
 async function daftarCatatHariIni(
@@ -216,10 +227,10 @@ async function daftarCatatHariIni(
       Date.parse(awalHariIni) - CHIP_HARI * 86_400_000,
     ).toISOString();
 
-    const [thread, kalimat] = await Promise.all([
+    const [thread, kalimat, kasbon] = await Promise.all([
       supa
         .from("transactions")
-        .select(`${TX_COLUMNS}, raw_input`)
+        .select(`${TX_COLUMNS}, raw_input, created_at`)
         .eq("user_id", uid)
         .in("status", ["confirmed", "draft"])
         .gte("created_at", awalHariIni)
@@ -234,6 +245,14 @@ async function daftarCatatHariIni(
         .gte("created_at", awalJendelaChip)
         .order("created_at", { ascending: true })
         .limit(CHIP_BARIS_MAKS),
+      supa
+        .from("kasbon")
+        .select(`${KASBON_COLUMNS}, raw_input, created_at`)
+        .eq("user_id", uid)
+        .in("status", ["draft", "aktif", "lunas"])
+        .gte("created_at", awalHariIni)
+        .order("created_at", { ascending: true })
+        .limit(CATAT_MAKS),
     ]);
     if (thread.error) {
       return jsonPribadi({ error: "Gagal membaca catatan." }, { status: 500 });
@@ -246,10 +265,23 @@ async function daftarCatatHariIni(
             (r) => r.raw_input,
           ),
         );
+    type Meta = { raw_input: string | null; created_at: string };
+    const baris = [
+      ...((thread.data ?? []) as (TxRow & Meta)[]).map((r) => ({
+        dibuat: r.created_at,
+        isi: { ...rowToTx(r, maps.byId), rawInput: r.raw_input },
+      })),
+      // Seperti chip: kegagalan membaca kasbon tidak menggagalkan thread —
+      // transaksi hari ini tetap tampil.
+      ...(kasbon.error ? [] : ((kasbon.data ?? []) as (KasbonRow & Meta)[])).map(
+        (r) => ({
+          dibuat: r.created_at,
+          isi: { ...kasbonKeEntri(r, maps.byId), rawInput: r.raw_input },
+        }),
+      ),
+    ].sort((a, b) => Date.parse(a.dibuat) - Date.parse(b.dibuat));
     return jsonPribadi({
-      items: (
-        (thread.data ?? []) as (TxRow & { raw_input: string | null })[]
-      ).map((r) => ({ ...rowToTx(r, maps.byId), rawInput: r.raw_input })),
+      items: baris.map((b) => b.isi),
       chips,
     });
   } catch {
