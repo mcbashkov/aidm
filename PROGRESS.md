@@ -1448,18 +1448,32 @@ basis kas — kasbon tidak masuk Sisa uang, PDF, maupun segel sampai lunas ·
       kalimat kasbon belum dicoba dengan kunci sungguhan — korpus hanya
       menguji fallback. Belum ada satu pun kalimat kasbon dari pengguna
       nyata (baris `kasbon` = 0 saat tayang).
-- ⬜ **Temuan saat verifikasi, di luar kasbon:** di produksi **139 dari 139
-      fungsi** skema `public` bisa dieksekusi `anon` — termasuk semua fungsi
-      lama. Sebabnya *default privileges* Supabase memberi EXECUTE ke
+- [x] **Temuan saat verifikasi, di luar kasbon → migrasi 0033 ditulis &
+      diuji, BELUM diterapkan (🧑 `pnpm db:migrate --dry-run` lalu
+      `pnpm db:migrate`).** Di produksi **139 dari 139 fungsi** skema
+      `public` bisa dieksekusi `anon` (118 milik ekstensi `vector`, 21 milik
+      proyek). Sebabnya *default privileges* Supabase memberi EXECUTE ke
       `anon`/`authenticated` saat fungsi dibuat, jadi pola `revoke … from
       public; grant … to service_role` di seluruh migrasi proyek (0013 dst.)
-      tidak pernah mencapai maksudnya. **Bukan lubang hari ini:** tidak ada
-      fungsi `SECURITY DEFINER`, dan setiap tabel ber-RLS tanpa policy (kecuali
-      `schema_migrations`), jadi panggilan `anon` ke RPC mana pun berakhir di
-      nol baris. Perbaikannya satu migrasi kecil: revoke dari
-      `anon`/`authenticated` untuk fungsi yang ada + `alter default
-      privileges` supaya fungsi berikutnya tidak mewarisinya. Belum
-      dikerjakan.
+      tidak pernah mencapai maksudnya. **Bukan lubang hari ini,** diperiksa:
+      tidak ada `SECURITY DEFINER`, setiap tabel ber-RLS tanpa policy (kecuali
+      `schema_migrations`), klien anon `lib/supabase/client.ts`/`server.ts`
+      tidak diimpor di mana pun, dan ke-17 pemanggil `.rpc(` memakai klien
+      service-role — panggilan `anon` berakhir di nol baris.
+      `0033_fungsi_hanya_service_role.sql`: cabut grant eksplisit dari 21
+      fungsi milik proyek (anggota ekstensi & fungsi internal Supabase tidak
+      disentuh), ubah *default privileges*, lalu **gagal keras** bila masih
+      ada yang bocor. Jebakan yang ketemu saat diuji, dan terdokumentasi di
+      PostgreSQL: entri *default privileges* **per-skema ditambahkan di atas**
+      default bawaan, jadi `revoke … from public` per-skema tidak mencabut
+      hak PUBLIC bawaan — dan produksi tidak punya entri global. Karena itu
+      0033 mencabut PUBLIC di tingkat **global** dan `anon`/`authenticated` di
+      skema `public`. Bukti di Postgres sekali pakai yang meniru produksi
+      persis (entri per-skema Supabase, grant eksplisit di tiap fungsi), 0033
+      dua kali berturut-turut: 0 fungsi proyek bisa `anon`/`authenticated`,
+      19/19 masih bisa `service_role`, 37/37 fungsi ekstensi tidak tersentuh,
+      fungsi BARU sesudahnya lahir `{postgres=X,service_role=X}`, dan blok
+      verifikasinya terbukti bisa gagal (kebocoran buatan → exit 3).
 - ⬜ Menghapus transaksi pelunasan di Riwayat TIDAK membuka kembali
       kasbonnya (kasbon tetap lunas, uangnya hilang dari laporan).
 - ⬜ Cicilan, jatuh tempo (kolom sudah ada), dan pengingat WA belum.
