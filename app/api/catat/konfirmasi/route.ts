@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { hapusCacheKesiapan } from "@/lib/kesiapan/server";
 import { bacaNominalJawaban } from "@/lib/parse/fallback";
 import {
   currentUserId,
@@ -34,6 +35,9 @@ export async function POST(req: Request) {
   if (!uid) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   }
+  // Rollup/kasbon pengguna ini akan berubah → hasil Kesiapan Catatan hari ini
+  // tidak lagi sah (lib/kesiapan/server.ts).
+  hapusCacheKesiapan(uid);
 
   let draftId = "";
   let jawaban = "";

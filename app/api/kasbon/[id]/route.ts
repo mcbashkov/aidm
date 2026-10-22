@@ -1,4 +1,5 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { hapusCacheKesiapan } from "@/lib/kesiapan/server";
 import { currentUserId } from "@/lib/catat/server";
 import { jsonPribadi } from "@/lib/api/respons";
 import { todayWib } from "@/lib/wib";
@@ -30,6 +31,9 @@ export async function PATCH(
   if (!uid) {
     return jsonPribadi({ error: "unauthenticated" }, { status: 401 });
   }
+  // Rollup/kasbon pengguna ini akan berubah → hasil Kesiapan Catatan hari ini
+  // tidak lagi sah (lib/kesiapan/server.ts).
+  hapusCacheKesiapan(uid);
   if (!idSah(params.id)) {
     return jsonPribadi({ error: "Kasbon tidak ditemukan." }, { status: 404 });
   }
@@ -110,6 +114,9 @@ export async function DELETE(
   if (!uid) {
     return jsonPribadi({ error: "unauthenticated" }, { status: 401 });
   }
+  // Rollup/kasbon pengguna ini akan berubah → hasil Kesiapan Catatan hari ini
+  // tidak lagi sah (lib/kesiapan/server.ts).
+  hapusCacheKesiapan(uid);
   if (!idSah(params.id)) {
     return jsonPribadi({ error: "Kasbon tidak ditemukan." }, { status: 404 });
   }
