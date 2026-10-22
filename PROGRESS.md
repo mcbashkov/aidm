@@ -1457,9 +1457,22 @@ basis kas — kasbon tidak masuk Sisa uang, PDF, maupun segel sampai lunas ·
       = 0 saat tayang; baris uji dibersihkan harness). Jalur Haiku teruji
       lewat `test:api`, tetapi hanya pada tujuh kalimat seksi 16 — korpus 29
       kasus tetap hanya menguji fallback.
-- [x] **Temuan saat verifikasi, di luar kasbon → migrasi 0033 ditulis &
-      diuji, BELUM diterapkan (🧑 `pnpm db:migrate --dry-run` lalu
-      `pnpm db:migrate`).** Di produksi **139 dari 139 fungsi** skema
+- [x] **Temuan saat verifikasi, di luar kasbon → migrasi 0033 DITERAPKAN &
+      DIVERIFIKASI DI PRODUKSI 2026-10-22** (atas perintah PO: dry-run
+      menunjukkan tepat satu migrasi menunggu, lalu `db:migrate`; 21 fungsi
+      dirapikan, blok verifikasi internal lulus). Sesudahnya di produksi:
+      0 fungsi proyek bisa `anon`/`authenticated`/PUBLIC, 21/21 masih bisa
+      `service_role`, 118/118 fungsi `vector` tidak tersentuh, default ACL
+      `GLOBAL={postgres=X}` + `public={postgres=X,service_role=X}` (entri
+      `storage` dibiarkan). Eksekusi NYATA, bukan hanya ACL: `set role
+      service_role` → `misi_sinyal_harian` dan `laporan_kategori` jalan;
+      `set role anon`/`authenticated` → `permission denied for function`
+      pada `misi_sinyal_harian`, `kasbon_lunasi`, `catat_kuota_inc`;
+      `vector_dims` tetap jalan untuk `anon`. Kunci server di `.env.local`
+      berklaim `role: service_role` (project ref sama). Aplikasi tayang tidak
+      terpengaruh: ia selalu memanggil RPC sebagai service_role — kalau
+      tidak, RLS tanpa policy sudah memutusnya jauh sebelum 0033.
+      Latar temuannya: di produksi **139 dari 139 fungsi** skema
       `public` bisa dieksekusi `anon` (118 milik ekstensi `vector`, 21 milik
       proyek). Sebabnya *default privileges* Supabase memberi EXECUTE ke
       `anon`/`authenticated` saat fungsi dibuat, jadi pola `revoke … from
