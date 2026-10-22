@@ -903,6 +903,60 @@ async function main() {
       r.body?.entries?.[0] && !r.body.entries[0].kasbon, JSON.stringify(r.body?.entries));
   }
 
+  console.log("\n── 17. Kesiapan Catatan (Batch 4, §1.4, migrasi 0034) ──");
+  {
+    const r = await api("/api/kesiapan");
+    cek("GET /api/kesiapan tanpa sesi → 401", r.status === 401, `dapat ${r.status}`);
+  }
+  // Satu pengguna per keadaan: hasilnya di-cache per hari di proses server,
+  // dan rollup di sini ditanam langsung lewat SQL (bukan lewat rute tulis yang
+  // mengosongkan cache), jadi pengguna yang sama tidak boleh dipakai ulang.
+  const seedRollups = (uid, bulanMundur, hari) => sql(`
+    insert into daily_rollups (user_id, tanggal, total_masuk, total_keluar, jml_transaksi, masuk_terverifikasi)
+    select '${uid}', (date_trunc('month', (now() at time zone 'Asia/Jakarta')::date) - interval '${bulanMundur} months')::date + d, 50000, 20000, 2, 0
+      from generate_series(0, ${hari - 1}) d
+    on conflict (user_id, tanggal) do nothing`);
+  {
+    const uidD1 = sql(`insert into users (privy_did) values ('${PREFIX}D1') returning id`);
+    const r = await api("/api/kesiapan", { cookie: sessionCookie(uidD1, `${PREFIX}D1`) });
+    cek("akun kosong → 200, tingkat baru, 0 dari 6", r.status === 200 && r.body?.tingkat === "baru" && r.body?.bulanAktif6 === 0, JSON.stringify(r.body));
+    cek("tanpa angka 0–100 di respons", r.body && !("skor" in r.body) && !("score" in r.body));
+    cek("profil kosong → item profil belum terpenuhi", r.body?.checklist?.find((c) => c.kunci === "profil")?.terpenuhi === false);
+    cek("berkas6/berkas12 belum boleh", r.body?.berkas6Boleh === false && r.body?.berkas12Boleh === false);
+    cek("tonggakBaru null", r.body?.tonggakBaru === null);
+  }
+  {
+    const uidD2 = sql(`insert into users (privy_did, earner_type) values ('${PREFIX}D2', 'ojol') returning id`);
+    for (const m of [0, 1, 2]) seedRollups(uidD2, m, 8);
+    const C = sessionCookie(uidD2, `${PREFIX}D2`);
+    const r = await api("/api/kesiapan", { cookie: C });
+    cek("seed 3 bulan × 8 hari → siap3, 3 dari 6, berkas6 boleh, berkas12 belum",
+      r.body?.tingkat === "siap3" && r.body?.bulanAktif6 === 3 && r.body?.berkas6Boleh === true && r.body?.berkas12Boleh === false, JSON.stringify(r.body));
+    cek("label per peran ojol → Riwayat Pendapatan", r.body?.labelBerkas === "Riwayat Pendapatan", r.body?.labelBerkas);
+    cek("tonggakBaru siap3 (toast belum pernah tampil)", r.body?.tonggakBaru === "siap3", r.body?.tonggakBaru);
+    const salah = await api("/api/kesiapan/tonggak", { method: "POST", cookie: C, body: { tingkat: "rutin" } });
+    cek("tandai tingkat asing → 400", salah.status === 400, `dapat ${salah.status}`);
+    const tandai = await api("/api/kesiapan/tonggak", { method: "POST", cookie: C, body: { tingkat: "siap3" } });
+    cek("tandai siap3 → 200", tandai.status === 200 && tandai.body?.ok === true, JSON.stringify(tandai.body));
+    const lagi = await api("/api/kesiapan", { cookie: C });
+    cek("setelah ditandai: tonggakBaru null (cache dikosongkan oleh POST)", lagi.body?.tonggakBaru === null, lagi.body?.tonggakBaru);
+    const dua = await api("/api/kesiapan/tonggak", { method: "POST", cookie: C, body: { tingkat: "siap3" } });
+    cek("tandai dua kali → tetap 200 (idempoten)", dua.status === 200);
+    cek("satu baris kesiapan_tonggak", sql(`select count(*) from kesiapan_tonggak where user_id='${uidD2}'`) === "1");
+  }
+  {
+    const uidD3 = sql(`insert into users (privy_did, nama_usaha, kota, kategori_id) values ('${PREFIX}D3', 'Warung Uji', 'Bekasi', (select id from categories where slug='kuliner')) returning id`);
+    for (const m of [1, 2, 3, 4, 5, 6]) seedRollups(uidD3, m, 8);
+    const r = await api("/api/kesiapan", { cookie: sessionCookie(uidD3, `${PREFIX}D3`) });
+    cek("seed 6 bulan penuh sebelum bulan ini → siap6, berkas12 boleh, bulan ini 0 hari",
+      r.body?.tingkat === "siap6" && r.body?.berkas12Boleh === true && r.body?.hariAktifBulanIni === 0, JSON.stringify(r.body));
+    cek("profil lengkap → item profil terpenuhi", r.body?.checklist?.find((c) => c.kunci === "profil")?.terpenuhi === true);
+    cek("tonggakBaru siap6 (yang tertinggi saja)", r.body?.tonggakBaru === "siap6", r.body?.tonggakBaru);
+    const C = sessionCookie(uidD3, `${PREFIX}D3`);
+    await api("/api/kesiapan/tonggak", { method: "POST", cookie: C, body: { tingkat: "siap6" } });
+    cek("tandai siap6 juga menandai siap3", sql(`select count(*) from kesiapan_tonggak where user_id='${uidD3}'`) === "2");
+  }
+
   console.log("\n── 12. DELETE /api/akun (§12 hak penghapusan) ──");
   {
     const uidC = sql(
@@ -913,6 +967,7 @@ async function main() {
       values ('${uidC}','masuk',90000,'tunai','${wibHariIni}T09:00:00+07:00','manual','manual','confirmed')`);
     sql(`insert into kasbon (user_id, tipe, pihak, amount)
       values ('${uidC}','piutang','Bu Uji',20000)`);
+    sql(`insert into kesiapan_tonggak (user_id, tingkat) values ('${uidC}','siap3')`);
     const punyaRollup = sql(
       `select count(*) from daily_rollups where user_id='${uidC}'`);
     cek("user C punya rollup sebelum dihapus", punyaRollup === "1", `dapat ${punyaRollup}`);
@@ -941,6 +996,8 @@ async function main() {
     // membawanya pergi juga (0031: on delete cascade).
     cek("kasbon ikut terhapus (cascade)",
       sql(`select count(*) from kasbon where user_id='${uidC}'`) === "0");
+    cek("kesiapan_tonggak ikut terhapus (cascade 0034)",
+      sql(`select count(*) from kesiapan_tonggak where user_id='${uidC}'`) === "0");
   }
   {
     const r = await api("/api/akun", { method: "DELETE", body: { konfirmasi: "HAPUS" } });
