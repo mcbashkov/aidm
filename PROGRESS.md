@@ -1990,7 +1990,7 @@ Berkas → halaman ringkasan memuat tabel per platform.
 
 ### 7t. Batch 11 — Freelance/jasa: Klien, Invoice, bukti potong ✅ **TAYANG 2026-10-23**
 
-Perintah: `PERINTAH-AGEN-PREMIUM` §Batch 11. Commit `d7a1f3e`..`71891fc`
+Perintah: `PERINTAH-AGEN-PREMIUM` §Batch 11. Commit `80b62ae`..`71891fc`
 (lib/invoice + 0040 + parser uang_muka; UI + harness seksi 24) · deploy
 `dpl_8L8SfSjrjQxhcBWa1S2kRhoKfEcS` READY.
 
