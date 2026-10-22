@@ -1424,6 +1424,82 @@ async function main() {
     cek("sub_kategori tersimpan sebagai platform sah di DB", ["gojek", null].includes(sql(`select sub_kategori from transactions where user_id='${uidL}' order by created_at desc limit 1`) || null));
   }
 
+  console.log("\n── 24. Freelance: invoice, kuitansi, bukti potong (Batch 11, migrasi 0040) ──");
+  {
+    const tahun = Number(new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 4));
+    cek("GET /api/invoice tanpa sesi → 401", (await api("/api/invoice")).status === 401);
+    const uidN = sql(`insert into users (privy_did, earner_type, nama_usaha, kota) values ('${PREFIX}N', 'freelance', 'Studio Uji', 'Bogor') returning id`);
+    const N = sessionCookie(uidN, `${PREFIX}N`);
+    const buat = await api("/api/invoice", { method: "POST", cookie: N, body: { klien: "PT Klien Uji", uraian: "Desain logo & kartu nama", nominal: 2500000, jatuhTempo: `${tahun + 1}-01-31` } });
+    const inv = buat.body?.invoice;
+    cek("POST /api/invoice → terbit, nomor INV-YYYYMM-XXXnnnn", buat.status === 200 && inv?.status === "terbit" && /^INV-\d{6}-[A-Z0-9]{3}\d{4}$/.test(inv?.nomor ?? ""), `${buat.status} ${JSON.stringify(inv)}`);
+    cek("piutang lahir di tabel kasbon (pihak = klien, invoice_id terisi, aktif)",
+      sql(`select tipe||'|'||pihak||'|'||amount||'|'||status from kasbon where invoice_id='${inv?.id}' and user_id='${uidN}'`) === "piutang|PT Klien Uji|2500000|aktif");
+    const kb = await api("/api/kasbon", { cookie: N });
+    cek("GET /api/kasbon menampilkan piutang invoice 2.500.000", kb.body?.totalPiutang === 2500000 && kb.body?.piutang?.[0]?.pihak === "PT Klien Uji", JSON.stringify(kb.body).slice(0, 160));
+    cek("POST invoice nominal 0 → 400", (await api("/api/invoice", { method: "POST", cookie: N, body: { klien: "X", uraian: "y", nominal: 0 } })).status === 400);
+    const pdfInv = await fetchAsli(`${BASE}/api/invoice/${inv?.id}/pdf?jenis=invoice`, { headers: { cookie: N } });
+    const bufInv = Buffer.from(await pdfInv.arrayBuffer());
+    cek("PDF invoice → 200 application/pdf", pdfInv.status === 200 && (pdfInv.headers.get("content-type") ?? "").startsWith("application/pdf") && bufInv.subarray(0, 4).toString() === "%PDF", `${pdfInv.status}`);
+    const teksInv = pdfText(bufInv);
+    if (teksInv !== null) {
+      cek("isi invoice: INVOICE, nomor, klien, Rp2.500.000, terbilang, Studio Uji",
+        /INVOICE/.test(teksInv) && teksInv.includes(inv.nomor) && /PT Klien Uji/.test(teksInv) && /Rp2\.500\.000/.test(teksInv) && /Dua juta lima ratus ribu rupiah/.test(teksInv) && /Studio Uji/.test(teksInv), JSON.stringify(teksInv.slice(0, 200)));
+      cek("invoice: nol kata token/wallet/opBNB/kripto/laba", (teksInv.replace(/https?:\/\/\S+/g, " ").match(/\b(token|wallet|opbnb|kripto|laba)\b/gi) ?? []).length === 0);
+    }
+    const kwDini = await api(`/api/invoice/${inv?.id}/pdf?jenis=kuitansi`, { cookie: N });
+    cek("kuitansi sebelum lunas → 409 BELUM_LUNAS", kwDini.status === 409 && kwDini.body?.kode === "BELUM_LUNAS", `${kwDini.status}`);
+    const lunas = await api(`/api/invoice/${inv?.id}`, { method: "PATCH", cookie: N, body: { aksi: "lunas", catat: true, metode: "transfer" } });
+    cek("PATCH lunas → status lunas", lunas.status === 200 && lunas.body?.invoice?.status === "lunas", `${lunas.status} ${JSON.stringify(lunas.body)}`);
+    cek("transaksi pemasukan jasa 2.500.000 transfer lahir dari pelunasan kasbon",
+      sql(`select jenis||'|'||amount||'|'||payment_method||'|'||(select slug from categories c where c.id=t.kategori_id)||'|'||status from transactions t where user_id='${uidN}' and amount=2500000`) === "masuk|2500000|transfer|jasa|confirmed");
+    cek("kasbon piutang-nya lunas", sql(`select status from kasbon where invoice_id='${inv?.id}'`) === "lunas");
+    cek("invoice.transaction_id menunjuk transaksi itu", sql(`select count(*) from invoices i join transactions t on t.id=i.transaction_id where i.id='${inv?.id}'`) === "1");
+    cek("PATCH lunas kedua → 409", (await api(`/api/invoice/${inv?.id}`, { method: "PATCH", cookie: N, body: { aksi: "lunas", catat: true } })).status === 409);
+    const pdfKw = await fetchAsli(`${BASE}/api/invoice/${inv?.id}/pdf?jenis=kuitansi`, { headers: { cookie: N } });
+    const bufKw = Buffer.from(await pdfKw.arrayBuffer());
+    cek("PDF kuitansi → 200", pdfKw.status === 200 && bufKw.subarray(0, 4).toString() === "%PDF");
+    const teksKw = pdfText(bufKw);
+    if (teksKw !== null) {
+      cek("isi kuitansi: KUITANSI, KW-, Telah terima dari, klien, terbilang, tanpa e-Meterai",
+        /KUITANSI/.test(teksKw) && /KW-\d{6}-/.test(teksKw) && /Telah terima dari/.test(teksKw) && /PT Klien Uji/.test(teksKw) && /Dua juta lima ratus ribu rupiah/.test(teksKw) && /tidak menyediakan e-Meterai/.test(teksKw), JSON.stringify(teksKw.slice(0, 200)));
+    }
+    const inv2 = (await api("/api/invoice", { method: "POST", cookie: N, body: { klien: "Bu Rina", uraian: "Les privat", nominal: 300000 } })).body?.invoice;
+    const batal = await api(`/api/invoice/${inv2?.id}`, { method: "PATCH", cookie: N, body: { aksi: "batal" } });
+    cek("batal → status batal, kasbon piutang-nya dihapus (soft)", batal.body?.invoice?.status === "batal" && sql(`select status from kasbon where invoice_id='${inv2?.id}'`) === "dihapus", JSON.stringify(batal.body));
+    const daftar = await api("/api/invoice", { cookie: N });
+    cek("GET /api/invoice: 2 baris, nomor berurutan per pengguna", daftar.body?.items?.length === 2 && daftar.body.items.map((i) => i.nomor.slice(-4)).sort().join(",") === "0001,0002", JSON.stringify(daftar.body?.items?.map((i) => i.nomor)));
+    cek("invoice milik orang lain → 404", (await api(`/api/invoice/${inv?.id}/pdf?jenis=invoice`, { cookie: sessionCookie(uidN.replace(/^./, (c) => (c === "0" ? "1" : "0")), `${PREFIX}asing`) })).status === 404);
+
+    // Bukti potong (premium pajak/Plus)
+    const bp0 = await api(`/api/pajak/bukti-potong?tahun=${tahun}`, { cookie: N });
+    cek("bukti potong tanpa paket → 402 PERLU_PAKET_PAJAK", bp0.status === 402 && bp0.body?.kode === "PERLU_PAKET_PAJAK", `${bp0.status}`);
+    sql(`select langganan_perpanjang('${uidN}', 30, 'manual')`);
+    const bp1 = await api("/api/pajak/bukti-potong", { method: "POST", cookie: N, body: { klien: "PT Klien Uji", tanggal: `${tahun}-03-10`, bruto: 2500000, status: "terpotong", nominalPotongan: 50000, nomorBukti: "BP-001/2026", invoiceId: inv?.id } });
+    cek("POST bukti potong terpotong 50.000 → item", bp1.status === 200 && bp1.body?.item?.nominal_potongan === 50000 && bp1.body?.item?.nomor_bukti === "BP-001/2026" && bp1.body?.item?.tahun_pajak === tahun, `${bp1.status} ${JSON.stringify(bp1.body)}`);
+    cek("terpotong tanpa nominal → 400", (await api("/api/pajak/bukti-potong", { method: "POST", cookie: N, body: { klien: "X", tanggal: `${tahun}-03-11`, bruto: 100000, status: "terpotong", nominalPotongan: 0 } })).status === 400);
+    const bp2 = await api("/api/pajak/bukti-potong", { method: "POST", cookie: N, body: { klien: "Bu Rina", tanggal: `${tahun}-04-02`, bruto: 300000, status: "nihil", nominalPotongan: 5 } });
+    cek("nihil → potongan dipaksa 0 (konsisten CHECK 0040)", bp2.status === 200 && bp2.body?.item?.nominal_potongan === 0, `${bp2.status} ${JSON.stringify(bp2.body)}`);
+    const bpList = await api(`/api/pajak/bukti-potong?tahun=${tahun}`, { cookie: N });
+    cek("daftar 2 item; rekap: bruto 2.800.000, potongan 50.000, 2 klien", bpList.body?.items?.length === 2 && bpList.body?.rekap?.totalBruto === 2800000 && bpList.body?.rekap?.totalPotongan === 50000 && bpList.body?.rekap?.perKlien?.length === 2, JSON.stringify(bpList.body?.rekap));
+    cek("tanpa kolom NPWP/NIK di bukti_potong", sql(`select count(*) from information_schema.columns where table_name='bukti_potong' and (column_name ilike '%npwp%' or column_name ilike '%nik%')`) === "0");
+    const rinci = await api("/api/pajak/rincian", { method: "POST", cookie: N, body: { tahun } });
+    if (rinci.body?.unduhUrl) {
+      const buf = Buffer.from(await (await fetchAsli(rinci.body.unduhUrl)).arrayBuffer());
+      const teks = pdfText(buf);
+      if (teks !== null) cek("PDF Rincian memuat rekap bukti potong per klien (PT Klien Uji, Rp50.000)", /Bukti potong PPh per klien/.test(teks) && /PT Klien Uji/.test(teks) && /Rp50\.000(?![.\d])/.test(teks), JSON.stringify(teks.match(/Bukti potong.{0,200}/)?.[0]));
+    } else cek("rincian dengan bukti potong dibuat", false, JSON.stringify(rinci.body));
+    const hapus = await api(`/api/pajak/bukti-potong?id=${bp2.body?.item?.id}`, { method: "DELETE", cookie: N });
+    cek("DELETE bukti potong → 200, sisa 1", hapus.status === 200 && (await api(`/api/pajak/bukti-potong?tahun=${tahun}`, { cookie: N })).body?.items?.length === 1);
+    cek("DELETE id asing → 404", (await api(`/api/pajak/bukti-potong?id=00000000-0000-4000-8000-000000000000`, { method: "DELETE", cookie: N })).status === 404);
+
+    // Parser: DP/uang muka pada pemasukan jasa.
+    const c = await api("/api/catat", { method: "POST", cookie: N, body: { text: "dp desain logo 500rb dari PT Maju" } });
+    const sub = c.body?.entries?.[0]?.subKategori ?? c.body?.entries?.[0]?.sub_kategori ?? null;
+    cek("catat 'dp desain logo 500rb' → kategori jasa, sub_kategori uang_muka (atau null bila model tidak mengisi)",
+      c.status === 200 && c.body?.entries?.[0]?.kategori === "jasa" && c.body?.entries?.[0]?.amount === 500000 && (sub === "uang_muka" || sub === null), `${c.status} ${JSON.stringify(c.body?.entries?.[0]).slice(0, 160)}`);
+  }
+
   console.log("\n── 12. DELETE /api/akun (§12 hak penghapusan) ──");
   {
     const uidC = sql(

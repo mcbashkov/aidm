@@ -8,6 +8,7 @@ import { BATAS_BEBAS_IDR, KALIMAT_BUKAN_NASIHAT, formatRp } from "@/lib/pajak/hi
 import { formatHargaIdr } from "@/lib/langganan/katalog";
 import { labelBulan } from "@/lib/berkas/label";
 import { cn } from "@/lib/utils";
+import { BuktiPotong } from "@/components/laporan/bukti-potong";
 
 /**
  * Kartu Pajak OP di Laporan (Batch 9). GRATIS: baris "Omzet tahun ini: Rp X
@@ -177,6 +178,9 @@ export function PajakCard() {
             ) : null}
           </div>
 
+          {/* Bukti potong per klien (Batch 11) — rekapnya ikut PDF Rincian. */}
+          <BuktiPotong tahun={data.tahun} />
+
           {formBuka ? (
             <form
               className="space-y-2 rounded-2xl bg-surface-warm p-4"
@@ -190,11 +194,11 @@ export function PajakCard() {
               </p>
               <label className="block text-[12px] text-ink-muted">
                 Nama sesuai NPWP
-                <input value={nama} onChange={(e) => setNama(e.target.value)} required maxLength={120} className="input mt-1 w-full" autoComplete="off" />
+                <input value={nama} onChange={(e) => setNama(e.target.value)} required maxLength={120} className="mt-1 w-full rounded-card border border-line bg-surface px-4 py-3 text-[15px] text-ink outline-none placeholder:text-ink-subtle focus:border-gold-deep" autoComplete="off" />
               </label>
               <label className="block text-[12px] text-ink-muted">
                 NPWP (15 atau 16 digit)
-                <input value={npwp} onChange={(e) => setNpwp(e.target.value)} required inputMode="numeric" className="input mt-1 w-full" autoComplete="off" />
+                <input value={npwp} onChange={(e) => setNpwp(e.target.value)} required inputMode="numeric" className="mt-1 w-full rounded-card border border-line bg-surface px-4 py-3 text-[15px] text-ink outline-none placeholder:text-ink-subtle focus:border-gold-deep" autoComplete="off" />
               </label>
               <button type="submit" disabled={sibuk !== null} className="btn-primary disabled:opacity-50">
                 {sibuk === "pernyataan" ? "Menyusun…" : "Unduh surat pernyataan"}

@@ -11,6 +11,7 @@ import { SealCard } from "@/components/laporan/seal-card";
 import { KesiapanCard } from "@/components/laporan/kesiapan-card";
 import { PajakCard } from "@/components/laporan/pajak-card";
 import { OjolCard } from "@/components/laporan/ojol-card";
+import { InvoiceCard } from "@/components/laporan/invoice-card";
 import { KasbonCard } from "@/components/laporan/kasbon-card";
 import { PERIOD_OPTIONS, laporanDemo } from "@/lib/mock/finance";
 import { periodeSekarang } from "@/lib/catat/client";
@@ -219,6 +220,9 @@ export function LaporanView() {
               Pelunasan yang membuat transaksi mengubah angka di atas, jadi
               laporan dibaca ulang dari server — bukan dirakit di klien. */}
           <KasbonCard onLaporanBerubah={() => setPercobaan((n) => n + 1)} />
+          {/* Klien & invoice (Batch 11): peran freelance/jasa; piutangnya
+              hidup di kartu Kasbon di atas, pelunasannya mengubah laporan. */}
+          <InvoiceCard onLaporanBerubah={() => setPercobaan((n) => n + 1)} />
           <VerifiedShare
             masuk={data.kini.masuk}
             masukTerverifikasi={data.kini.masukTerverifikasi}
