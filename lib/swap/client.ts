@@ -11,13 +11,13 @@
  * harus segar pada detik pengguna menekan tombol. Sisa jatah mingguan yang
  * basi 30 detik berarti transaksi yang revert setelah pengguna membayar gas.
  *
- * CATATAN (2026-10-22): "segar" tidak mewajibkan "dari browser" — pembacaan di
- * server tanpa cache sama segarnya, dan lib/token/saldo.ts sudah memakai pola
- * itu dengan alasan yang berlawanan (alamat pengguna tidak bocor ke penyedia
- * RPC, tiap tab tidak menembak RPC sendiri). Sebelum mainnet, pembacaan di
- * sini dipindahkan ke `GET /api/swap/keadaan` dan seluruh lalu lintas RPC
- * browser dilewatkan proxy same-origin; `fallback()` di bawah adalah
- * perbaikan sementara yang membuat testnet bisa dipakai dari HP.
+ * SEJAK BATCH 8 (2026-10-22): pembacaan utama pindah ke `GET /api/swap/keadaan`
+ * (server, cache 10 dtk, status per kaki) — `ambilKeadaanServer()` di bawah.
+ * `bacaKeadaanSwap`/`bacaKeadaanKlaim` tetap ada dan dipakai dua pihak: server
+ * (lib/swap/server-baca.ts, dengan klien upstream-nya sendiri) dan browser
+ * sebagai CADANGAN bila rute itu gagal — lewat `publicClient()` yang kini
+ * menembak proxy same-origin `/api/rpc/<chain>` lebih dulu (lib/swap/
+ * chains-klien.ts), dan daftar RPC publik hanya sebagai cadangan terakhir.
  */
 
 import {
@@ -28,6 +28,7 @@ import {
   http,
   type Chain,
   type EIP1193Provider,
+  type PublicClient,
 } from "viem";
 
 import {
@@ -35,6 +36,7 @@ import {
   SWAP_CLAIM_ABI,
   SWAP_INITIATOR_ABI,
 } from "@/lib/swap/config";
+import type { KeadaanSwapRespons } from "@/lib/swap/tipe";
 
 /**
  * Bentuk dompet Privy yang kita butuhkan, ditulis struktural.
@@ -77,8 +79,10 @@ const RPC_TIMEOUT_MS = 6_000;
 /**
  * Klien baca-saja untuk browser.
  *
- * `fallback()` atas SELURUH daftar URL chain (env + endpoint resmi), bukan
- * `http()` polos atas entri pertama. Sebabnya tercatat di lib/chains/rpc.ts:
+ * `fallback()` atas SELURUH daftar URL chain — sejak Batch 8 entri pertamanya
+ * adalah proxy same-origin `/api/rpc/<chain>` (bila chain datang dari
+ * `chainDariId`), lalu env + endpoint resmi — bukan `http()` polos atas entri
+ * pertama. Sebabnya tercatat di lib/chains/rpc.ts:
  * dari HP satu endpoint publik bisa tidak terjangkau sama sekali — port
  * difilter operator, atau rate-limit per IP di balik CGNAT seluler — sementara
  * endpoint lain normal. Dengan satu URL, kegagalan itu tampil sebagai "Gagal
@@ -89,7 +93,7 @@ const RPC_TIMEOUT_MS = 6_000;
  * yang sedang menolak — bila sebabnya rate-limit, itu justru memperparah.
  * Lebih baik cepat pindah ke cadangan.
  */
-export function publicClient(chain: Chain) {
+export function publicClient(chain: Chain): PublicClient {
   const urls = chain.rpcUrls.default.http;
   return createPublicClient({
     chain,
@@ -106,12 +110,11 @@ export function publicClient(chain: Chain) {
  * sebentar lagi ditolak.
  */
 export async function bacaKeadaanSwap(
-  chain: Chain,
+  klien: PublicClient,
   idmx: `0x${string}`,
   initiator: `0x${string}`,
   pengguna: `0x${string}`,
 ): Promise<KeadaanSwap> {
-  const klien = publicClient(chain);
   const [saldoIdmx, minSwap, sisaJatahMinggu, izin, jeda] = await Promise.all([
     klien.readContract({
       address: idmx,
@@ -151,10 +154,9 @@ export async function bacaKeadaanSwap(
  * mockup adalah nilai awal, bukan konstanta.
  */
 export async function bacaKeadaanKlaim(
-  chain: Chain,
+  klien: PublicClient,
   claim: `0x${string}`,
 ): Promise<KeadaanKlaim> {
-  const klien = publicClient(chain);
   const [kurs, fee, jeda] = await Promise.all([
     klien.readContract({
       address: claim,
@@ -173,6 +175,53 @@ export async function bacaKeadaanKlaim(
     }),
   ]);
   return { kurs, fee, jeda };
+}
+
+/** Hasil GET /api/swap/keadaan yang sudah diterjemahkan ke bigint; kaki yang
+ *  gagal bernilai null dengan sebabnya di `galat*`. */
+export interface KeadaanDariServer {
+  swap: KeadaanSwap | null;
+  klaim: KeadaanKlaim | null;
+  galatSwap: string | null;
+  galatKlaim: string | null;
+}
+
+/**
+ * Pembacaan utama (Batch 8): server membaca kedua kaki lewat upstream-nya,
+ * cache 10 detik. `null` berarti RUTENYA yang gagal (jaringan ke server, 5xx,
+ * sesi habis) — pemanggil lalu jatuh ke pembacaan browser lewat proxy. Kaki
+ * yang gagal di server BUKAN null: ia tetap pulang dengan status & sebabnya.
+ */
+export async function ambilKeadaanServer(): Promise<KeadaanDariServer | null> {
+  try {
+    const r = await fetch("/api/swap/keadaan", {
+      cache: "no-store",
+      credentials: "same-origin",
+      headers: { accept: "application/json" },
+    });
+    if (!r.ok) return null;
+    const j = (await r.json()) as KeadaanSwapRespons;
+    return {
+      swap:
+        j.opbnb.status === "ok"
+          ? {
+              saldoIdmx: BigInt(j.opbnb.saldoIdmx),
+              minSwap: BigInt(j.opbnb.minSwap),
+              sisaJatahMinggu: BigInt(j.opbnb.sisaJatahMinggu),
+              izin: BigInt(j.opbnb.izin),
+              jeda: j.opbnb.jeda,
+            }
+          : null,
+      klaim:
+        j.bsc.status === "ok"
+          ? { kurs: BigInt(j.bsc.kurs), fee: BigInt(j.bsc.fee), jeda: j.bsc.jeda }
+          : null,
+      galatSwap: j.opbnb.status === "ok" ? null : j.opbnb.galat,
+      galatKlaim: j.bsc.status === "ok" ? null : j.bsc.galat,
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**

@@ -5,6 +5,7 @@ import { PrivyProvider } from "@privy-io/react-auth";
 import type { PrivyClientConfig } from "@privy-io/react-auth";
 import { DEFAULT_CHAIN, SUPPORTED_CHAINS } from "@/lib/chains/opbnb";
 import { bsc, bscTestnet } from "@/lib/chains/bsc";
+import { denganProxy } from "@/lib/swap/chains-klien";
 import {
   PRIVY_APP_ID,
   PRIVY_LOGIN_METHODS,
@@ -95,13 +96,17 @@ export function Providers({ children }: { children: ReactNode }) {
     loginMethods:
       PRIVY_LOGIN_METHODS as unknown as PrivyClientConfig["loginMethods"],
     customOAuthRedirectUrl: oauthRedirectUrl(),
-    defaultChain: DEFAULT_CHAIN,
+    // Sejak Batch 8 RPC dompet lewat proxy same-origin `/api/rpc/<chain>`
+    // (lib/swap/chains-klien.ts): kunci penyedia tetap di server, alamat
+    // pengguna tidak bocor ke penyedia publik, dan daftar RPC publik tinggal
+    // di belakang sebagai cadangan terakhir.
+    defaultChain: denganProxy(DEFAULT_CHAIN),
     // BSC ikut didaftarkan meski aplikasi berumah di opBNB: langkah kedua alur
     // Tukar menebus IDM Reborn di BSC, dan `switchChain` ke jaringan yang tidak
     // terdaftar di sini akan MELEMPAR — voucher yang sah pun jadi tak bisa
     // diklaim. Keduanya (mainnet + testnet) didaftarkan sekaligus supaya
     // pergantian fase tidak menuntut perubahan di berkas ini.
-    supportedChains: [...SUPPORTED_CHAINS, bsc, bscTestnet],
+    supportedChains: [...SUPPORTED_CHAINS, bsc, bscTestnet].map(denganProxy),
     appearance: {
       theme: "light",
       accentColor: "#F0B90B",

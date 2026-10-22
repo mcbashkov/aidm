@@ -7,6 +7,7 @@ import { X, ArrowDown, CircleAlert, ExternalLink } from "lucide-react";
 import { formatNumberID, shortenAddress } from "@/lib/utils";
 import { chainDariId } from "@/lib/swap/chains-klien";
 import {
+  ambilKeadaanServer,
   bacaKeadaanKlaim,
   bacaKeadaanSwap,
   kirimSwap,
@@ -82,12 +83,16 @@ export function SwapSheet({
   /* ── Muat keadaan kontrak ─────────────────────────────────────────────── */
 
   /**
-   * Dua kaki dibaca TERPISAH (`allSettled`, bukan `all`): opBNB (saldo, jatah,
-   * izin) dan BSC (kurs, fee). Dulu satu kaki gagal menggugurkan keduanya dan
-   * layar hanya bisa berkata "Gagal membaca data dari jaringan. Coba tutup dan
-   * buka lagi" — tanpa menyebut jaringan mana, tanpa jalan keluar selain
-   * menutup sheet. Sekarang yang terbaca ditampilkan apa adanya, yang gagal
-   * disebut namanya, dan tombol Coba lagi mengulang pembacaan di tempat.
+   * Pembacaan utama lewat `GET /api/swap/keadaan` (Batch 8): server membaca
+   * kedua kaki lewat upstream-nya sendiri dengan cache 10 detik, dan tiap kaki
+   * pulang berstatus. Bila RUTENYA yang gagal (jaringan ke server, sesi habis),
+   * jatuh ke pembacaan browser — lewat proxy same-origin `/api/rpc/<chain>`,
+   * RPC publik hanya cadangan terakhir.
+   *
+   * Dua kaki tetap diperlakukan TERPISAH: opBNB (saldo, jatah, izin) dan BSC
+   * (kurs, fee). Yang terbaca ditampilkan apa adanya, yang gagal disebut
+   * namanya, dan tombol Coba lagi mengulang pembacaan di tempat — memanggil
+   * rute lagi (kegagalan tidak di-cache server).
    *
    * Tombol konfirmasi tetap terkunci selama salah satu kaki kosong (`alasan`
    * di bawah) — tidak ada jalur mengirim tanpa kurs atau tanpa jatah.
@@ -100,28 +105,47 @@ export function SwapSheet({
     }
     setSedangMuat(true);
     setGalatMuat(null);
-    const [s, k] = await Promise.allSettled([
-      bacaKeadaanSwap(
-        burnChain,
-        config.idmx,
-        config.initiator,
-        address as `0x${string}`,
-      ),
-      bacaKeadaanKlaim(claimChain, config.claim),
-    ]);
-    if (s.status === "fulfilled") setSwap(s.value);
-    if (k.status === "fulfilled") setKlaim(k.value);
+
+    let s: KeadaanSwap | null = null;
+    let k: KeadaanKlaim | null = null;
+    const dariServer = await ambilKeadaanServer();
+    if (dariServer) {
+      s = dariServer.swap;
+      k = dariServer.klaim;
+    }
+    // Cadangan browser hanya untuk kaki yang belum terisi.
+    if (!s || !k) {
+      const [cs, ck] = await Promise.allSettled([
+        s
+          ? Promise.resolve(s)
+          : bacaKeadaanSwap(
+              publicClient(burnChain),
+              config.idmx,
+              config.initiator,
+              address as `0x${string}`,
+            ),
+        k
+          ? Promise.resolve(k)
+          : bacaKeadaanKlaim(publicClient(claimChain), config.claim),
+      ]);
+      if (cs.status === "fulfilled") s = cs.value;
+      if (ck.status === "fulfilled") k = ck.value;
+    }
+    if (s) setSwap(s);
+    if (k) setKlaim(k);
     setSedangMuat(false);
     setTahap((t) => (t === "muat" ? "isi" : t));
 
-    if (s.status === "rejected" && k.status === "rejected") {
+    if (!s && !k) {
       setGalatMuat(
         `Data dari ${burnChain.name} dan ${claimChain.name} belum terbaca. Periksa koneksi, lalu coba lagi.`,
       );
-    } else if (s.status === "rejected") {
-      setGalatMuat(`Saldo dan jatah di ${burnChain.name} belum terbaca.`);
-    } else if (k.status === "rejected") {
-      setGalatMuat(`Kurs di ${claimChain.name} belum terbaca.`);
+    } else if (!s) {
+      setGalatMuat(
+        dariServer?.galatSwap ?? `Saldo dan jatah di ${burnChain.name} belum terbaca.`,
+      );
+    } else if (!k) {
+      setGalatMuat(dariServer?.galatKlaim ?? `Kurs di ${claimChain.name} belum terbaca.`);
     }
   }, [burnChain, claimChain, config, address]);
 
