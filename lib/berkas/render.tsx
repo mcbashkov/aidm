@@ -231,6 +231,28 @@ export function BerkasPdf({ input }: { input: BerkasPdfInput }) {
           Sisa uang = pemasukan dikurangi seluruh pengeluaran yang dicatat pada bulan itu, termasuk pengeluaran pribadi dan pembelian alat. Hari aktif = jumlah hari dengan minimal satu catatan.
         </Text>
         <GrafikPemasukan data={data} />
+        {data.platform && data.platform.length > 0 ? (
+          <View style={{ marginTop: 14 }}>
+            <Text style={s.bagianJudul}>Pemasukan per platform (kotor)</Text>
+            <View style={s.barisKepala}>
+              <Text style={[s.th, s.kolBulan]}>Platform</Text>
+              {data.bulanan.map((b) => (
+                <Text key={b.bulan} style={[s.th, s.kolKecil]}>{BULAN[Number(b.bulan.slice(5)) - 1].slice(0, 3)}</Text>
+              ))}
+              <Text style={[s.th, s.kolAngka]}>Total</Text>
+            </View>
+            {data.platform.map((p) => (
+              <View key={p.platform || "tanpa"} style={s.baris}>
+                <Text style={s.kolBulan}>{p.label}</Text>
+                {data.bulanan.map((b) => (
+                  <Text key={b.bulan} style={[s.kolKecil, { fontSize: 8 }]}>{p.perBulan[b.bulan] ? Math.round(p.perBulan[b.bulan] / 1000).toLocaleString("id-ID") : "—"}</Text>
+                ))}
+                <Text style={s.kolAngka}>{formatRupiah(p.total)}</Text>
+              </View>
+            ))}
+            <Text style={[s.catatan, { marginTop: 4 }]}>Angka per bulan dalam ribuan rupiah; total dalam rupiah penuh. Platform mengikuti catatan pengguna.</Text>
+          </View>
+        ) : null}
         <Footer nomor={nomorDokumen} />
       </Page>
 

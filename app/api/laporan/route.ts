@@ -1,7 +1,8 @@
 import { jsonPribadi } from "@/lib/api/respons";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { currentUserId } from "@/lib/catat/server";
-import { bolehSegel, rentangTanggal } from "@/lib/laporan/periode";
+import { bolehSegel, rentangIso, rentangTanggal } from "@/lib/laporan/periode";
+import { rekapOjol } from "@/lib/laporan/ojol";
 import {
   ambilRollups,
   breakdownKategori,
@@ -58,17 +59,27 @@ export async function GET(req: Request) {
 
   try {
     const rentang = rentangTanggal(period);
-    const [rollups, kategori, sebelumnya, segel, bulan] = await Promise.all([
+    const [rollups, kategori, sebelumnya, segel, bulan, profil] = await Promise.all([
       ambilRollups(supa, uid, rentang),
       breakdownKategori(supa, uid, rentang),
       ringkasSebelumnya(supa, uid, period),
       statusSegel(supa, uid, period),
       bulanTercatat(supa, uid),
+      supa.from("users").select("earner_type").eq("id", uid).maybeSingle(),
     ]);
+    const kini = ringkasDariRollups(rollups);
+    // Peran ojol (Batch 10): rekap per platform & biaya kendaraan dari RPC
+    // 0039 — hanya untuk ojol supaya peran lain tidak membayar dua query.
+    const earner = (profil.data as { earner_type: string | null } | null)?.earner_type ?? null;
+    const iso = rentangIso(period);
+    const ojol =
+      earner === "ojol"
+        ? await rekapOjol(supa, uid, { startIso: iso.start ?? null, endIso: iso.end ?? null }, kini)
+        : undefined;
 
     const body: LaporanResponse = {
       period,
-      kini: ringkasDariRollups(rollups),
+      kini,
       sebelumnya,
       series: seriesDariRollups(rollups),
       masuk: kategori.masuk,
@@ -80,6 +91,7 @@ export async function GET(req: Request) {
       bolehSegel: bolehSegel(period),
       segelSiap: isSealConfigured(),
       bulanTercatat: bulan,
+      ...(ojol ? { ojol } : {}),
     };
     return jsonPribadi(body);
   } catch {

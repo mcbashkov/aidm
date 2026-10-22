@@ -10,6 +10,7 @@ import { VerifiedShare } from "@/components/laporan/verified-share";
 import { SealCard } from "@/components/laporan/seal-card";
 import { KesiapanCard } from "@/components/laporan/kesiapan-card";
 import { PajakCard } from "@/components/laporan/pajak-card";
+import { OjolCard } from "@/components/laporan/ojol-card";
 import { KasbonCard } from "@/components/laporan/kasbon-card";
 import { PERIOD_OPTIONS, laporanDemo } from "@/lib/mock/finance";
 import { periodeSekarang } from "@/lib/catat/client";
@@ -200,6 +201,9 @@ export function LaporanView() {
       ) : data ? (
         <>
           <SummaryCards kini={data.kini} sebelumnya={data.sebelumnya} />
+          {/* Peran ojol (Batch 10): per platform, biaya kendaraan, bersih
+              harian rata-rata — server hanya mengirimnya untuk ojol. */}
+          {data.ojol ? <OjolCard data={data.ojol} /> : null}
           <CashflowChart data={data.series} />
           <CategoryBreakdown
             judul="Pemasukan per kategori"

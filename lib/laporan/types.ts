@@ -8,6 +8,8 @@
  * yang sudah dinormalkan di `rowToTx`.
  */
 
+import type { RekapOjol } from "@/lib/laporan/ojol";
+
 export interface Ringkasan {
   masuk: number;
   keluar: number;
@@ -54,6 +56,8 @@ export interface LaporanResponse {
    *  Segel tidak boleh ditawarkan bila menekan-nya pasti berujung galat. */
   segelSiap: boolean;
   bulanTercatat: number;
+  /** Rekap peran ojol (Batch 10) — hanya bila earner_type = ojol. */
+  ojol?: RekapOjol;
 }
 
 

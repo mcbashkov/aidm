@@ -11,6 +11,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { geserBulan } from "@/lib/kesiapan/hitung";
 import { kategoriLabel, type Jenis } from "@/lib/transactions";
+import { LABEL_PLATFORM } from "@/lib/parse/platform";
 
 export interface BulanBerkas {
   bulan: string; // YYYY-MM
@@ -37,6 +38,9 @@ export interface DataBerkas {
   total: { masuk: number; keluar: number; sisa: number; hariAktif: number; jmlTransaksi: number };
   /** Rincian per bulan, kunci YYYY-MM; bulan tanpa catatan → []. */
   rincian: Record<string, TransaksiRingkas[]>;
+  /** Peran ojol (Batch 10): pemasukan ojek per platform per bulan (kotor);
+   *  undefined untuk peran lain. */
+  platform?: { platform: string; label: string; perBulan: Record<string, number>; total: number }[];
 }
 
 /** Batas baris rincian per bulan di PDF — di atas ini dokumen jadi buku. */
@@ -65,7 +69,7 @@ export async function ambilDataBerkas(
   const tglAwal = `${awal}-01`;
   const tglBatas = `${bulanIni}-01`; // eksklusif
 
-  const [profil, bulananRaw, rows] = await Promise.all([
+  const [profil, bulananRaw, rows, platformRaw] = await Promise.all([
     supa
       .from("users")
       .select("nama_usaha, kota, earner_type, categories:kategori_id(nama)")
@@ -81,6 +85,11 @@ export async function ambilDataBerkas(
       .lt("occurred_at", `${tglBatas}T00:00:00+07:00`)
       .order("occurred_at", { ascending: true })
       .limit(RINCIAN_MAKS_PER_BULAN * bulan),
+    supa.rpc("laporan_ojol_platform", {
+      p_user: userId,
+      p_start: `${tglAwal}T00:00:00+07:00`,
+      p_end: `${tglBatas}T00:00:00+07:00`,
+    }),
   ]);
   if (bulananRaw.error) throw bulananRaw.error;
   if (rows.error) throw rows.error;
@@ -145,6 +154,28 @@ export async function ambilDataBerkas(
     { masuk: 0, keluar: 0, sisa: 0, hariAktif: 0, jmlTransaksi: 0 },
   );
 
+  // Tabel per platform hanya untuk ojol (§Batch 10) — RPC-nya murah, tetapi
+  // tabel kosong di PDF peran lain hanya membingungkan pembaca.
+  let platform: DataBerkas["platform"];
+  if (u?.earner_type === "ojol" && !platformRaw.error) {
+    const peta = new Map<string, { perBulan: Record<string, number>; total: number }>();
+    for (const r of (platformRaw.data ?? []) as { bulan: string; platform: string | null; total: number }[]) {
+      const kunci = r.platform ?? "";
+      const c = peta.get(kunci) ?? { perBulan: {}, total: 0 };
+      c.perBulan[r.bulan] = (c.perBulan[r.bulan] ?? 0) + Number(r.total);
+      c.total += Number(r.total);
+      peta.set(kunci, c);
+    }
+    platform = [...peta.entries()]
+      .map(([k, c]) => ({
+        platform: k,
+        label: k ? (LABEL_PLATFORM as Record<string, string>)[k] ?? k : "Tanpa platform",
+        perBulan: c.perBulan,
+        total: c.total,
+      }))
+      .sort((a, b) => b.total - a.total);
+  }
+
   return {
     usaha: { nama: u?.nama_usaha?.trim() || "Usaha tanpa nama", kota: u?.kota ?? null, kategori },
     earnerType: u?.earner_type ?? null,
@@ -153,5 +184,6 @@ export async function ambilDataBerkas(
     bulanan,
     total,
     rincian,
+    ...(platform ? { platform } : {}),
   };
 }
