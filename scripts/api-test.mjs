@@ -1384,6 +1384,46 @@ async function main() {
     }
   }
 
+  console.log("\n── 23. Ojol: platform per pendapatan & biaya kendaraan (Batch 10, migrasi 0039) ──");
+  {
+    const uidL = sql(`insert into users (privy_did, earner_type, nama_usaha, kota) values ('${PREFIX}L', 'ojol', 'Driver Uji', 'Depok') returning id`);
+    const L = sessionCookie(uidL, `${PREFIX}L`);
+    const hariIni = new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10);
+    const bulanIni = hariIni.slice(0, 7);
+    // Transaksi ditanam langsung (deterministik; parser diuji di test:parser korpus ojol).
+    const ojek = sql(`select id from categories where slug='ojek'`);
+    const ops = sql(`select id from categories where slug='operasional'`);
+    const trp = sql(`select id from categories where slug='transportasi'`);
+    sql(`insert into transactions (user_id, jenis, amount, kategori_id, sub_kategori, occurred_at, status) values
+      ('${uidL}','masuk',150000,'${ojek}','gojek','${bulanIni}-02T12:00:00+07:00','confirmed'),
+      ('${uidL}','masuk',80000,'${ojek}','grab','${bulanIni}-02T13:00:00+07:00','confirmed'),
+      ('${uidL}','masuk',20000,'${ojek}',null,'${bulanIni}-03T12:00:00+07:00','confirmed'),
+      ('${uidL}','keluar',30000,'${ops}','bbm','${bulanIni}-02T12:00:00+07:00','confirmed'),
+      ('${uidL}','keluar',5000,'${trp}','parkir','${bulanIni}-03T12:00:00+07:00','confirmed'),
+      ('${uidL}','keluar',15000,'${ops}',null,'${bulanIni}-03T12:30:00+07:00','confirmed')`);
+    // Rollup harian dibangun trigger dari transactions (0011/0012) → hari aktif 2.
+    const r = await api(`/api/laporan?period=${bulanIni}`, { cookie: L });
+    const o = r.body?.ojol;
+    cek("GET /api/laporan untuk ojol memuat blok `ojol`", r.status === 200 && o && Array.isArray(o.platform), JSON.stringify(r.body?.ojol).slice(0, 200));
+    cek("platform: gojek 150.000, grab 80.000, tanpa platform 20.000; total 250.000",
+      o?.platform?.find((p) => p.platform === "gojek")?.total === 150000 && o?.platform?.find((p) => p.platform === "grab")?.total === 80000 &&
+      o?.platform?.find((p) => p.platform === null)?.total === 20000 && o?.totalOjek === 250000, JSON.stringify(o?.platform));
+    cek("persen gojek 0,6", Math.abs((o?.platform?.find((p) => p.platform === "gojek")?.persen ?? 0) - 0.6) < 1e-9);
+    cek("kendaraan: bbm 30.000 + parkir 5.000 = 35.000 (operasional tanpa sub tidak ikut)",
+      o?.kendaraan?.find((k) => k.sub === "bbm")?.total === 30000 && o?.kendaraan?.find((k) => k.sub === "parkir")?.total === 5000 && o?.totalKendaraan === 35000, JSON.stringify(o?.kendaraan));
+    cek("bersih harian rata-rata = (250.000 − 50.000) ÷ 2 hari aktif = 100.000", o?.bersihHarianRata === 100000 && o?.hariAktif === 2, `${o?.bersihHarianRata} / ${o?.hariAktif}`);
+    cek("tanpa kata laba di blok ojol", !/laba/i.test(JSON.stringify(o)));
+    const uidM = sql(`insert into users (privy_did, earner_type) values ('${PREFIX}M', 'dagang') returning id`);
+    const rm = await api(`/api/laporan?period=${bulanIni}`, { cookie: sessionCookie(uidM, `${PREFIX}M`) });
+    cek("peran dagang: tanpa blok ojol", rm.status === 200 && rm.body?.ojol === undefined, JSON.stringify(rm.body?.ojol));
+    // Parser lewat rute Catat: sub_kategori kalau terisi harus platform yang sah.
+    const c = await api("/api/catat", { method: "POST", cookie: L, body: { text: "narik gojek 120rb" } });
+    const sub = c.body?.entries?.[0]?.subKategori ?? c.body?.entries?.[0]?.sub_kategori ?? null;
+    cek("catat 'narik gojek 120rb' → kategori ojek, sub_kategori gojek (atau null bila model tidak mengisi)",
+      c.status === 200 && c.body?.entries?.[0]?.kategori === "ojek" && (sub === "gojek" || sub === null), `${c.status} ${JSON.stringify(c.body?.entries?.[0]).slice(0, 160)}`);
+    cek("sub_kategori tersimpan sebagai platform sah di DB", ["gojek", null].includes(sql(`select sub_kategori from transactions where user_id='${uidL}' order by created_at desc limit 1`) || null));
+  }
+
   console.log("\n── 12. DELETE /api/akun (§12 hak penghapusan) ──");
   {
     const uidC = sql(
