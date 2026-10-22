@@ -114,7 +114,7 @@ Pilar Web3 keempat yang **baru di v3.0**:
 11. **Riset Pasar & Generator Konten sebagai fitur premium** (kode v2.0 dipertahankan, dipindah ke balik langganan)
 
 ### Fase 2
-- **Kasbon** (utang-piutang: piutang pelanggan, utang supplier, jatuh tempo, pengingat WA, tandai lunas)
+- **Kasbon** (utang-piutang: piutang pelanggan, utang supplier, jatuh tempo, pengingat WA, tandai lunas) — *Batch 2 (2026-10-22) membangun sebagian: dicatat lewat Catat, daftar + tandai lunas + hapus di Laporan, basis kas. Jatuh tempo, pengingat WA, dan cicilan belum. Lihat PROGRESS §7k.*
 - **Katalog produk & harga modal** (opsional → membuka perhitungan margin/untung bersih)
 - **Skor Kesiapan Pinjaman** (§7.4 — spesifikasi sudah disiapkan, rilis setelah data pengguna cukup)
 - Foto nota → OCR → entri otomatis
@@ -525,6 +525,9 @@ report_seals(
 )
 
 -- Fase 2 (siapkan skema, jangan dipakai di MVP)
+-- Kasbon: sketsa di bawah DIGANTIKAN migrasi 0031 (status draft/aktif/lunas/
+-- dihapus, kategori_id, items, raw_input, deleted_at, RPC kasbon_lunasi).
+-- Skema yang berlaku adalah migrasinya, bukan sketsa ini.
 kasbon(
   id uuid pk, user_id uuid fk,
   tipe text check (tipe in ('piutang','utang')),

@@ -1309,8 +1309,10 @@ kontrak, dan "sudah jalan di PC" justru yang menyesatkan selama berjam-jam.
       berlawanan (alamat pengguna tidak bocor ke penyedia RPC, tiap tab tidak
       menembak RPC sendiri). `fallback()` membuat testnet bisa dipakai dari HP;
       proxy itu yang menghapus seluruh kelas masalah ini.
-- ⬜ 🧑 **Belum diuji di HP dengan jaringan seluler sungguhan.** Hanya itu
-      yang membuktikan perbaikannya; gerbang otomatis tidak menyentuhnya.
+- [x] 🧑 **Diuji PO di HP dengan jaringan seluler sungguhan, 2026-10-22:
+      sheet Tukar terbaca normal.** Hanya uji ini yang membuktikan
+      perbaikannya; gerbang otomatis tidak menyentuhnya. Proxy RPC di atas
+      tetap ditunda sesuai keputusan PO.
 
 **(2) Chip Catat: kalimat pengguna sendiri, dan contoh yang cocok bidangnya.**
 
@@ -1368,6 +1370,77 @@ kontrak, dan "sudah jalan di PC" justru yang menyesatkan selama berjam-jam.
 `test:parser` 200/200. `test:api`, `test:swap`, `test:misi` **tidak**
 dijalankan (butuh env produksi & anvil) — statusnya masih yang tercatat di
 "Keadaan sekarang".
+
+### 7k. Kasbon — Batch 2 🟡 **KODE SELESAI 2026-10-22, MENUNGGU MIGRASI**
+
+Lima commit lokal, **belum di-push**: commit API & UI membaca tabel `kasbon`,
+jadi `main` hanya boleh di-push SETELAH 0031 dan 0032 diterapkan — kalau
+tidak, setiap kalimat kasbon di Catat menjadi 500 di produksi.
+
+**Urutan menyalakan (🧑):** `pnpm db:migrate` (0031 lalu 0032) →
+`git push` → jalankan `pnpm test:api` sekali (seksi 16 baru, 30 cek +
+cascade kasbon di hapus akun).
+
+**Keputusan PO 2026-10-22 (lima rekomendasi diterima):** kartu di halaman
+Laporan yang ada, tanpa segmen baru (segmen "Usaha" tidak pernah ada) ·
+basis kas — kasbon tidak masuk Sisa uang, PDF, maupun segel sampai lunas ·
+"Tandai lunas" punya dua pilihan eksplisit (catat sekarang / sudah kucatat)
+· cicilan ditunda · Hapus untuk salah tangkap, tanpa Edit.
+
+- [x] **Tabel terpisah, bukan baris `transactions` bertanda** (0031). Setiap
+      angka uang membaca `transactions` berstatus confirmed; di tabel
+      terpisah laporan benar menurut konstruksi, bukan menurut filter yang
+      harus diingat di tiap jalur. Status baru di `transactions` juga butuh
+      DROP CONSTRAINT — dilarang untuk batch ini.
+- [x] **Pelunasan atomik** (`kasbon_lunasi`): kunci baris, buat transaksi
+      pada tanggal PELUNASAN, tutup kasbon — satu transaksi DB. Penjualan
+      kasbon karenanya masuk laporan pada hari uangnya diterima.
+- [x] **Misi tidak menghitung transaksi pelunasan** (0032). Tanpa ini
+      setiap ketukan "Tandai lunas" menambah progres misi — hadiah untuk
+      satu ketukan dan jalur dari kasbon ke klaim on-chain. Pelunasan yang
+      DIUCAPKAN di Catat tetap dihitung, seperti sebelum kasbon ada.
+- [x] **Retensi nama orang ketiga:** `raw_input` kasbon 90 hari (janji yang
+      sama dengan 0025); `pihak` & `catatan` kasbon yang sudah selesai
+      dikosongkan 90 hari setelah selesai, lewat cron pemeliharaan yang
+      sama. Transaksi biasa tidak pernah menyimpan `pihak` sama sekali.
+- [x] **Parser:** `status_bayar`, `pihak`, `items` di kedua jalur. Pagar
+      server: "belum" dari LLM diturunkan ke "lunas" bila kalimatnya tidak
+      punya satu pun jejak kasbon — penjualan tunai tidak boleh hilang dari
+      laporan karena model keliru menebak. `items` hanya disimpan, tanpa UI
+      stok, dan tidak pernah memengaruhi nominal.
+- [x] **Korpus kasbon terpisah** (`tests/parser-kasbon.json`, 29 kasus).
+      Korpus 200 sengaja tidak ditambah — pembanding historis & gerbang M6.
+- [x] **Batas yang dijaga:** Catat tetap gratis (tidak menyentuh
+      langganan) · tidak ada skor atau rasio dari kasbon (komponen "Kasbon
+      terkelola" PRD §7.4 tidak dibangun) · tidak ada data kasbon di
+      kanonik segel (dibuktikan test:canonical) · tanpa kata "laba",
+      "layak", "KUR".
+
+**Bukti (sesi ini, bukan diasumsikan):**
+- 0031 & 0032 diterapkan DUA KALI ke Postgres sekali pakai (Docker lokal,
+  setelah 0001–0030): 10/10 uji perilaku 0031 (kasbon aktif tidak
+  menyentuh rollup, tujuh constraint menolak, lintas pengguna KB404,
+  pelunasan ganda KB409, "sudah kucatat" tanpa transaksi, FK set null,
+  retensi, hak eksekusi, hapus akun → nol baris). 0032: data tanpa kasbon
+  menghasilkan angka misi identik sebelum/sesudah; 3 transaksi dengan 1
+  pelunasan → 2 terhitung.
+- `test:parser` 200/200 · korpus kasbon 29/29 (17/29 sebelum empat
+  perbaikan fallback) · 0 dari 200 kalimat lama ditandai "belum" · 9/9
+  frasa kasbon di luar korpus terbaca benar · `test:canonical` 27/27.
+- UI diperiksa di mode demo (env produksi dikosongkan) pada 375×812.
+  Satu bug tertangkap dan diperbaiki: sheet "Tandai lunas" semula
+  bergeser 16px karena ikut `space-y` kartunya.
+
+**Belum, dan terbuka:**
+- ⬜ 🧑 Migrasi 0031/0032 belum diterapkan; `test:api` seksi 16 belum
+      pernah jalan; jalur LLM (Haiku) untuk kalimat kasbon belum dicoba
+      dengan kunci sungguhan — korpus hanya menguji fallback.
+- ⬜ Menghapus transaksi pelunasan di Riwayat TIDAK membuka kembali
+      kasbonnya (kasbon tetap lunas, uangnya hilang dari laporan).
+- ⬜ Cicilan, jatuh tempo (kolom sudah ada), dan pengingat WA belum.
+- ⬜ Fallback hanya menangkap nama dengan sapaan ("Bu Ani"), dan kalimat
+      dua arah seperti "bu warung ngasih utang dulu" terbaca piutang —
+      parser LLM yang diandalkan untuk itu.
 
 ### 8. 🤖 M5 — premium di balik LANGGANAN
 
