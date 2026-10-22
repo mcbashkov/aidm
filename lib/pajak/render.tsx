@@ -20,6 +20,7 @@ import { formatRupiah } from "@/lib/transactions";
 import { Footer, Qr, WARNA, gaya as s } from "@/lib/berkas/render";
 import { NAMA_BULAN as BULAN, labelBulan } from "@/lib/berkas/label";
 import { KALIMAT_BUKAN_NASIHAT, type HasilPajak } from "@/lib/pajak/hitung";
+import type { RekapBuktiPotong } from "@/lib/invoice/server";
 
 const p = StyleSheet.create({
   kolBulan: { flex: 1.3 },
@@ -49,6 +50,8 @@ export interface ProfilPajak {
 export interface RincianPdfInput {
   hasil: HasilPajak;
   profil: ProfilPajak;
+  /** Batch 11: rekap bukti potong per klien tahun pajak ini (bila ada). */
+  buktiPotong?: RekapBuktiPotong;
   nomorDokumen: string;
   kodeVerifikasi: string;
   tanggalTerbit: string; // YYYY-MM-DD WIB
@@ -62,7 +65,7 @@ function KalimatNasihat() {
 }
 
 export function RincianPdf({ input }: { input: RincianPdfInput }) {
-  const { hasil, profil, nomorDokumen, kodeVerifikasi, tanggalTerbit, urlVerifikasi } = input;
+  const { hasil, profil, nomorDokumen, kodeVerifikasi, tanggalTerbit, urlVerifikasi, buktiPotong } = input;
   return (
     <Document title={`Rincian Peredaran Bruto per Bulan — Tahun Pajak ${hasil.tahun}`} author="AIDM" language="id">
       <Page size="A4" style={s.page}>
@@ -121,6 +124,38 @@ export function RincianPdf({ input }: { input: RincianPdfInput }) {
       </Page>
 
       <Page size="A4" style={s.page}>
+        {buktiPotong && buktiPotong.jml > 0 ? (
+          <View style={{ marginBottom: 22 }}>
+            <Text style={s.bagianJudul}>Bukti potong PPh per klien · Tahun Pajak {hasil.tahun}</Text>
+            <View style={s.barisKepala}>
+              <Text style={[s.th, { flex: 2 }]}>Klien / pemotong</Text>
+              <Text style={[s.th, s.kolKecil]}>Pembayaran</Text>
+              <Text style={[s.th, s.kolKecil]}>Dipotong</Text>
+              <Text style={[s.th, p.kolUang]}>Bruto</Text>
+              <Text style={[s.th, p.kolUang]}>Potongan PPh</Text>
+            </View>
+            {buktiPotong.perKlien.map((k) => (
+              <View key={k.klien} style={s.baris}>
+                <Text style={{ flex: 2 }}>{k.klien}</Text>
+                <Text style={s.kolKecil}>{k.jml}</Text>
+                <Text style={s.kolKecil}>{k.terpotong}</Text>
+                <Text style={p.kolUang}>{formatRupiah(k.bruto)}</Text>
+                <Text style={p.kolUang}>{k.potongan > 0 ? formatRupiah(k.potongan) : "—"}</Text>
+              </View>
+            ))}
+            <View style={s.barisTotal}>
+              <Text style={{ flex: 2 }}>Total</Text>
+              <Text style={s.kolKecil}>{buktiPotong.jml}</Text>
+              <Text style={s.kolKecil}></Text>
+              <Text style={p.kolUang}>{formatRupiah(buktiPotong.totalBruto)}</Text>
+              <Text style={p.kolUang}>{formatRupiah(buktiPotong.totalPotongan)}</Text>
+            </View>
+            <Text style={[s.catatan, { marginTop: 6 }]}>
+              Dicatat pengguna per pembayaran klien (status dipotong/nihil, nominal, nomor bukti potong bila ada). Potongan PPh yang sudah dipungut pihak lain
+              dapat diperhitungkan dalam SPT — cocokkan dengan bukti potong aslinya.
+            </Text>
+          </View>
+        ) : null}
         <Text style={s.bagianJudul}>Pernyataan</Text>
         <Text style={{ lineHeight: 1.5 }}>
           Dokumen ini disusun otomatis dari catatan harian pengguna di aplikasi AIDM (PT IDM Film Sejahtera).

@@ -110,7 +110,7 @@ function systemPrompt(ctx: LlmParseContext): string {
     ]
       .filter(Boolean)
       .join(" "),
-    "- sub_kategori: untuk pemasukan kategori ojek isi NAMA PLATFORM ternormalisasi bila disebut: gojek (termasuk gofood/gocar/goride) | grab (grabfood/grabbike/grabcar) | maxim | indrive | shopeefood | lainnya; tidak disebut → null. Untuk pengeluaran kendaraan (bensin/servis/cicilan/sewa/kuota/parkir) isi: bbm | servis | cicilan | sewa | kuota | parkir. Selain itu null.",
+    "- sub_kategori: untuk pemasukan kategori ojek isi NAMA PLATFORM ternormalisasi bila disebut: gojek (termasuk gofood/gocar/goride) | grab (grabfood/grabbike/grabcar) | maxim | indrive | shopeefood | lainnya; tidak disebut → null. Untuk pengeluaran kendaraan (bensin/servis/cicilan/sewa/kuota/parkir) isi: bbm | servis | cicilan | sewa | kuota | parkir. Untuk pemasukan kategori jasa yang berupa DP/uang muka/deposit/panjar isi: uang_muka. Selain itu null.",
     "- status_bayar: \"belum\" HANYA bila uangnya jelas BELUM berpindah — pelanggan ngebon/ngutang/kasbon barang, pengguna ambil barang dari pemasok yang belum dibayar, \"bayar nanti/besok\". Selain itu \"lunas\". Bila ragu → \"lunas\".",
     "- Pelunasan kasbon atau utang (\"Bu Ani bayar kasbon 45rb\", \"bayar utang ke Pak Haji 500rb\") = uang SUDAH berpindah → status_bayar \"lunas\", entri biasa.",
     "- Arah kasbon: orang lain berutang pada pengguna (pelanggan ngebon) → jenis masuk; pengguna yang berutang (ngutang ke/di pemasok, ambil barang belum dibayar) → jenis keluar. Kasbon karyawan (uang tunai diserahkan ke karyawan) → uang SUDAH keluar → status_bayar \"lunas\", jenis keluar.",

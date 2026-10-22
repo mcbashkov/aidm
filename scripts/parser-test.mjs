@@ -39,6 +39,10 @@ const casesKasbon = JSON.parse(
 const casesOjol = JSON.parse(
   readFileSync(join(root, "tests/parser-ojol.json"), "utf8"),
 );
+// Korpus jasa (Batch 11): uang muka/DP pada pemasukan jasa.
+const casesJasa = JSON.parse(
+  readFileSync(join(root, "tests/parser-jasa.json"), "utf8"),
+);
 
 /** Pasangkan entri hasil ↔ harapan dengan permutasi terbaik (n kecil). */
 function cocokkanEntri(hasil, harapan) {
@@ -186,4 +190,17 @@ for (const g of ojol.gagal.slice(0, tampil)) {
   }
 }
 
-process.exit(skor >= 0.95 && skorKasbon >= 0.95 && skorOjol >= 0.95 ? 0 : 1);
+const jasa = nilai(casesJasa);
+const skorJasa = jasa.lulus / casesJasa.length;
+console.log(
+  `\n━━ Korpus jasa: ${jasa.lulus}/${casesJasa.length} = ${(skorJasa * 100).toFixed(1)}% (target ≥95%) ━━`,
+);
+for (const g of jasa.gagal.slice(0, tampil)) {
+  console.log(`  ✗ [${g.id}] "${g.text}"`);
+  for (const m of g.masalah) console.log(`      ${m}`);
+  if (process.env.VERBOSE) {
+    console.log(`      hasil: ${JSON.stringify(g.hasil)}`);
+  }
+}
+
+process.exit(skor >= 0.95 && skorKasbon >= 0.95 && skorOjol >= 0.95 && skorJasa >= 0.95 ? 0 : 1);

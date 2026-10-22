@@ -1,0 +1,130 @@
+[
+ {
+  "id": "jasa-dp-01",
+  "persona": "freelance",
+  "text": "dp desain logo 500rb dari PT Maju transfer",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 500000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "transfer",
+     "occurred_at": "2026-08-12",
+     "sub_kategori": "uang_muka"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jasa-dp-02",
+  "persona": "freelance",
+  "text": "terima uang muka proyek website 1,5jt",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 1500000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "sub_kategori": "uang_muka"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jasa-dp-03",
+  "persona": "freelance",
+  "text": "klien bayar termin 1 2jt",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 2000000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "sub_kategori": "uang_muka"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jasa-dp-04",
+  "persona": "freelance",
+  "text": "pelunasan desain logo 1jt",
+  "note": "bukan uang muka → sub null",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 1000000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "sub_kategori": null
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jasa-dp-05",
+  "persona": "freelance",
+  "text": "honor ngajar les 300rb",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 300000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "sub_kategori": null
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "jasa-dp-06",
+  "persona": "dagang",
+  "text": "deposit katering 40 porsi 800rb",
+  "note": "peran dagang: kategori penjualan → sub tidak diisi",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 800000,
+     "kategori_ok": [
+      "penjualan",
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ }
+]

@@ -89,3 +89,22 @@ export function normalisasiSubKendaraan(nilai: unknown): SubKendaraan | null {
   if ((SUB_KENDARAAN as readonly string[]).includes(v)) return v as SubKendaraan;
   return tebakSubKendaraan(v);
 }
+
+/* ── Jasa/freelance (Batch 11): uang muka ──────────────────────────────── */
+
+/** "dp", "uang muka", "deposit", "down payment", "panjar", "termin 1" →
+ *  sub_kategori `uang_muka` pada pemasukan kategori `jasa`. */
+const RE_UANG_MUKA = /\b(dp|uang\s?muka|deposit|down\s?payment|panjar|termin\s?(1|pertama|awal))\b/;
+
+export function tebakSubJasa(teks: string): "uang_muka" | null {
+  return RE_UANG_MUKA.test(teks.toLowerCase()) ? "uang_muka" : null;
+}
+
+export function normalisasiSubJasa(nilai: unknown): string | null {
+  if (typeof nilai !== "string") return null;
+  const v = nilai.trim();
+  if (!v) return null;
+  const k = v.toLowerCase().replace(/[\s-]/g, "_");
+  if (k === "uang_muka" || k === "dp" || k === "deposit" || k === "down_payment" || k === "panjar") return "uang_muka";
+  return tebakSubJasa(v) ?? v.slice(0, 80);
+}

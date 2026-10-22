@@ -31,6 +31,7 @@ import {
   type Pengingat,
 } from "@/lib/pajak/hitung";
 import { renderPernyataanPdf, renderRincianPdf, type ProfilPajak } from "@/lib/pajak/render";
+import { daftarBuktiPotong, rekapBuktiPotong } from "@/lib/invoice/server";
 
 export type JenisDokumenPajak = "rincian" | "pernyataan";
 export type StatusDokumenPajak = "dibuat" | "pending_segel" | "confirmed" | "gagal";
@@ -262,10 +263,15 @@ export async function prosesRincian(supa: SupabaseClient, baris: DokumenPajakRow
   let d = baris;
   try {
     if (!d.path_pdf || !d.sha256) {
-      const [omzet, profil] = await Promise.all([omzetBulanan(supa, d.user_id, d.tahun_pajak), profilPajak(supa, d.user_id)]);
+      const [omzet, profil, bp] = await Promise.all([
+        omzetBulanan(supa, d.user_id, d.tahun_pajak),
+        profilPajak(supa, d.user_id),
+        daftarBuktiPotong(supa, d.user_id, d.tahun_pajak),
+      ]);
       const pdf = await renderRincianPdf({
         hasil: hitungPajak(d.tahun_pajak, omzet),
         profil,
+        buktiPotong: rekapBuktiPotong(bp),
         nomorDokumen: d.nomor_dokumen,
         kodeVerifikasi: d.kode_verifikasi,
         tanggalTerbit: d.created_at.slice(0, 10),

@@ -17,7 +17,7 @@
 
 // Satu-satunya impor runtime di berkas ini — modul murni tanpa dependensi;
 // runner uji Node menyelesaikannya lewat scripts/hook-ts.mjs.
-import { tebakPlatform, tebakSubKendaraan } from "@/lib/parse/platform";
+import { tebakPlatform, tebakSubJasa, tebakSubKendaraan } from "@/lib/parse/platform";
 import type { EarnerType } from "@/lib/earner";
 import type {
   ItemBarang,
@@ -425,6 +425,9 @@ function tebakSubKategori(
   kategori: string,
   earner?: EarnerType,
 ): string | null {
+  // Uang muka/DP pada pemasukan jasa (Batch 11) — semua peran: DP adalah
+  // istilah umum, bukan milik satu peran.
+  if (jenis === "masuk" && kategori === "jasa") return tebakSubJasa(teks);
   if (earner !== "ojol") return null;
   if (jenis === "masuk") return kategori === "ojek" ? tebakPlatform(teks) : null;
   if (kategori === "transportasi" || kategori === "operasional" || kategori === "peralatan") {

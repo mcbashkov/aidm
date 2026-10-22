@@ -18,7 +18,7 @@ import {
   type StatusBayar,
 } from "@/lib/transactions";
 import { todayWib } from "@/lib/wib";
-import { normalisasiPlatform, normalisasiSubKendaraan } from "@/lib/parse/platform";
+import { normalisasiPlatform, normalisasiSubJasa, normalisasiSubKendaraan } from "@/lib/parse/platform";
 
 export interface ValidatedEntry {
   jenis: Jenis;
@@ -148,6 +148,7 @@ export interface RawEntry {
  */
 function validSubKategori(v: unknown, jenis: Jenis, kategori: string): string | null {
   if (jenis === "masuk" && kategori === "ojek") return normalisasiPlatform(v);
+  if (jenis === "masuk" && kategori === "jasa") return normalisasiSubJasa(v);
   const teks = typeof v === "string" && v.trim() ? v.trim().slice(0, 80) : null;
   if (!teks) return null;
   if (jenis === "keluar" && (kategori === "transportasi" || kategori === "operasional" || kategori === "peralatan")) {
