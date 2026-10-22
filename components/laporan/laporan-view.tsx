@@ -9,6 +9,7 @@ import { CategoryBreakdown } from "@/components/laporan/category-breakdown";
 import { VerifiedShare } from "@/components/laporan/verified-share";
 import { SealCard } from "@/components/laporan/seal-card";
 import { ValuationLocked } from "@/components/laporan/valuation-locked";
+import { KasbonCard } from "@/components/laporan/kasbon-card";
 import { PERIOD_OPTIONS, laporanDemo } from "@/lib/mock/finance";
 import { periodeSekarang } from "@/lib/catat/client";
 import { ambilLaporan, segelLaporan, urlPdfLaporan } from "@/lib/laporan/client";
@@ -180,16 +181,21 @@ export function LaporanView() {
           </button>
         </div>
       ) : kosong ? (
-        <div className="card flex flex-col items-center gap-2 p-10 text-center">
-          <h2>Belum ada catatan di periode ini</h2>
-          <p className="max-w-xs text-[14px] leading-relaxed text-ink-muted">
-            Begitu kamu mencatat, ringkasan dan grafiknya muncul di sini
-            otomatis.
-          </p>
-          <Link href="/catat" className="btn-primary mt-2 max-w-[220px]">
-            Mulai mencatat
-          </Link>
-        </div>
+        <>
+          <div className="card flex flex-col items-center gap-2 p-10 text-center">
+            <h2>Belum ada catatan di periode ini</h2>
+            <p className="max-w-xs text-[14px] leading-relaxed text-ink-muted">
+              Begitu kamu mencatat, ringkasan dan grafiknya muncul di sini
+              otomatis.
+            </p>
+            <Link href="/catat" className="btn-primary mt-2 max-w-[220px]">
+              Mulai mencatat
+            </Link>
+          </div>
+          {/* Kasbon tidak mengikuti periode: periode tanpa uang berpindah
+              tetap bisa punya orang yang berutang. */}
+          <KasbonCard onLaporanBerubah={() => setPercobaan((n) => n + 1)} />
+        </>
       ) : data ? (
         <>
           <SummaryCards kini={data.kini} sebelumnya={data.sebelumnya} />
@@ -204,6 +210,10 @@ export function LaporanView() {
             baris={data.keluar}
             nada="keluar"
           />
+          {/* Kasbon (Batch 2): satu-satunya tempat kasbon tampil di Laporan.
+              Pelunasan yang membuat transaksi mengubah angka di atas, jadi
+              laporan dibaca ulang dari server — bukan dirakit di klien. */}
+          <KasbonCard onLaporanBerubah={() => setPercobaan((n) => n + 1)} />
           <VerifiedShare
             masuk={data.kini.masuk}
             masukTerverifikasi={data.kini.masukTerverifikasi}

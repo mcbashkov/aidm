@@ -17,6 +17,7 @@ import {
   hapusTransaksi,
   hidrasiCatat,
   type BarisCatat,
+  type EntriCatat,
   type HidrasiCatat,
 } from "@/lib/catat/client";
 import {
@@ -38,7 +39,7 @@ import { todayWib } from "@/lib/wib";
  *  offline ke item antrean IndexedDB-nya. */
 type Bubble =
   | { kind: "user"; id: string; text: string }
-  | { kind: "entry"; id: string; tx: Transaction; antre: boolean; qid?: string }
+  | { kind: "entry"; id: string; tx: EntriCatat; antre: boolean; qid?: string }
   | { kind: "agent"; id: string; text: string };
 
 let counter = 0;
@@ -361,6 +362,16 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
             source: "chat",
             parsedBy: "fallback",
             status: e.amount === null ? "draft" : "confirmed",
+            // Pratinjau demo/offline memakai kartu yang sama dengan server:
+            // kalimat kasbon tidak boleh tampil sebagai "Masuk Rp45.000".
+            kasbon:
+              e.statusBayar === "belum"
+                ? {
+                    tipe: e.jenis === "masuk" ? "piutang" : "utang",
+                    pihak: e.pihak,
+                    lunas: false,
+                  }
+                : null,
           },
         });
       }
@@ -487,7 +498,9 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
           // Kalimat yang melahirkan entri tersimpan layak diulang besok —
           // masukkan ke chip personal sekarang juga. Draft (nominal belum
           // ada) dan kalimat tak dikenali tidak ikut: bukan contoh yang baik.
-          if (entries.length > 0 && !draftBaru) {
+          // Kasbon juga tidak: chip dari server hanya dibaca dari transaksi,
+          // dan kalimat kasbon membawa nama orang ketiga ke layar utama.
+          if (entries.length > 0 && !draftBaru && !entries.some((e) => e.kasbon)) {
             setChipsPersonal((p) => chipPersonal([...[...p].reverse(), text]));
           }
           segarkanSetelahTulis();

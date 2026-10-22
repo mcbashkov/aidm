@@ -4,11 +4,19 @@
  */
 
 import type { Transaction } from "@/lib/transactions";
+import type { KasbonRingkas } from "@/lib/kasbon/tipe";
 import type { KodeTidakDikenali, Pertanyaan } from "@/lib/catat/pesan";
 import { panggil, type ApiHasil } from "@/lib/api/panggil";
 import { bulanWib } from "@/lib/wib";
 
 export type { ApiHasil };
+
+/**
+ * Satu kartu entri di Catat. Bentuknya `Transaction`, plus penanda `kasbon`
+ * bila entri itu kasbon (Batch 2): uangnya BELUM berpindah, id-nya milik
+ * tabel `kasbon`, dan kartunya tidak boleh dibuka di sheet edit transaksi.
+ */
+export type EntriCatat = Transaction & { kasbon?: KasbonRingkas | null };
 
 /**
  * Respons `/api/catat`. Tidak ada satu pun string bebas: `pertanyaan` dan
@@ -17,7 +25,7 @@ export type { ApiHasil };
  * model bisa sampai ke gelembung percakapan.
  */
 export interface CatatResponse {
-  entries: Transaction[];
+  entries: EntriCatat[];
   pertanyaan: Pertanyaan | null;
   tidak_dikenali: KodeTidakDikenali | null;
   /** Berapa kali offtopic hari ini — menentukan panjang-pendek kalimatnya. */
@@ -54,7 +62,7 @@ export function kirimCatat(
 export function konfirmasiDraft(
   draftId: string,
   jawaban: string,
-): Promise<ApiHasil<{ ok: boolean; entry?: Transaction; pertanyaan?: Pertanyaan }>> {
+): Promise<ApiHasil<{ ok: boolean; entry?: EntriCatat; pertanyaan?: Pertanyaan }>> {
   return panggil("/api/catat/konfirmasi", {
     method: "POST",
     body: JSON.stringify({ draft_id: draftId, jawaban }),
@@ -108,7 +116,7 @@ export function hapusTransaksi(id: string): Promise<ApiHasil<{ ok: boolean }>> {
  * `rawInput` HANYA terisi lewat hidrasi ini — tidak ada layar lain yang
  * membacanya, jadi ia tidak ikut ke tipe `Transaction`.
  */
-export type BarisCatat = Transaction & { rawInput?: string | null };
+export type BarisCatat = EntriCatat & { rawInput?: string | null };
 
 /**
  * Thread Catat hari ini dari server (§7.2). Batas harinya `created_at` WIB —
