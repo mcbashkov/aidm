@@ -29,6 +29,7 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, unlinkSync } from "node:fs";
 import crypto from "node:crypto";
+import { createClient } from "@supabase/supabase-js";
 
 /* ── Env ─────────────────────────────────────────────────────────────────── */
 
@@ -117,6 +118,27 @@ async function api(path, { method = "GET", body, cookie } = {}) {
     /* respons tanpa body */
   }
   return { status: res.status, body: json };
+}
+
+/** Hapus PDF milik pengguna uji di bucket `berkas` lewat Storage API. */
+async function hapusPdfUji() {
+  const url = env.NEXT_PUBLIC_SUPABASE_URL;
+  const kunci = env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !kunci) return;
+  const uids = sql(`select string_agg(id::text, ' ') from users where privy_did like '${PREFIX}%'`)
+    .split(" ")
+    .filter(Boolean);
+  if (uids.length === 0) return;
+  const storage = createClient(url, kunci, { auth: { persistSession: false } }).storage.from("berkas");
+  for (const uid of uids) {
+    const { data } = await storage.list(uid);
+    const nama = (data ?? []).map((o) => `${uid}/${o.name}`);
+    if (nama.length > 0) {
+      const { error } = await storage.remove(nama);
+      if (error) throw error;
+      console.log(`  (dihapus dari bucket: ${nama.length} berkas uji)`);
+    }
+  }
 }
 
 /** Ekstrak teks PDF via pdftotext; null bila alatnya tidak terpasang. */
@@ -975,9 +997,14 @@ async function main() {
     cek("pratinjau tidak di-cache", (res.headers.get("cache-control") ?? "").includes("no-store"));
     const teks = pdfText(buf);
     if (teks !== null) {
-      cek("pratinjau memuat tanda air PRATINJAU & 'Terbit setelah pembelian'", teks.includes("PRATINJAU") && teks.includes("Terbit setelah pembelian"));
+      // Tanda air PRATINJAU adalah teks miring absolut yang tidak diekstrak
+      // pdftotext (diperiksa visual); yang bisa dibuktikan dari teks: satu
+      // halaman saja, dan tempat nomor dokumen berbunyi "terbit setelah pembelian".
+      cek("pratinjau satu halaman & 'Terbit setelah pembelian' di tempat nomor", teks.includes("Terbit setelah pembelian") && teks.includes("Halaman 1 dari 1"));
       cek("pratinjau memakai label peran dagang 'Berkas Usaha 6 Bulan'", teks.includes("Berkas Usaha 6 Bulan"));
-      cek("pratinjau tanpa kata laba/layak/KUR/token", !/\blaba\b|\blayak|\bKUR\b|token|kripto|opBNB|wallet/i.test(teks));
+      // Nama domain `ai.idmtoken.com` di URL verifikasi bukan kata salinan, dan
+      // "kriptografis" adalah frasa yang §0.2 justru wajibkan — keduanya dikecualikan.
+      cek("pratinjau tanpa kata laba/layak/KUR/token/kripto/wallet", !/\blaba\b|\blayak|\bKUR\b|token|kripto(?!grafis)|opBNB|wallet/i.test(teks.replace(/idmtoken\.com/g, "")));
     }
     cek("premium_events mencatat lihat_pratinjau", sql(`select count(*) from premium_events where user_id='${uidE}' and aksi='lihat_pratinjau' and kode='berkas6'`) === "1");
   }
@@ -1001,7 +1028,7 @@ async function main() {
     cek("nomor dokumen BK-YYYYMM-xxxxx", /^BK-\d{6}-\d{5}$/.test(baris[0] ?? ""), baris[0]);
     cek("kode verifikasi 12 karakter", (baris[1] ?? "").length === 12, baris[1]);
     cek("PDF tersimpan di bucket & sha256 64 hex", baris[2] === `${uidE}/${baris[0]}.pdf` && baris[3] === "64", baris.join(" "));
-    cek("order_id NULL (lewat Plus)", baris[5] === "t");
+    cek("order_id NULL (lewat Plus)", baris[5] === "true", baris[5]);
     cek("objek ada di storage.objects bucket berkas", sql(`select count(*) from storage.objects where bucket_id='berkas' and name='${uidE}/${baris[0]}.pdf'`) === "1");
     cek("galat menyebut dompet belum siap (notarisasi menunggu, bukan gagal)", sql(`select galat from berkas_pengajuan where id='${berkasId}'`).includes("dompet"));
   }
@@ -1021,7 +1048,7 @@ async function main() {
       if (teks !== null) {
         cek("dokumen penuh memuat nomor, Ringkasan periode, Rincian, Pernyataan, notarisasi", [nomorDok, "Ringkasan periode", "Rincian", "Pernyataan", "Notarisasi hash kriptografis"].every((k) => teks.includes(k)));
         cek("bulan tanpa catatan tetap ada halamannya", teks.includes("Tidak ada catatan pada bulan ini"));
-        cek("dokumen penuh tanpa kata laba/layak/KUR/token/kripto/wallet", !/\blaba\b|\blayak|\bKUR\b|token|kripto|opBNB|wallet|blockchain/i.test(teks));
+        cek("dokumen penuh tanpa kata laba/layak/KUR/token/kripto/wallet", !/\blaba\b|\blayak|\bKUR\b|token|kripto(?!grafis)|opBNB|wallet|blockchain/i.test(teks.replace(/idmtoken\.com/g, "")));
         cek("sidik jari tidak dicetak di dalam dokumen (sirkular)", !teks.includes(sql(`select sha256 from berkas_pengajuan where id='${berkasId}'`)));
       }
     }
@@ -1103,9 +1130,16 @@ try {
   // baris voucher selamat dari penghapusan user, jadi tanpa baris ini sampah
   // uji akan menumpuk di database yang sama dengan produksi.
   sql(`delete from swap_vouchers where user_address in ('${SWAP_ADDR_A}','${SWAP_ADDR_B}')`);
-  // PDF uji di bucket `berkas` tidak ikut cascade penghapusan users — hapus
-  // lewat storage.objects supaya tidak menumpuk di bucket produksi.
-  sql(`delete from storage.objects where bucket_id='berkas' and name like any (select id::text || '/%' from users where privy_did like '${PREFIX}%')`);
+  // PDF uji di bucket `berkas` tidak ikut cascade penghapusan users, dan
+  // Supabase MENOLAK delete langsung ke storage.objects (trigger
+  // storage.protect_delete) — hapus lewat Storage API dengan kunci service
+  // role. Dibungkus try/catch: kegagalan bersih-bersih tidak boleh menutupi
+  // galat asli dari main().
+  try {
+    await hapusPdfUji();
+  } catch (err) {
+    console.error("(bersih-bersih PDF uji gagal — periksa bucket `berkas` secara manual)", err);
+  }
   sql(`delete from users where privy_did like '${PREFIX}%'`);
   console.log("(user uji dibersihkan)");
 }
