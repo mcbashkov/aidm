@@ -16,10 +16,14 @@
  */
 
 import { readFileSync } from "node:fs";
+import { register } from "node:module";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
+// Alias `@/` + ekstensi .ts seperti bundler Next (scripts/hook-ts.mjs), supaya
+// fallback.ts boleh mengimpor modul murni lain (lib/parse/platform, Batch 10).
+register("./hook-ts.mjs", import.meta.url);
 const { parseFallback } = await import(
   new URL(join(root, "lib/parse/fallback.ts"), "file://").href
 );
@@ -30,6 +34,10 @@ const cases = JSON.parse(
 );
 const casesKasbon = JSON.parse(
   readFileSync(join(root, "tests/parser-kasbon.json"), "utf8"),
+);
+// Korpus ojol (Batch 10): platform per pendapatan & sub pengeluaran kendaraan.
+const casesOjol = JSON.parse(
+  readFileSync(join(root, "tests/parser-ojol.json"), "utf8"),
 );
 
 /** Pasangkan entri hasil ↔ harapan dengan permutasi terbaik (n kecil). */
@@ -57,6 +65,10 @@ function cocokkanEntri(hasil, harapan) {
       masalah.push(`status_bayar ${h.statusBayar}≠${e.status_bayar}`);
     if (e.pihak !== undefined && h.pihak !== e.pihak)
       masalah.push(`pihak ${h.pihak}≠${e.pihak}`);
+    // sub_kategori (Batch 10) diperiksa HANYA bila harapannya menyebut kunci
+    // itu (termasuk null = "tidak boleh terisi") — korpus 200 & kasbon tidak.
+    if ("sub_kategori" in e && (h.subKategori ?? null) !== e.sub_kategori)
+      masalah.push(`sub_kategori ${h.subKategori ?? null}≠${e.sub_kategori}`);
     return masalah;
   }
 
@@ -161,4 +173,17 @@ for (const g of kasbon.gagal.slice(0, tampil)) {
   }
 }
 
-process.exit(skor >= 0.95 && skorKasbon >= 0.95 ? 0 : 1);
+const ojol = nilai(casesOjol);
+const skorOjol = ojol.lulus / casesOjol.length;
+console.log(
+  `\n━━ Korpus ojol: ${ojol.lulus}/${casesOjol.length} = ${(skorOjol * 100).toFixed(1)}% (target ≥95%) ━━`,
+);
+for (const g of ojol.gagal.slice(0, tampil)) {
+  console.log(`  ✗ [${g.id}] "${g.text}"`);
+  for (const m of g.masalah) console.log(`      ${m}`);
+  if (process.env.VERBOSE) {
+    console.log(`      hasil: ${JSON.stringify(g.hasil)}`);
+  }
+}
+
+process.exit(skor >= 0.95 && skorKasbon >= 0.95 && skorOjol >= 0.95 ? 0 : 1);

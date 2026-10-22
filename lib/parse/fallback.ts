@@ -15,6 +15,9 @@
  * Diuji oleh tests/parser-cases.json (200 kalimat, `pnpm test:parser`).
  */
 
+// Satu-satunya impor runtime di berkas ini — modul murni tanpa dependensi;
+// runner uji Node menyelesaikannya lewat scripts/hook-ts.mjs.
+import { tebakPlatform, tebakSubKendaraan } from "@/lib/parse/platform";
 import type { EarnerType } from "@/lib/earner";
 import type {
   ItemBarang,
@@ -28,6 +31,9 @@ export interface ParsedEntry {
   jenis: Jenis;
   amount: number | null;
   kategori: string;
+  /** Batch 10: platform (kategori ojek) atau sub pengeluaran kendaraan
+   *  (peran ojol); null bila tidak disebut atau tidak relevan. */
+  subKategori: string | null;
   paymentMethod: PaymentMethod;
   occurredAt: string; // YYYY-MM-DD
   catatan: string;
@@ -285,7 +291,14 @@ function tebakJenis(teks: string, earner?: EarnerType): JenisTebakan {
   if (pihakLain) skorMasuk += 2; // pihak lain membayar KITA
   if (ISI_COMPOUND.test(teks)) skorKeluar += 2;
   if (NAIK_COMPOUND.test(teks)) skorKeluar += 2;
-  if (PESAN_MAKAN.test(teks)) skorKeluar += 2;
+  // "gofood/grabfood/shopeefood" bagi peran ojol = ORDERAN antar (uang masuk),
+  // kecuali kalimatnya jelas memesan/membeli makanan sendiri. Bagi peran lain
+  // tetap pengeluaran (pesan makan via aplikasi).
+  const pesanSendiri = /\b(pesan|pesen|beli|makan|order(?:in)?\s+makan)\b/.test(teks);
+  if (PESAN_MAKAN.test(teks)) {
+    if (earner === "ojol" && !pesanSendiri) skorMasuk += 2;
+    else skorKeluar += 2;
+  }
 
   // "setoran hari ini" bagi ojol = uang MASUK (§7.2 contoh chip); bagi peran
   // lain "setor" lebih sering berarti menyetor keluar.
@@ -310,7 +323,7 @@ function tebakJenis(teks: string, earner?: EarnerType): JenisTebakan {
     ISI_COMPOUND.test(teks) ||
     NAIK_COMPOUND.test(teks) ||
     PESAN_MAKAN.test(teks) ||
-    (earner === "ojol" && /\bsetoran\b/.test(teks));
+    (earner === "ojol" && /\b(setoran|trip|narik)\b/.test(teks));
 
   if (skorKeluar === 0 && skorMasuk === 0) {
     return { jenis: null, sinyalKuat: false };
@@ -363,6 +376,9 @@ const KATEGORI_KELUAR_RULES: [RegExp, string][] = [
   [/bensin|solar|pertalite|pertamax|bbm/, "operasional"],
   [/listrik|token|\bair\b|pulsa|kuota|paket data|wifi|internet|sewa|\bgas\b|elpiji|galon|langganan|admin|iuran|tagihan|packing|canva|adobe|figma|photoshop|domain|hosting|gofood|grabfood|\bjasa\b/, "operasional"],
   [/servis|bengkel|\boli\b|\bban\b|kampas|\bcvt\b|\baki\b|stnk|pajak|tambal|benerin|perbaikan|renovasi|tukang/, "operasional"],
+  // Cicilan/angsuran/sewa kendaraan bagi pelaku mikro = biaya operasional
+  // (Batch 10; korpus 200 sudah menerima operasional untuk "cicilan motor").
+  [/cicilan|angsuran|leasing|\brental\b/, "operasional"],
   [/ongkir|ongkos|angkot|parkir|\btol\b|transport|busway|kereta|\bbus\b|kurir|pickup|ekspedisi|\bjne\b|\bjnt\b|j&t|sicepat|anteraja|naik gojek|naik grab|naik ojek|naik taksi/, "transportasi"],
   [/iklan|promo|spanduk|banner|\bads\b|endorse|pemasaran|foto produk|konten/, "pemasaran"],
   [/\balat\b|mesin|kompor|wajan|etalase|peralatan|\bhp\b|laptop|\bram\b|lisensi|software|printer|rice cooker|kulkas|freezer|blender|gerobak|helm|jas hujan|sarung tangan|kabel|hdmi|\busb\b|hanger|display/, "peralatan"],
@@ -381,6 +397,9 @@ const KATEGORI_MASUK_RULES: [RegExp, string][] = [
 ];
 
 function tebakKategori(teks: string, jenis: Jenis, earner?: EarnerType): string {
+  // Peran ojol: nama platform/layanan antar pada pemasukan = pendapatan ojek,
+  // sebelum aturan umum ("shopeefood" jangan jatuh ke "shopee" = penjualan).
+  if (jenis === "masuk" && earner === "ojol" && tebakPlatform(teks)) return "ojek";
   const rules = jenis === "masuk" ? KATEGORI_MASUK_RULES : KATEGORI_KELUAR_RULES;
   for (const [re, slug] of rules) {
     if (re.test(teks)) return slug;
@@ -393,6 +412,25 @@ function tebakKategori(teks: string, jenis: Jenis, earner?: EarnerType): string 
     return "lainnya";
   }
   return "lainnya";
+}
+
+/**
+ * Sub-kategori (Batch 10) — HANYA untuk peran ojol: platform pada pemasukan
+ * `ojek`, sub pengeluaran kendaraan pada kategori transportasi/operasional/
+ * peralatan. Peran lain: null (tidak ada kolom baru, tidak ada tebakan).
+ */
+function tebakSubKategori(
+  teks: string,
+  jenis: Jenis,
+  kategori: string,
+  earner?: EarnerType,
+): string | null {
+  if (earner !== "ojol") return null;
+  if (jenis === "masuk") return kategori === "ojek" ? tebakPlatform(teks) : null;
+  if (kategori === "transportasi" || kategori === "operasional" || kategori === "peralatan") {
+    return tebakSubKendaraan(teks);
+  }
+  return null;
 }
 
 /* ── Waktu relatif (§7.2 / §17.1) ────────────────────────────────────────── */
@@ -728,6 +766,7 @@ export function parseFallback(
         e.statusBayar = "belum";
         e.jenis = arahKasbon(klausaTerakhir);
         e.kategori = tebakKategori(klausaTerakhir, e.jenis, opts.earner);
+        e.subKategori = tebakSubKategori(klausaTerakhir, e.jenis, e.kategori, opts.earner);
       }
       continue;
     }
@@ -791,6 +830,7 @@ export function parseFallback(
       jenis,
       amount,
       kategori,
+      subKategori: tebakSubKategori(k, jenis, kategori, opts.earner),
       // Metode bayar milik klausanya sendiri; klausa lain dalam kalimat yang
       // sama tetap tunai kecuali menyebut alat bayarnya sendiri (§17.1).
       paymentMethod: tebakMetode(k),

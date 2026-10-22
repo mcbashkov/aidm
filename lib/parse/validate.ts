@@ -18,6 +18,7 @@ import {
   type StatusBayar,
 } from "@/lib/transactions";
 import { todayWib } from "@/lib/wib";
+import { normalisasiPlatform, normalisasiSubKendaraan } from "@/lib/parse/platform";
 
 export interface ValidatedEntry {
   jenis: Jenis;
@@ -139,6 +140,22 @@ export interface RawEntry {
   items?: unknown;
 }
 
+/**
+ * sub_kategori (Batch 10): untuk pemasukan `ojek` WAJIB salah satu platform
+ * ternormalisasi atau null; untuk pengeluaran kendaraan dinormalkan ke
+ * bbm|servis|cicilan|sewa|kuota|parkir bila cocok, selain itu teks bebas
+ * (≤80) seperti sebelumnya — model boleh memberi sub lain yang berguna.
+ */
+function validSubKategori(v: unknown, jenis: Jenis, kategori: string): string | null {
+  if (jenis === "masuk" && kategori === "ojek") return normalisasiPlatform(v);
+  const teks = typeof v === "string" && v.trim() ? v.trim().slice(0, 80) : null;
+  if (!teks) return null;
+  if (jenis === "keluar" && (kategori === "transportasi" || kategori === "operasional" || kategori === "peralatan")) {
+    return normalisasiSubKendaraan(teks) ?? teks;
+  }
+  return teks;
+}
+
 export function validateEntries(
   raw: RawEntry[],
   today: string,
@@ -154,10 +171,7 @@ export function validateEntries(
       jenis,
       amount,
       kategori: validKategori(e.kategori, jenis),
-      subKategori:
-        typeof e.sub_kategori === "string" && e.sub_kategori.trim()
-          ? e.sub_kategori.trim().slice(0, 80)
-          : null,
+      subKategori: validSubKategori(e.sub_kategori, jenis, validKategori(e.kategori, jenis)),
       paymentMethod: validMetode(e.payment_method ?? e.paymentMethod),
       occurredAt: validTanggal(e.occurred_at ?? e.occurredAt, today),
       catatan:
