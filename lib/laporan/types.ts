@@ -56,8 +56,6 @@ export interface LaporanResponse {
   bulanTercatat: number;
 }
 
-/** Bulan catatan yang dibutuhkan sebelum kartu valuasi terbuka (§7.9). */
-export const VALUASI_BUTUH_BULAN = 6;
 
 export const RINGKASAN_KOSONG: Ringkasan = {
   masuk: 0,

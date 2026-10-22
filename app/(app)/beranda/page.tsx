@@ -15,6 +15,8 @@ import { useMe } from "@/components/providers/me-provider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GagalMuat } from "@/components/ui/gagal-muat";
 import { useKueri } from "@/components/providers/kueri-provider";
+import { ambilKesiapan, type KesiapanResponse } from "@/lib/kesiapan/client";
+import { JENDELA_6 } from "@/lib/kesiapan/hitung";
 import { BelumTersinkron } from "@/components/ui/belum-tersinkron";
 import type { ApiHasil } from "@/lib/api/panggil";
 import { DEFAULT_MISSIONS } from "@/lib/missions";
@@ -85,8 +87,21 @@ async function ambilBeranda(): Promise<ApiHasil<DataBeranda>> {
   return res;
 }
 
+/** Kesiapan Catatan: mode demo → null (tidak ada catatan siapa pun untuk
+ *  dinilai), selain itu apa adanya dari server. */
+async function ambilKesiapanBeranda(): Promise<ApiHasil<KesiapanResponse | null>> {
+  const res = await ambilKesiapan();
+  if (res.ok) return res;
+  if (res.demo) return { ok: true, data: null };
+  return res;
+}
+
 export default function BerandaPage() {
   const me = useMe();
+  const kesiapan = useKueri<KesiapanResponse | null>(
+    "kesiapan",
+    ambilKesiapanBeranda,
+  );
 
   // Satu sumber data untuk seluruh tab (components/providers/kueri-provider).
   // Kembali dari tab lain menyajikan salinan terakhir SEKETIKA lalu memeriksa
@@ -203,6 +218,55 @@ export default function BerandaPage() {
           </div>
         </div>
       </section>
+
+      {/* Blok 2 — Kesiapan Catatan (Batch 4, §1.3 poin 2). Gratis; tanpa
+          angka 0–100. Tombol "Buat …" hanya bila tingkat ≥ "Siap 3 bulan". */}
+      {kesiapan.keadaan === "gagal" ? (
+        <section className="card p-5">
+          <p className="text-[13px] font-medium text-ink-subtle">Kesiapan Catatan</p>
+          <GagalMuat offline={kesiapan.offline} onCobaLagi={kesiapan.muatUlang} />
+        </section>
+      ) : kesiapan.keadaan === "terbaca" && kesiapan.data ? (
+        <section className="card p-5">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="text-[13px] font-medium text-ink-subtle">
+              Kesiapan Catatan
+            </p>
+            <Link
+              href="/laporan#kesiapan"
+              className="shrink-0 text-[12px] font-semibold text-gold-deep"
+            >
+              Selengkapnya
+            </Link>
+          </div>
+          <p className="mt-1 text-[22px] font-semibold leading-tight text-ink">
+            {kesiapan.data.label}
+          </p>
+          <p className="tnum mt-0.5 text-[12.5px] text-ink-muted">
+            {kesiapan.data.bulanAktif6} dari {JENDELA_6} bulan terakhir aktif
+          </p>
+          {(() => {
+            const kurang = kesiapan.data.checklist
+              .filter((c) => !c.terpenuhi && !c.info)
+              .slice(0, 2);
+            return kurang.length > 0 ? (
+              <ul className="mt-3 space-y-1.5">
+                {kurang.map((c) => (
+                  <li key={c.kunci} className="flex items-start gap-2 text-[13px] text-ink">
+                    <span aria-hidden className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-gold-deep" />
+                    {c.label}
+                  </li>
+                ))}
+              </ul>
+            ) : null;
+          })()}
+          {kesiapan.data.berkas6Boleh ? (
+            <Link href="/laporan#kesiapan" className="btn-primary mt-4">
+              Buat {kesiapan.data.labelBerkas}
+            </Link>
+          ) : null}
+        </section>
+      ) : null}
 
       {/* Blok 3 — misi hari ini. Ikut disembunyikan saat gagal: judulnya
           menjanjikan keadaan HARI INI, dan kita tidak sedang bisa memastikan

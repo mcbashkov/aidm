@@ -31,7 +31,6 @@ import type {
   TitikHarian,
 } from "@/lib/laporan/types";
 
-export { VALUASI_BUTUH_BULAN } from "@/lib/laporan/types";
 export type { BarisKategori, Ringkasan, SealState, TitikHarian };
 
 /** Hari "ini" untuk seluruh data mock. */

@@ -8,6 +8,12 @@ import { TransactionSheet } from "@/components/transaksi/transaction-sheet";
 import { useMe } from "@/components/providers/me-provider";
 import { catatChips, type EarnerType } from "@/lib/earner";
 import { chipPersonal, gabungChips } from "@/lib/catat/chip";
+import {
+  ambilKesiapan,
+  kalimatTonggak,
+  tandaiTonggak,
+  type TonggakToast,
+} from "@/lib/kesiapan/client";
 import { parseFallback, bacaNominalJawaban } from "@/lib/parse/fallback";
 import { pesanPertanyaan, pesanTidakDikenali } from "@/lib/catat/pesan";
 import {
@@ -139,6 +145,33 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
    * kelas bug P0-1 yang sama.
    */
   const hidrasi = useKueri<HidrasiCatat>("catat:hari-ini", hidrasiCatat);
+
+  /**
+   * Toast tonggak Kesiapan Catatan (§1.3 poin 4): non-blokir, sekali seumur
+   * akun per tingkat, statusnya di DB (0034). Diperiksa saat thread pertama
+   * kali terbaca dari server — bukan setiap kirim: tingkat paling cepat
+   * berubah sehari sekali, dan satu permintaan ringan per kunjungan cukup.
+   * Mode demo/offline tidak pernah sampai ke sini (hidrasi tidak "terbaca").
+   */
+  const [tonggak, setTonggak] = useState<TonggakToast | null>(null);
+  const tonggakDiperiksa = useRef(false);
+  useEffect(() => {
+    if (hidrasi.keadaan !== "terbaca" || tonggakDiperiksa.current) return;
+    tonggakDiperiksa.current = true;
+    void (async () => {
+      const res = await ambilKesiapan();
+      if (!res.ok || !res.data.tonggakBaru) return;
+      setTonggak(res.data.tonggakBaru);
+      // Ditandai begitu tampil, bukan saat ditutup: "sekali seumur akun"
+      // tidak boleh bergantung pada pengguna menekan tombol tutup.
+      void tandaiTonggak(res.data.tonggakBaru);
+    })();
+  }, [hidrasi.keadaan]);
+  useEffect(() => {
+    if (!tonggak) return;
+    const id = setTimeout(() => setTonggak(null), 12_000);
+    return () => clearTimeout(id);
+  }, [tonggak]);
   const batalkanKueri = useBatalkanKueri();
   const sudahHidrasi = useRef(false);
 
@@ -747,6 +780,23 @@ export function CatatView({ earnerType: earnerProp = "dagang" }: CatatViewProps)
         >
           Kamu sedang offline. Catatan tetap tersimpan di perangkat dan dikirim
           otomatis begitu internet kembali.
+        </div>
+      ) : null}
+
+      {tonggak ? (
+        <div
+          role="status"
+          className="mb-4 flex shrink-0 items-start justify-between gap-3 rounded-card bg-gold-tint px-5 py-3 text-[12px] leading-relaxed text-ink"
+        >
+          <span>{kalimatTonggak(tonggak)}</span>
+          <button
+            type="button"
+            onClick={() => setTonggak(null)}
+            aria-label="Tutup"
+            className="shrink-0 text-[12px] font-semibold text-gold-deep"
+          >
+            Tutup
+          </button>
         </div>
       ) : null}
 

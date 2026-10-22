@@ -8,7 +8,7 @@ import { CashflowChart } from "@/components/laporan/cashflow-chart";
 import { CategoryBreakdown } from "@/components/laporan/category-breakdown";
 import { VerifiedShare } from "@/components/laporan/verified-share";
 import { SealCard } from "@/components/laporan/seal-card";
-import { ValuationLocked } from "@/components/laporan/valuation-locked";
+import { KesiapanCard } from "@/components/laporan/kesiapan-card";
 import { KasbonCard } from "@/components/laporan/kasbon-card";
 import { PERIOD_OPTIONS, laporanDemo } from "@/lib/mock/finance";
 import { periodeSekarang } from "@/lib/catat/client";
@@ -241,7 +241,10 @@ export function LaporanView() {
             Unduh PDF
           </a>
 
-          <ValuationLocked bulanTercatat={data.bulanTercatat} />
+          {/* Kesiapan Catatan (Batch 4) menggantikan kartu terkunci valuasi
+              usaha: valuasi adalah Fase 3 dan terlalu dekat dengan "kelayakan";
+              slotnya lebih berguna untuk kelengkapan catatan. */}
+          <KesiapanCard />
         </>
       ) : null}
     </div>
