@@ -1,10 +1,25 @@
 import { defineChain, type Chain } from "viem";
+import { daftarRpc } from "@/lib/chains/rpc";
 
 /**
  * Jaringan default AIDM = opBNB (§9.1, §16 #9): gas sangat murah, ditanggung
  * treasury untuk klaim misi; tukar & withdraw dibayar user. Token IDM Reborn
  * tetap di BSC (jalur lintas-chain difinalkan sebelum M4).
+ *
+ * URL RPC berupa daftar (env di depan, resmi sebagai cadangan) — alasannya di
+ * lib/chains/rpc.ts. Endpoint resmi:
+ * https://docs.bnbchain.org/bnb-opbnb/get-started/network-info/
  */
+
+export const OPBNB_RPC_RESMI = [
+  "https://opbnb-mainnet-rpc.bnbchain.org",
+  "https://opbnb.publicnode.com",
+] as const;
+
+export const OPBNB_TESTNET_RPC_RESMI = [
+  "https://opbnb-testnet-rpc.bnbchain.org",
+  "https://opbnb-testnet.publicnode.com",
+] as const;
 
 export const opbnb: Chain = defineChain({
   id: 204,
@@ -12,10 +27,7 @@ export const opbnb: Chain = defineChain({
   nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
   rpcUrls: {
     default: {
-      http: [
-        process.env.NEXT_PUBLIC_OPBNB_RPC_URL ||
-          "https://opbnb-mainnet-rpc.bnbchain.org",
-      ],
+      http: daftarRpc(process.env.NEXT_PUBLIC_OPBNB_RPC_URL, OPBNB_RPC_RESMI),
     },
   },
   blockExplorers: {
@@ -30,10 +42,10 @@ export const opbnbTestnet: Chain = defineChain({
   nativeCurrency: { name: "tBNB", symbol: "tBNB", decimals: 18 },
   rpcUrls: {
     default: {
-      http: [
-        process.env.NEXT_PUBLIC_OPBNB_TESTNET_RPC_URL ||
-          "https://opbnb-testnet-rpc.bnbchain.org",
-      ],
+      http: daftarRpc(
+        process.env.NEXT_PUBLIC_OPBNB_TESTNET_RPC_URL,
+        OPBNB_TESTNET_RPC_RESMI,
+      ),
     },
   },
   blockExplorers: {

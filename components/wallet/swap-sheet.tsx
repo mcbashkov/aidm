@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { formatEther, parseEther, type Chain } from "viem";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { formatEther, parseEther } from "viem";
 import { useWallets } from "@privy-io/react-auth";
 import { X, ArrowDown, CircleAlert, ExternalLink } from "lucide-react";
 import { formatNumberID, shortenAddress } from "@/lib/utils";
@@ -51,7 +51,18 @@ export function SwapSheet({
   const [swap, setSwap] = useState<KeadaanSwap | null>(null);
   const [klaim, setKlaim] = useState<KeadaanKlaim | null>(null);
   const [teks, setTeks] = useState("");
+  /** Galat PENGIRIMAN (approve/swap). Dipisah dari galat pembacaan di bawah
+   *  karena jalan keluarnya berbeda: yang ini "coba kirim lagi", yang itu
+   *  "baca ulang dari jaringan". */
   const [galat, setGalat] = useState<string | null>(null);
+  /** Galat PEMBACAAN keadaan kontrak — selalu disertai tombol Coba lagi. */
+  const [galatMuat, setGalatMuat] = useState<string | null>(null);
+  const [sedangMuat, setSedangMuat] = useState(false);
+  /** Percobaan ulang otomatis sesudah pembacaan pertama gagal — SEKALI saja.
+   *  Kegagalan sesaat (endpoint tersendat) sembuh sendiri tanpa pengguna
+   *  menyentuh apa pun; kegagalan menetap berhenti di tombol Coba lagi, bukan
+   *  di putaran permintaan yang membanjiri RPC. */
+  const percobaanOtomatisRef = useRef(0);
   const [txUrl, setTxUrl] = useState<string | null>(null);
 
   const burnChain = useMemo(
@@ -70,32 +81,63 @@ export function SwapSheet({
 
   /* ── Muat keadaan kontrak ─────────────────────────────────────────────── */
 
+  /**
+   * Dua kaki dibaca TERPISAH (`allSettled`, bukan `all`): opBNB (saldo, jatah,
+   * izin) dan BSC (kurs, fee). Dulu satu kaki gagal menggugurkan keduanya dan
+   * layar hanya bisa berkata "Gagal membaca data dari jaringan. Coba tutup dan
+   * buka lagi" — tanpa menyebut jaringan mana, tanpa jalan keluar selain
+   * menutup sheet. Sekarang yang terbaca ditampilkan apa adanya, yang gagal
+   * disebut namanya, dan tombol Coba lagi mengulang pembacaan di tempat.
+   *
+   * Tombol konfirmasi tetap terkunci selama salah satu kaki kosong (`alasan`
+   * di bawah) — tidak ada jalur mengirim tanpa kurs atau tanpa jatah.
+   */
   const muat = useCallback(async () => {
     if (!burnChain || !claimChain) {
-      setGalat("Jaringan fitur Tukar tidak dikenali di aplikasi ini.");
+      setGalatMuat("Jaringan fitur Tukar tidak dikenali di aplikasi ini.");
+      setTahap((t) => (t === "muat" ? "isi" : t));
       return;
     }
-    try {
-      const [s, k] = await Promise.all([
-        bacaKeadaanSwap(
-          burnChain,
-          config.idmx,
-          config.initiator,
-          address as `0x${string}`,
-        ),
-        bacaKeadaanKlaim(claimChain, config.claim),
-      ]);
-      setSwap(s);
-      setKlaim(k);
-      setTahap("isi");
-    } catch {
-      setGalat("Gagal membaca data dari jaringan. Coba tutup dan buka lagi.");
+    setSedangMuat(true);
+    setGalatMuat(null);
+    const [s, k] = await Promise.allSettled([
+      bacaKeadaanSwap(
+        burnChain,
+        config.idmx,
+        config.initiator,
+        address as `0x${string}`,
+      ),
+      bacaKeadaanKlaim(claimChain, config.claim),
+    ]);
+    if (s.status === "fulfilled") setSwap(s.value);
+    if (k.status === "fulfilled") setKlaim(k.value);
+    setSedangMuat(false);
+    setTahap((t) => (t === "muat" ? "isi" : t));
+
+    if (s.status === "rejected" && k.status === "rejected") {
+      setGalatMuat(
+        `Data dari ${burnChain.name} dan ${claimChain.name} belum terbaca. Periksa koneksi, lalu coba lagi.`,
+      );
+    } else if (s.status === "rejected") {
+      setGalatMuat(`Saldo dan jatah di ${burnChain.name} belum terbaca.`);
+    } else if (k.status === "rejected") {
+      setGalatMuat(`Kurs di ${claimChain.name} belum terbaca.`);
     }
   }, [burnChain, claimChain, config, address]);
 
   useEffect(() => {
     void muat();
   }, [muat]);
+
+  useEffect(() => {
+    if (!galatMuat || sedangMuat) return;
+    // Jaringan tak dikenali bukan kegagalan sesaat — mengulang tidak berguna.
+    if (!burnChain || !claimChain) return;
+    if (percobaanOtomatisRef.current >= 1) return;
+    percobaanOtomatisRef.current += 1;
+    const id = setTimeout(() => void muat(), 1_500);
+    return () => clearTimeout(id);
+  }, [galatMuat, sedangMuat, burnChain, claimChain, muat]);
 
   /* ── Hitungan ─────────────────────────────────────────────────────────── */
 
@@ -116,7 +158,9 @@ export function SwapSheet({
   const bersih = klaim && kotor > klaim.fee ? kotor - klaim.fee : 0n;
 
   const alasan: string | null = (() => {
-    if (!swap || !klaim) return "Memuat…";
+    if (!swap || !klaim) {
+      return sedangMuat ? "Memuat…" : "Data jaringan belum terbaca";
+    }
     if (swap.jeda) return "Fitur Tukar sedang dijeda sementara di jaringan.";
     if (klaim.jeda) return "Kolam klaim di BSC sedang dijeda sementara.";
     if (jumlahWei === 0n) return "Masukkan jumlah IDMX";
@@ -349,6 +393,23 @@ export function SwapSheet({
                 sendiri.
               </p>
             </div>
+
+            {galatMuat ? (
+              <div
+                role="alert"
+                className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-[rgba(233,178,74,.10)] px-3.5 py-2.5 text-[12.5px] leading-relaxed text-[#E9B24A]"
+              >
+                <span>{galatMuat}</span>
+                <button
+                  type="button"
+                  onClick={() => void muat()}
+                  disabled={sedangMuat || sedangJalan}
+                  className="shrink-0 rounded-lg border border-[rgba(243,198,74,.26)] px-2.5 py-1 text-[12px] font-semibold text-gold-light transition-colors hover:bg-white/5 disabled:opacity-50"
+                >
+                  {sedangMuat ? "Memuat…" : "Coba lagi"}
+                </button>
+              </div>
+            ) : null}
 
             {galat ? (
               <p

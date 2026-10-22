@@ -10,12 +10,21 @@
  * Pembacaan keadaan kontrak juga dilakukan di sini, bukan di server: angkanya
  * harus segar pada detik pengguna menekan tombol. Sisa jatah mingguan yang
  * basi 30 detik berarti transaksi yang revert setelah pengguna membayar gas.
+ *
+ * CATATAN (2026-10-22): "segar" tidak mewajibkan "dari browser" — pembacaan di
+ * server tanpa cache sama segarnya, dan lib/token/saldo.ts sudah memakai pola
+ * itu dengan alasan yang berlawanan (alamat pengguna tidak bocor ke penyedia
+ * RPC, tiap tab tidak menembak RPC sendiri). Sebelum mainnet, pembacaan di
+ * sini dipindahkan ke `GET /api/swap/keadaan` dan seluruh lalu lintas RPC
+ * browser dilewatkan proxy same-origin; `fallback()` di bawah adalah
+ * perbaikan sementara yang membuat testnet bisa dipakai dari HP.
  */
 
 import {
   createPublicClient,
   createWalletClient,
   custom,
+  fallback,
   http,
   type Chain,
   type EIP1193Provider,
@@ -58,8 +67,36 @@ export interface KeadaanKlaim {
   jeda: boolean;
 }
 
+/**
+ * Batas waktu satu permintaan RPC dari browser. Pembacaan normal opBNB/BSC
+ * dari jaringan seluler Indonesia ada di kisaran 100–600 ms; enam detik berarti
+ * endpoint itu memang bermasalah dan giliran cadangan yang dicoba.
+ */
+const RPC_TIMEOUT_MS = 6_000;
+
+/**
+ * Klien baca-saja untuk browser.
+ *
+ * `fallback()` atas SELURUH daftar URL chain (env + endpoint resmi), bukan
+ * `http()` polos atas entri pertama. Sebabnya tercatat di lib/chains/rpc.ts:
+ * dari HP satu endpoint publik bisa tidak terjangkau sama sekali — port
+ * difilter operator, atau rate-limit per IP di balik CGNAT seluler — sementara
+ * endpoint lain normal. Dengan satu URL, kegagalan itu tampil sebagai "Gagal
+ * membaca data dari jaringan" dan tidak ada yang bisa dilakukan pengguna.
+ *
+ * `retryCount: 1` per endpoint, bukan bawaan viem (3): sekali buka sheet ada
+ * delapan pembacaan, dan retry bawaan berarti sampai 32 permintaan ke endpoint
+ * yang sedang menolak — bila sebabnya rate-limit, itu justru memperparah.
+ * Lebih baik cepat pindah ke cadangan.
+ */
 export function publicClient(chain: Chain) {
-  return createPublicClient({ chain, transport: http() });
+  const urls = chain.rpcUrls.default.http;
+  return createPublicClient({
+    chain,
+    transport: fallback(
+      urls.map((url) => http(url, { timeout: RPC_TIMEOUT_MS, retryCount: 1 })),
+    ),
+  });
 }
 
 /**
