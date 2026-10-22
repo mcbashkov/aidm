@@ -1659,6 +1659,67 @@ tombol beli menjawab "sedang disiapkan". Uji di HP: Laporan → "Buat Berkas
 Usaha" → pratinjau → (Plus) buat → unduh; buka `/verifikasi/<kode>` dari HP
 dan cocokkan PDF-nya.
 
+### 7o. Batch 6 — Etalase premium & SKU Plus tahunan ✅ **TAYANG 2026-10-22**
+
+Perintah: `PERINTAH-AGEN-PREMIUM` §1.1, §1.3, §Batch 6. Commit `53a8dcd`
+(SKU + katalog + webhook + riwayat), `d826aaf` (UI /premium, Akun, halaman
+hukum), `389420e` (harness seksi 19 + dua perbaikan harness) · deploy
+`dpl_AwEbxQSGaPmkustsJCe6cmx8BcWP` READY. Tanpa migrasi.
+
+- [x] SKU 30 hari → **AIDM Plus 365 hari Rp149.000** (`kode = plus`).
+      `HARGA_BULANAN_IDR`, `PERIODE_HARI`, `HARGA_TAMPIL` dihapus dari
+      `lib/langganan/index.ts`; harga, periode, dan nama produk kini
+      satu-satunya di `lib/langganan/katalog.ts`. `POST /api/langganan/bayar`
+      mencatat `kode` + `premium_events` klik_beli; webhook sadar `kode`
+      (plus → 365 hari + bayar_sukses · berkas → `buatBerkas` · pesanan lama
+      tanpa kode → jalur lama); `GET /api/langganan` + `riwayat` (20 lunas
+      terakhir).
+- [x] `/premium` urutan §1.3 #6: Berkas (label peran, harga 6/12 bulan,
+      tautan ke pintu Laporan) → Plus tahunan (masa coba 7 hari tetap) →
+      "Termasuk dalam Plus" (Riset Tren & Generator Konten, gerbang 402/429
+      yang ada) → gratis selamanya + Kesiapan Catatan + Segel. Tidak ada
+      angka rupiah hard-coded.
+- [x] Akun: kartu "Fitur premium" → **"Langganan & berkas"** (status Plus/
+      masa coba, riwayat pembelian, daftar berkas + unduh ulang, tautan
+      `/premium`) — bukan lagi pintu penjualan utama; pintu utama di Laporan.
+- [x] `/syarat-ketentuan` + `/pengembalian-dana`: "30 hari" → Plus 365 hari
+      dan Berkas sekali bayar per dokumen; tetap "tidak diperpanjang
+      otomatis".
+- [x] Tidak berubah: masa coba 7 hari sekali seumur akun, `KUOTA_BULANAN`
+      Riset/Konten, `middleware.ts`, langganan lama `tidak_aktif`.
+
+**Gerbang §0.3:** typecheck bersih · lint bersih · `test:parser` 200/200 +
+29/29 · `test:canonical` 27/27 · `test:kesiapan` 22/22 · `test:api`
+**218/218** (seksi 19: 12 cek — pesanan plus 365 hari Rp149.000; notifikasi
+Midtrans disimulasikan dengan tanda tangan sha512 yang sah dari kunci
+sandbox lokal, tanpa jaringan Midtrans dan tanpa uang nyata: tanda tangan
+palsu 401, nominal tak cocok → `failed`, settlement sah → aktif ≈365 hari,
+replay → "sudah diproses" tanpa menambah masa, Plus dari pesanan memberi
+berkas tanpa bayar) · deploy READY · cek asap produksi: `/api/langganan`
+401 tanpa sesi, `/syarat-ketentuan` dan `/pengembalian-dana` memuat
+"Rp149.000"/"365 hari" dan tidak lagi "30 hari".
+
+**Keputusan yang saya ambil sendiri:**
+- Durasi perpanjangan di webhook diambil dari **katalog berdasarkan `kode`**,
+  bukan dari `subscription_orders.periode_hari` — kolom itu jejak harga/masa
+  saat memesan, bukan otoritas; pesanan tanpa `kode` (era 30 hari) tetap
+  memakai jalur lama agar notifikasi yang terlambat tidak salah hitung.
+- Kartu Pajak **disembunyikan** sampai Batch 9 (bukan "segera hadir" yang
+  menjanjikan tanggal).
+- Riset & Konten tidak dipindah; hanya diberi label "termasuk dalam Plus"
+  dan ajakan diarahkan ke Plus tahunan (keputusan arsitek PO).
+- Harness: galat TRANSPORT (soket ditutup sebelum menjawab) diulang satu
+  kali — yang diuji aplikasinya, bukan soketnya; klien Storage memakai
+  `fetchAsli` (pembungkus `connection: close` menyebar `Headers` sehingga
+  content-type hilang); pesanan uji dihapus eksplisit di akhir
+  (`subscription_orders` bertahan saat pengguna dihapus).
+
+**Butuh tangan PO:** kunci Midtrans produksi masih 401 (Memblokir #1) —
+pembelian Plus di produksi menjawab "sedang disiapkan" sampai itu beres.
+Uji di HP: `/premium` → kartu Berkas menautkan ke Laporan; Akun → "Langganan
+& berkas" menampilkan status + riwayat; Syarat & Ketentuan menyebut 365
+hari.
+
 ### 8. 🤖 M5 — premium di balik LANGGANAN
 
 Model kredit **dibatalkan sebelum sempat rilis** (keputusan PO 2026-08-28).
