@@ -1371,15 +1371,27 @@ kontrak, dan "sudah jalan di PC" justru yang menyesatkan selama berjam-jam.
 dijalankan (butuh env produksi & anvil) — statusnya masih yang tercatat di
 "Keadaan sekarang".
 
-### 7k. Kasbon — Batch 2 🟡 **KODE SELESAI 2026-10-22, MENUNGGU MIGRASI**
+### 7k. Kasbon — Batch 2 🟡 **TAYANG DI PRODUKSI 2026-10-22**, `test:api` menunggu
 
-Lima commit lokal, **belum di-push**: commit API & UI membaca tabel `kasbon`,
-jadi `main` hanya boleh di-push SETELAH 0031 dan 0032 diterapkan — kalau
-tidak, setiap kalimat kasbon di Catat menjadi 500 di produksi.
+Lima commit (`c8d6f60..bc07dad`). Commit API & UI membaca tabel `kasbon`,
+jadi urutannya WAJIB migrasi dulu, baru push — kalau terbalik, setiap
+kalimat kasbon di Catat menjadi 500 di produksi.
 
-**Urutan menyalakan (🧑):** `pnpm db:migrate` (0031 lalu 0032) →
-`git push` → jalankan `pnpm test:api` sekali (seksi 16 baru, 30 cek +
-cascade kasbon di hapus akun).
+**Urutan menyalakan — yang terjadi 2026-10-22:**
+1. [x] `pnpm db:migrate` dijalankan dari sesi agen atas perintah PO, setelah
+       pemeriksaan baca-saja menunjukkan tabel `kasbon` belum ada. Yang
+       masuk: **0030, 0031, 0032** — 0030 ikut karena dulu diterapkan lewat
+       SQL Editor tanpa tercatat di `schema_migrations` (efeknya sudah ada,
+       diulang aman). Diverifikasi sesudahnya: tabel, kolom `items`, 13
+       constraint, 5 indeks, dua fungsi, RLS, `misi_sinyal_harian` versi
+       0032, FK 0030 `set null`.
+2. [x] `git push` → deploy Vercel `dpl_DxQaXvYoXEXyGz6m1V9CX8L5uLUU` READY
+       (build 102 dtk). Cek asap tanpa sesi di `ai.idmtoken.com`: `/api/kasbon`
+       404 → 401 (rute ada, auth diperiksa lebih dulu), PATCH/DELETE 401,
+       `/laporan` 307 ke `/masuk`, beranda 200.
+3. ⬜ 🧑 `pnpm test:api` sekali (seksi 16 baru, 30 cek + cascade kasbon di
+       hapus akun). Butuh dev server dengan env produksi dan memanggil Haiku
+       beberapa kali.
 
 **Keputusan PO 2026-10-22 (lima rekomendasi diterima):** kartu di halaman
 Laporan yang ada, tanpa segmen baru (segmen "Usaha" tidak pernah ada) ·
@@ -1432,9 +1444,22 @@ basis kas — kasbon tidak masuk Sisa uang, PDF, maupun segel sampai lunas ·
   bergeser 16px karena ikut `space-y` kartunya.
 
 **Belum, dan terbuka:**
-- ⬜ 🧑 Migrasi 0031/0032 belum diterapkan; `test:api` seksi 16 belum
-      pernah jalan; jalur LLM (Haiku) untuk kalimat kasbon belum dicoba
-      dengan kunci sungguhan — korpus hanya menguji fallback.
+- ⬜ 🧑 `test:api` seksi 16 belum pernah jalan; jalur LLM (Haiku) untuk
+      kalimat kasbon belum dicoba dengan kunci sungguhan — korpus hanya
+      menguji fallback. Belum ada satu pun kalimat kasbon dari pengguna
+      nyata (baris `kasbon` = 0 saat tayang).
+- ⬜ **Temuan saat verifikasi, di luar kasbon:** di produksi **139 dari 139
+      fungsi** skema `public` bisa dieksekusi `anon` — termasuk semua fungsi
+      lama. Sebabnya *default privileges* Supabase memberi EXECUTE ke
+      `anon`/`authenticated` saat fungsi dibuat, jadi pola `revoke … from
+      public; grant … to service_role` di seluruh migrasi proyek (0013 dst.)
+      tidak pernah mencapai maksudnya. **Bukan lubang hari ini:** tidak ada
+      fungsi `SECURITY DEFINER`, dan setiap tabel ber-RLS tanpa policy (kecuali
+      `schema_migrations`), jadi panggilan `anon` ke RPC mana pun berakhir di
+      nol baris. Perbaikannya satu migrasi kecil: revoke dari
+      `anon`/`authenticated` untuk fungsi yang ada + `alter default
+      privileges` supaya fungsi berikutnya tidak mewarisinya. Belum
+      dikerjakan.
 - ⬜ Menghapus transaksi pelunasan di Riwayat TIDAK membuka kembali
       kasbonnya (kasbon tetap lunas, uangnya hilang dari laporan).
 - ⬜ Cicilan, jatuh tempo (kolom sudah ada), dan pengingat WA belum.
