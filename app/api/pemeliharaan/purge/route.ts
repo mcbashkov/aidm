@@ -135,6 +135,19 @@ async function purge(req: Request) {
     console.error("[pemeliharaan] sapu berkas gagal:", err);
   }
 
+  // Proxy RPC (0037): baris batas laju yang tidak tersentuh 24 jam dibuang.
+  // Jendelanya hanya 60 detik, jadi baris yang lebih tua dari sehari pasti
+  // sudah tidak berarti apa-apa. Gagal di sini dicatat, tidak menggagalkan.
+  let rpcRateDisapu: number | null = null;
+  const { data: rr, error: errRr } = await supa.rpc("rpc_rate_sapu", {
+    p_umur_detik: 86_400,
+  });
+  if (errRr) {
+    console.error("[pemeliharaan] sapu rpc_rate gagal:", errRr);
+  } else {
+    rpcRateDisapu = typeof rr === "number" ? rr : 0;
+  }
+
   return NextResponse.json({
     ok: true,
     retensiHari: RETENSI_HARI,
@@ -143,6 +156,7 @@ async function purge(req: Request) {
     kasbonDibersihkan,
     langgananDisapu,
     berkas,
+    rpcRateDisapu,
   });
 }
 
