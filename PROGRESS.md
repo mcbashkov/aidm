@@ -1503,6 +1503,46 @@ basis kas — kasbon tidak masuk Sisa uang, PDF, maupun segel sampai lunas ·
       dua arah seperti "bu warung ngasih utang dulu" terbaca piutang —
       parser LLM yang diandalkan untuk itu.
 
+### 7l. Batch 3 — koreksi klaim Perpres 27/2026 ✅ **TAYANG 2026-10-22**
+
+Perintah: `docs/PERINTAH-AGEN-PREMIUM.md` §Batch 3. Commit `d9ec3dd` (3a) di
+atas `bc2f20f` (dua berkas perintah & riset) · deploy
+`dpl_9irH97yMjvoNgwTMzTbCUK9g3BN2` READY.
+
+- [x] **3a.** Klaim "berlaku 1 Juli 2026", "~2,8 juta pengemudi",
+      "mewajibkan pilar pelatihan manajemen keuangan", "KUR mikro bunga 3%"
+      diganti rumusan netral §Batch 3 di PRD §2 #4 (+ catatan kaki yang
+      merekam apa yang dihapus dan tanda **[verifikasi naskah di JDIH Setneg
+      — PO]**), PRD §4 (sasaran & persona ojol), komentar `lib/earner.ts` dan
+      `onboarding/peran` (kini alasan PRODUK: bentuk penghasilan ojol
+      berbeda; Perpres disebut sebagai pengakuan mitra), keyword metadata
+      `app/layout.tsx`. Grep ulang: README, prompt `lib/parse/llm.ts`,
+      `lib/konten`, `lib/research`, halaman hukum — tidak memuat klaim itu.
+- [x] **3b.** Migrasi 0033 sudah diterapkan & diverifikasi di §7k; bukti
+      "tidak ada jalur yang putus" = `test:api` penuh **154/154** pasca-0033
+      (jalan ini, dev server lokal + env produksi, parser Haiku).
+
+**Gerbang §0.3:** typecheck bersih · lint bersih · `test:parser` 200/200 +
+kasbon 29/29 · `test:canonical` 27/27 · `test:swap` tidak wajib (tidak
+menyentuh swap/chain) · `test:api` 154/154 · tanpa migrasi baru · deploy
+READY, cek asap tanpa sesi: `/` 200, `/api/kasbon` 401, HTML beranda memuat
+keyword baru dan nol "KUR mikro".
+
+**Keputusan yang saya ambil sendiri:**
+- Keyword metadata "KUR mikro" → "berkas pengajuan pinjaman mikro" (§0.2
+  menyebut metadata; alternatif ditolak: membiarkannya sebagai "kalimat
+  penjelas" — sebuah keyword bukan kalimat).
+- PRD §4 (sasaran "definisi yang diperluas negara", persona ojol "akses KUR
+  3%") ikut dirapikan meski §Batch 3 hanya menyebut ~59 dan ~85 secara
+  eksplisit; alternatif ditolak: meninggalkan klaim turunan yang sama.
+- Komentar "penilai KUR" di `lib/laporan/pdf.tsx` dan README dibiarkan —
+  kalimat penjelas umum, diizinkan §0.2.
+
+**Butuh tangan PO:** naskah Perpres 27/2026 di JDIH (tanda di PRD §2) ·
+`AIDM_Ringkasan_Produk.pdf` di akar repo adalah biner yang masih memuat klaim
+Perpres versi lama, "Skor Kelayakan Kredit", dan "laba operasional" — tidak
+bisa disunting agen; dokumen itu beredar ke pihak luar.
+
 ### 8. 🤖 M5 — premium di balik LANGGANAN
 
 Model kredit **dibatalkan sebelum sempat rilis** (keputusan PO 2026-08-28).
