@@ -1543,6 +1543,57 @@ keyword baru dan nol "KUR mikro".
 Perpres versi lama, "Skor Kelayakan Kredit", dan "laba operasional" — tidak
 bisa disunting agen; dokumen itu beredar ke pihak luar.
 
+### 7m. Batch 4 — Kesiapan Catatan ✅ **TAYANG 2026-10-22**
+
+Perintah: `PERINTAH-AGEN-PREMIUM` §1.4 & §Batch 4. Commit `cb0e93a` (lib +
+API + 0034), `7eef5f7` (UI), `ab7f751` (harness) · deploy
+`dpl_3WzeKzQv5KCXC66gY85X7xfokGcH` READY.
+
+- [x] `lib/kesiapan/hitung.ts` murni (tanpa impor runtime, aritmetika bulan
+      atas string YYYY-MM) + `pnpm test:kesiapan` **22/22** — batas bulan
+      WIB, akun baru, bulan kosong di tengah, pelunasan kasbon = hari aktif,
+      jendela 12, checklist, label per peran.
+- [x] `GET /api/kesiapan` + `POST /api/kesiapan/tonggak`; cache per pengguna
+      per hari di proses, dikosongkan di awal tiap rute tulis.
+- [x] Migrasi **0034** `kesiapan_tonggak` (PK user×tingkat, RLS, cascade):
+      dua kali di Postgres sekali pakai → dry-run tepat satu → `db:migrate`
+      → verifikasi tabel/RLS/tercatat.
+- [x] Beranda: kartu inline setelah "Sisa hari ini"; Laporan: `KesiapanCard`
+      menggantikan `ValuationLocked` (komponen & `VALUASI_BUTUH_BULAN`
+      dihapus); Catat: toast tonggak sekali seumur akun.
+- [x] Diperiksa dengan sesi uji di dev server lokal (pengguna `siap3` yang
+      disemai lalu dihapus): Beranda menampilkan "Siap 3 bulan · 3 dari 6
+      bulan terakhir aktif · Buat Berkas Usaha"; Laporan `#kesiapan` tampil
+      dengan checklist penuh dan gulir mendarat di kartunya. Toast Catat
+      diverifikasi di tingkat API (seksi 17), tidak sempat diperiksa visual.
+
+**Gerbang §0.3:** typecheck bersih · lint bersih · `test:parser` 200/200 +
+kasbon 29/29 · `test:kesiapan` 22/22 · `test:canonical` 27/27 (tidak wajib) ·
+`test:api` **173/173** (seksi 17 baru: 18 cek + cascade) · 0034 diterapkan
+sebelum push · deploy READY · cek asap: `/api/kesiapan` 404 → 401.
+
+**Keputusan yang saya ambil sendiri:**
+- Jendela `siap3` = 6 bulan termasuk bulan berjalan; hanya `siap6` yang
+  mengecualikannya (teks §1.4 hanya menyebut pengecualian pada siap6).
+- `rutin` = ≥1 bulan aktif yang belum siap3/siap6 — tabel §1.4 tidak
+  menutup tiga bulan aktif yang tersebar di luar 6 bulan terakhir.
+- Tonggak toast di tabel kecil `kesiapan_tonggak`, bukan kolom `users`;
+  menandai siap6 ikut menandai siap3.
+- Cache harian di dalam proses (bukan tabel) dengan invalidasi di AWAL tiap
+  rute tulis; jendela basinya sepersekian detik dan tersapu pergantian hari.
+- Toast Catat diperiksa saat thread pertama terbaca, bukan tiap kirim.
+- Mode demo: kartu tidak dirender (tidak ada catatan siapa pun untuk dinilai).
+- Field `bulanTercatat` di `/api/laporan` dibiarkan walau `ValuationLocked`
+  hilang — cek harness lama masih memakainya.
+
+**Catatan operasional:** dev server `next dev` dua kali dibunuh OOM killer
+kernel (RSS 3,3 GB lalu 4,0 GB) saat harness menyentuh semua rute, dan
+yang kedua ikut mematikan sesi agen. Mulai Batch 5 dev server lokal dijalankan
+dengan `NODE_OPTIONS=--max-old-space-size=2048` (konfigurasi lokal
+`.claude/launch.json`, tidak di-commit) supaya yang mati hanya servernya.
+
+**Butuh tangan PO:** tidak ada.
+
 ### 8. 🤖 M5 — premium di balik LANGGANAN
 
 Model kredit **dibatalkan sebelum sempat rilis** (keputusan PO 2026-08-28).
