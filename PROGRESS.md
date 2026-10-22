@@ -54,11 +54,11 @@ perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
 | M6 mainnet & beta | ⬜ belum mulai | tokenomics terbuka, tapi **audit pra-mainnet menemukan 1 Critical + 4 High** (semua Terbuka) — lihat Titik lanjut |
 | M7 Play & App Store | ⬜ belum mulai | — |
 
-**Gerbang otomatis terkini (2026-10-22, Batch 9):** `test:parser` 200/200 +
-korpus kasbon 29/29 · `test:swap` 36/36 · `test:canonical` 27/27 ·
+**Gerbang otomatis terkini (2026-10-22, Batch 10):** `test:parser` 200/200 +
+korpus kasbon 29/29 + korpus ojol 30/30 · `test:swap` 36/36 · `test:canonical` 27/27 ·
 `test:kesiapan` 22/22 · `test:pajak` 17/17 · `test:misi` 30/30 · `test:api`
-**282/282** (env produksi, 22 seksi) · typecheck bersih · lint bersih · build
-Vercel READY (`cb9f391`). Uji browser produksi terakhir: 17/17 (P2-6 + guardrail,
+**291/291** (env produksi, 23 seksi) · typecheck bersih · lint bersih · build
+Vercel READY (`a0f8490`). Uji browser produksi terakhir: 17/17 (P2-6 + guardrail,
 2026-09-07) dan 11/11 (perbaikan "Menyiapkan…" + identitas ber-cache).
 
 **Produksi 2026-09-07:** 16 pengguna · 128 transaksi · 13 klaim misi ·
@@ -1926,6 +1926,67 @@ Pajak di produksi menjawab "sedang disiapkan". Uji di HP: Akun → nyalakan
 "Saya wajib pajak orang pribadi" → Laporan → kartu Pajak usaha (omzet vs
 batas); (Plus) buat Rincian → unduh; buat Surat Pernyataan → berkas terunduh
 ke HP, tidak tersimpan di Akun.
+
+### 7s. Batch 10 — Ojol: platform per pendapatan & biaya kendaraan ✅ **TAYANG 2026-10-22**
+
+Perintah: `PERINTAH-AGEN-PREMIUM` §Batch 10 (gratis — bagian Catat/Laporan).
+Commit `0fcc24a` (parser + korpus + runner), `9d75b21` (0039 + Laporan +
+Berkas + impor CSV), `a0f8490` (harness seksi 23) · deploy `dpl_9zHEmMsEawvwzPM5kog5mCMS17qc` READY.
+
+- [x] Parser — **tanpa kolom baru** (`transactions.sub_kategori` sudah ada):
+      `lib/parse/platform.ts` murni (platform gojek|grab|maxim|indrive|
+      shopeefood|lainnya; sub kendaraan bbm|servis|cicilan|sewa|kuota|parkir).
+      Fallback mengisi `subKategori` HANYA untuk peran ojol; kalimat tanpa
+      platform → null. Arah: "gofood/grabfood/shopeefood" bagi ojol = orderan
+      antar (masuk) kecuali jelas memesan sendiri; bagi peran lain tetap
+      pengeluaran. Aturan baru `cicilan|angsuran|leasing|rental` →
+      operasional. Validator menormalkan `sub_kategori` hasil LLM (ojek →
+      enum platform atau null; kendaraan → enum sub bila cocok). Prompt LLM
+      diberi aturan `sub_kategori`.
+- [x] Korpus baru `tests/parser-ojol.json` **30 kasus** (hari acuan
+      2026-08-12), runner menilai `sub_kategori` hanya bila harapan menyebut
+      kuncinya; **korpus 200 tidak diubah** (200/200 tetap). Runner memakai
+      hook resolusi `scripts/hook-ts.mjs` (alias `@/` + ekstensi `.ts`)
+      sehingga fallback.ts boleh mengimpor modul murni lain.
+- [x] Migrasi **0039**: RPC `laporan_ojol_platform` & `laporan_ojol_kendaraan`
+      (baca-saja, service_role). Dua kali di Postgres sekali pakai → dry-run
+      tepat satu → `db:migrate`.
+- [x] Laporan untuk `earner_type = ojol`: blok `ojol` di `GET /api/laporan`
+      + `OjolCard` — pemasukan per platform (kotor, dengan persen), total
+      pengeluaran kendaraan per sub, **"bersih harian rata-rata"** =
+      (pemasukan − pengeluaran usaha) ÷ hari aktif. Tanpa kata "laba".
+- [x] Berkas Pengajuan ojol: tabel per platform × bulan di halaman ringkasan.
+- [x] `lib/impor/ojol.ts`: tipe & pembaca CSV generik (tanggal, platform,
+      kotor, potongan, bersih; kepala dikenali dari sinonim; `,`/`;`) —
+      **tanpa UI**, menunggu format aplikator (≈2027). Tanpa OCR.
+
+**Gerbang §0.3:** typecheck bersih · lint bersih · `test:parser` **200/200**
++ kasbon 29/29 + **ojol 30/30** · `test:canonical` 27/27 (PDF Berkas) ·
+`test:kesiapan` 22/22 · `test:pajak` 17/17 · `test:api` **291/291** (seksi 23:
+9 cek) · 0039 diterapkan sebelum push · deploy READY · cek asap:
+`/api/laporan` 401 tanpa sesi.
+
+**Keputusan yang saya ambil sendiri:**
+- Sub-kategori kendaraan diisi HANYA untuk peran ojol di fallback ("kuota"
+  bagi freelancer adalah internet, bukan kendaraan); validator menormalkan
+  untuk semua peran bila LLM mengisinya dengan nilai enum.
+- Platform pada pemasukan ojol diputuskan SEBELUM aturan kategori umum:
+  "shopeefood" tidak boleh jatuh ke "shopee" = penjualan. Untuk peran lain
+  aturan lama utuh (korpus 200 tidak berubah).
+- "gofood/grabfood/shopeefood" bagi ojol = uang MASUK kecuali ada kata
+  pesan/beli/makan — korpus 200 kasus freelance "gofood pas meeting" tetap
+  pengeluaran.
+- Hook resolusi modul di runner uji (bukan `allowImportingTsExtensions` di
+  tsconfig, bukan menduplikasi regex ke fallback.ts).
+- Rekap ojol hanya dihitung untuk earner ojol (dua RPC tambahan tidak dibayar
+  peran lain); blok `ojol` tidak ada untuk peran lain.
+- Tabel per platform di PDF menampilkan angka per bulan dalam ribuan rupiah
+  agar 12 kolom muat di A4; total dalam rupiah penuh.
+
+**Butuh tangan PO:** tidak ada yang memblokir. Uji di HP (peran ojol):
+Catat "narik gojek 150rb", "grab 80rb", "isi bensin 30rb" → Laporan: kartu
+"Pendapatan per platform" (Gojek/Grab, BBM, bersih harian rata-rata); buat
+Berkas → halaman ringkasan memuat tabel per platform.
 
 ### 8. 🤖 M5 — premium di balik LANGGANAN
 
