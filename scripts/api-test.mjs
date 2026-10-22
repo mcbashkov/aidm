@@ -957,6 +957,88 @@ async function main() {
     cek("tandai siap6 juga menandai siap3", sql(`select count(*) from kesiapan_tonggak where user_id='${uidD3}'`) === "2");
   }
 
+  console.log("\n── 18. Berkas Pengajuan (Batch 5, §1.5, migrasi 0035) ──");
+  const uidE = sql(`insert into users (privy_did, earner_type, nama_usaha, kota, kategori_id) values ('${PREFIX}E', 'dagang', 'Warung Uji Berkas', 'Depok', (select id from categories where slug='kuliner')) returning id`);
+  const E = sessionCookie(uidE, `${PREFIX}E`);
+  for (const m of [1, 2, 3]) seedRollups(uidE, m, 8); // siap3 (3 bulan penuh sebelum bulan ini)
+  {
+    const r = await api("/api/berkas/pratinjau", { method: "POST", body: { kode: "berkas6" } });
+    cek("pratinjau tanpa sesi → 401", r.status === 401, `dapat ${r.status}`);
+    const buruk = await api("/api/berkas/pratinjau", { method: "POST", cookie: E, body: { kode: "berkas99" } });
+    cek("kode asing → 400", buruk.status === 400, `dapat ${buruk.status}`);
+  }
+  {
+    const res = await fetch(`${BASE}/api/berkas/pratinjau`, { method: "POST", headers: { "content-type": "application/json", cookie: E }, body: JSON.stringify({ kode: "berkas6" }) });
+    const buf = Buffer.from(await res.arrayBuffer());
+    cek("pratinjau → 200 application/pdf", res.status === 200 && (res.headers.get("content-type") ?? "").includes("application/pdf"), `${res.status} ${res.headers.get("content-type")}`);
+    cek("pratinjau berkas PDF sungguhan", buf.subarray(0, 4).toString() === "%PDF");
+    cek("pratinjau tidak di-cache", (res.headers.get("cache-control") ?? "").includes("no-store"));
+    const teks = pdfText(buf);
+    if (teks !== null) {
+      cek("pratinjau memuat tanda air PRATINJAU & 'Terbit setelah pembelian'", teks.includes("PRATINJAU") && teks.includes("Terbit setelah pembelian"));
+      cek("pratinjau memakai label peran dagang 'Berkas Usaha 6 Bulan'", teks.includes("Berkas Usaha 6 Bulan"));
+      cek("pratinjau tanpa kata laba/layak/KUR/token", !/\blaba\b|\blayak|\bKUR\b|token|kripto|opBNB|wallet/i.test(teks));
+    }
+    cek("premium_events mencatat lihat_pratinjau", sql(`select count(*) from premium_events where user_id='${uidE}' and aksi='lihat_pratinjau' and kode='berkas6'`) === "1");
+  }
+  {
+    const uidF = sql(`insert into users (privy_did) values ('${PREFIX}F') returning id`);
+    const r = await api("/api/berkas/pesan", { method: "POST", cookie: sessionCookie(uidF, `${PREFIX}F`), body: { kode: "berkas6" } });
+    cek("pesan di bawah syarat tingkat → 409 BELUM_MEMENUHI_SYARAT", r.status === 409 && r.body?.kode === "BELUM_MEMENUHI_SYARAT", `${r.status} ${JSON.stringify(r.body)}`);
+    cek("klik tetap tercatat walau ditolak", sql(`select count(*) from premium_events where user_id='${uidF}' and aksi='klik_beli'`) === "1");
+  }
+  let berkasId = null, nomorDok = null, kodeVer = null;
+  {
+    // Jalur Plus: aktifkan lewat RPC manual (tanpa Midtrans), lalu pesan.
+    sql(`select langganan_perpanjang('${uidE}', 365, 'manual')`);
+    const r = await api("/api/berkas/pesan", { method: "POST", cookie: E, body: { kode: "berkas6" } });
+    cek("Plus aktif → dokumen dibuat (jalur plus, status dibuat — tanpa dompet, notarisasi menunggu)",
+      r.status === 200 && r.body?.jalur === "plus" && r.body?.berkas?.status === "dibuat", `${r.status} ${JSON.stringify(r.body)}`);
+    berkasId = r.body?.berkas?.id ?? null;
+    nomorDok = r.body?.berkas?.nomorDokumen ?? null;
+    const baris = sql(`select nomor_dokumen||' '||kode_verifikasi||' '||coalesce(path_pdf,'-')||' '||coalesce(length(sha256)::text,'0')||' '||status||' '||(order_id is null) from berkas_pengajuan where id='${berkasId}'`).split(" ");
+    kodeVer = baris[1];
+    cek("nomor dokumen BK-YYYYMM-xxxxx", /^BK-\d{6}-\d{5}$/.test(baris[0] ?? ""), baris[0]);
+    cek("kode verifikasi 12 karakter", (baris[1] ?? "").length === 12, baris[1]);
+    cek("PDF tersimpan di bucket & sha256 64 hex", baris[2] === `${uidE}/${baris[0]}.pdf` && baris[3] === "64", baris.join(" "));
+    cek("order_id NULL (lewat Plus)", baris[5] === "t");
+    cek("objek ada di storage.objects bucket berkas", sql(`select count(*) from storage.objects where bucket_id='berkas' and name='${uidE}/${baris[0]}.pdf'`) === "1");
+    cek("galat menyebut dompet belum siap (notarisasi menunggu, bukan gagal)", sql(`select galat from berkas_pengajuan where id='${berkasId}'`).includes("dompet"));
+  }
+  {
+    const r = await api("/api/berkas", { cookie: E });
+    cek("GET /api/berkas memuat dokumen, bisaUnduh true", r.body?.items?.[0]?.id === berkasId && r.body.items[0].bisaUnduh === true, JSON.stringify(r.body));
+    const tanpa = await fetch(`${BASE}/api/berkas/${berkasId}/unduh`, { redirect: "manual" });
+    cek("unduh tanpa sesi → 401", tanpa.status === 401, `dapat ${tanpa.status}`);
+    const dengan = await fetch(`${BASE}/api/berkas/${berkasId}/unduh`, { redirect: "manual", headers: { cookie: E } });
+    const lokasi = dengan.headers.get("location") ?? "";
+    cek("unduh dengan sesi → 302 ke signed URL", dengan.status === 302 && /berkas/.test(lokasi), `${dengan.status} ${lokasi.slice(0, 60)}`);
+    if (dengan.status === 302) {
+      const pdf = await fetch(lokasi);
+      const buf = Buffer.from(await pdf.arrayBuffer());
+      cek("signed URL mengembalikan PDF", pdf.status === 200 && buf.subarray(0, 4).toString() === "%PDF", `${pdf.status}`);
+      const teks = pdfText(buf);
+      if (teks !== null) {
+        cek("dokumen penuh memuat nomor, Ringkasan periode, Rincian, Pernyataan, notarisasi", [nomorDok, "Ringkasan periode", "Rincian", "Pernyataan", "Notarisasi hash kriptografis"].every((k) => teks.includes(k)));
+        cek("bulan tanpa catatan tetap ada halamannya", teks.includes("Tidak ada catatan pada bulan ini"));
+        cek("dokumen penuh tanpa kata laba/layak/KUR/token/kripto/wallet", !/\blaba\b|\blayak|\bKUR\b|token|kripto|opBNB|wallet|blockchain/i.test(teks));
+        cek("sidik jari tidak dicetak di dalam dokumen (sirkular)", !teks.includes(sql(`select sha256 from berkas_pengajuan where id='${berkasId}'`)));
+      }
+    }
+  }
+  {
+    const r = await api(`/api/verifikasi/${kodeVer}`);
+    cek("verifikasi publik tanpa sesi → 200", r.status === 200, `dapat ${r.status}`);
+    cek("memuat nomor, periode, nama usaha, sha256, status notarisasi 'belum'", r.body?.nomor_dokumen === nomorDok && r.body?.nama_usaha === "Warung Uji Berkas" && /^[0-9a-f]{64}$/.test(r.body?.sha256 ?? "") && r.body?.notarisasi?.status === "belum", JSON.stringify(r.body));
+    cek("TANPA field keuangan", !["masuk", "keluar", "sisa", "total", "bulanan", "rincian"].some((k) => k in (r.body ?? {})));
+    const lower = await api(`/api/verifikasi/${kodeVer.toLowerCase().replace(/0/g, "o")}`);
+    cek("kode huruf kecil / O→0 dinormalisasi", lower.status === 200 && lower.body?.nomor_dokumen === nomorDok, `dapat ${lower.status}`);
+    const asing = await api("/api/verifikasi/ZZZZZZZZZZZZ");
+    cek("kode tak dikenal → 404", asing.status === 404, `dapat ${asing.status}`);
+    const pendek = await api("/api/verifikasi/ABC");
+    cek("kode panjang salah → 404", pendek.status === 404, `dapat ${pendek.status}`);
+  }
+
   console.log("\n── 12. DELETE /api/akun (§12 hak penghapusan) ──");
   {
     const uidC = sql(
@@ -968,6 +1050,7 @@ async function main() {
     sql(`insert into kasbon (user_id, tipe, pihak, amount)
       values ('${uidC}','piutang','Bu Uji',20000)`);
     sql(`insert into kesiapan_tonggak (user_id, tingkat) values ('${uidC}','siap3')`);
+    sql(`insert into premium_events (user_id, kode, aksi, harga_idr) values ('${uidC}','berkas6','klik_beli',49000)`);
     const punyaRollup = sql(
       `select count(*) from daily_rollups where user_id='${uidC}'`);
     cek("user C punya rollup sebelum dihapus", punyaRollup === "1", `dapat ${punyaRollup}`);
@@ -998,6 +1081,8 @@ async function main() {
       sql(`select count(*) from kasbon where user_id='${uidC}'`) === "0");
     cek("kesiapan_tonggak ikut terhapus (cascade 0034)",
       sql(`select count(*) from kesiapan_tonggak where user_id='${uidC}'`) === "0");
+    cek("premium_events ikut terhapus (cascade 0035)",
+      sql(`select count(*) from premium_events where user_id='${uidC}'`) === "0");
   }
   {
     const r = await api("/api/akun", { method: "DELETE", body: { konfirmasi: "HAPUS" } });
@@ -1018,6 +1103,9 @@ try {
   // baris voucher selamat dari penghapusan user, jadi tanpa baris ini sampah
   // uji akan menumpuk di database yang sama dengan produksi.
   sql(`delete from swap_vouchers where user_address in ('${SWAP_ADDR_A}','${SWAP_ADDR_B}')`);
+  // PDF uji di bucket `berkas` tidak ikut cascade penghapusan users — hapus
+  // lewat storage.objects supaya tidak menumpuk di bucket produksi.
+  sql(`delete from storage.objects where bucket_id='berkas' and name like any (select id::text || '/%' from users where privy_did like '${PREFIX}%')`);
   sql(`delete from users where privy_did like '${PREFIX}%'`);
   console.log("(user uji dibersihkan)");
 }
