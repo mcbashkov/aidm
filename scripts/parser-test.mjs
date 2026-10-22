@@ -1,5 +1,9 @@
 /**
- * Runner test suite parser pencatatan (tests/parser-cases.json).
+ * Runner test suite parser pencatatan (tests/parser-cases.json), plus korpus
+ * kasbon terpisah (tests/parser-kasbon.json, Batch 2). Korpus 200 sengaja
+ * TIDAK ditambah: angkanya pembanding historis dan gerbang M6, dan menambah
+ * kasus ke dalamnya akan membuat 200/200 hari ini tidak bisa dibandingkan
+ * dengan 200/200 kemarin.
  *
  * Menguji parser FALLBACK (deterministik — jalur yang menjaga §7.2 tetap
  * hidup saat LLM gagal, dan satu-satunya yang bisa diuji di CI tanpa API
@@ -24,6 +28,9 @@ const TODAY = "2026-08-12";
 const cases = JSON.parse(
   readFileSync(join(root, "tests/parser-cases.json"), "utf8"),
 );
+const casesKasbon = JSON.parse(
+  readFileSync(join(root, "tests/parser-kasbon.json"), "utf8"),
+);
 
 /** Pasangkan entri hasil ↔ harapan dengan permutasi terbaik (n kecil). */
 function cocokkanEntri(hasil, harapan) {
@@ -44,6 +51,12 @@ function cocokkanEntri(hasil, harapan) {
       masalah.push(`tanggal ${h.occurredAt}≠${e.occurred_at}`);
     if (!e.kategori_ok.includes(h.kategori))
       masalah.push(`kategori ${h.kategori}∉[${e.kategori_ok}]`);
+    // Field kasbon diperiksa HANYA bila harapannya menyebut — korpus 200
+    // tidak menyebutnya, jadi skornya tidak bisa berubah karena field ini.
+    if (e.status_bayar !== undefined && h.statusBayar !== e.status_bayar)
+      masalah.push(`status_bayar ${h.statusBayar}≠${e.status_bayar}`);
+    if (e.pihak !== undefined && h.pihak !== e.pihak)
+      masalah.push(`pihak ${h.pihak}≠${e.pihak}`);
     return masalah;
   }
 
@@ -67,6 +80,7 @@ function cocokkanEntri(hasil, harapan) {
   return salah;
 }
 
+function nilai(cases) {
 let lulus = 0;
 const gagal = [];
 const perPersona = new Map();
@@ -112,7 +126,10 @@ for (const c of cases) {
   }
   perPersona.set(c.persona, stat);
 }
+return { lulus, gagal, perPersona };
+}
 
+const { lulus, gagal, perPersona } = nilai(cases);
 const skor = lulus / cases.length;
 console.log(`\n━━ Skor parser fallback: ${lulus}/${cases.length} = ${(skor * 100).toFixed(1)}% (target ≥95%) ━━`);
 for (const [p, s] of [...perPersona.entries()].sort()) {
@@ -131,4 +148,17 @@ if (gagal.length > 0) {
   }
 }
 
-process.exit(skor >= 0.95 ? 0 : 1);
+const kasbon = nilai(casesKasbon);
+const skorKasbon = kasbon.lulus / casesKasbon.length;
+console.log(
+  `\n━━ Korpus kasbon: ${kasbon.lulus}/${casesKasbon.length} = ${(skorKasbon * 100).toFixed(1)}% (target ≥95%) ━━`,
+);
+for (const g of kasbon.gagal.slice(0, tampil)) {
+  console.log(`  ✗ [${g.id}] "${g.text}"`);
+  for (const m of g.masalah) console.log(`      ${m}`);
+  if (process.env.VERBOSE) {
+    console.log(`      hasil: ${JSON.stringify(g.hasil)}`);
+  }
+}
+
+process.exit(skor >= 0.95 && skorKasbon >= 0.95 ? 0 : 1);

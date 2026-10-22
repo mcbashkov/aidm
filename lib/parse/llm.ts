@@ -41,6 +41,7 @@ const PARSER_SCHEMA = {
         required: [
           "jenis", "amount", "kategori", "sub_kategori",
           "payment_method", "occurred_at", "catatan", "confidence",
+          "pihak", "status_bayar", "items",
         ],
         additionalProperties: false,
         properties: {
@@ -52,6 +53,25 @@ const PARSER_SCHEMA = {
           occurred_at: { type: "string" },
           catatan: { type: "string" },
           confidence: { type: "number" },
+          // Kasbon (Batch 2). Ketiganya WAJIB ada supaya model selalu
+          // memutuskan, bukan menghilangkan field; validasi server tetap yang
+          // menentukan nilai akhirnya (lib/parse/validate.ts, index.ts).
+          pihak: { type: ["string", "null"] },
+          status_bayar: { enum: ["lunas", "belum"] },
+          // Selalu array (kosong bila tidak ada barang), bukan array|null:
+          // satu bentuk saja yang harus dipatuhi model.
+          items: {
+            type: "array",
+            items: {
+              type: "object",
+              required: ["nama", "jumlah"],
+              additionalProperties: false,
+              properties: {
+                nama: { type: "string" },
+                jumlah: { type: ["number", "null"] },
+              },
+            },
+          },
         },
       },
     },
@@ -90,6 +110,11 @@ function systemPrompt(ctx: LlmParseContext): string {
     ]
       .filter(Boolean)
       .join(" "),
+    "- status_bayar: \"belum\" HANYA bila uangnya jelas BELUM berpindah — pelanggan ngebon/ngutang/kasbon barang, pengguna ambil barang dari pemasok yang belum dibayar, \"bayar nanti/besok\". Selain itu \"lunas\". Bila ragu → \"lunas\".",
+    "- Pelunasan kasbon atau utang (\"Bu Ani bayar kasbon 45rb\", \"bayar utang ke Pak Haji 500rb\") = uang SUDAH berpindah → status_bayar \"lunas\", entri biasa.",
+    "- Arah kasbon: orang lain berutang pada pengguna (pelanggan ngebon) → jenis masuk; pengguna yang berutang (ngutang ke/di pemasok, ambil barang belum dibayar) → jenis keluar. Kasbon karyawan (uang tunai diserahkan ke karyawan) → uang SUDAH keluar → status_bayar \"lunas\", jenis keluar.",
+    "- pihak: nama orang atau toko lawan transaksi bila DISEBUT (\"Bu Ani\", \"Pak Haji\", \"Toko Makmur\"). Tidak disebut → null. DILARANG menebak nama.",
+    "- items: barang yang disebut beserta jumlahnya (\"3 nasi goreng\" → [{nama: \"nasi goreng\", jumlah: 3}]); jumlah tidak disebut → null; tanpa barang → []. items TIDAK pernah mengubah amount.",
     "- Bila kalimat TIDAK berhubungan dengan uang sama sekali (sapaan, pertanyaan umum, obrolan), kembalikan entries: [] dan tidak_dikenali: \"bukan_uang\".",
     "- tidak_dikenali: \"tidak_jelas\" HANYA bila kamu tidak bisa menentukan peristiwa uangnya sama sekali. Nominal yang hilang BUKAN alasan memakainya — itu kasus amount: null di atas.",
     "- Bila ada entri, tidak_dikenali harus null.",

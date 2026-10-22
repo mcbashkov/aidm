@@ -4,7 +4,11 @@
  * yang sama — keluaran modul ini SUDAH aman untuk database.
  */
 
-import { adaSinyalUang, parseFallback } from "@/lib/parse/fallback";
+import {
+  adaSinyalKasbon,
+  adaSinyalUang,
+  parseFallback,
+} from "@/lib/parse/fallback";
 import { parseWithLlm, type LlmParseContext } from "@/lib/parse/llm";
 import {
   validateEntries,
@@ -42,7 +46,7 @@ export async function parseCatat(
   // 1) Jalur utama: LLM JSON mode (§17.1). null = gagal/timeout/tak dikonfigurasi.
   const llm = await parseWithLlm(text, ctx);
   if (llm) {
-    const entries = validateEntries(llm.entries, ctx.today);
+    const entries = pagarKasbon(validateEntries(llm.entries, ctx.today), text);
     // "tidak_jelas" berarti model TIDAK YAKIN — dan justru di situlah pendapat
     // kedua berharga. Parser fallback gratis dan deterministik; ia menangkap
     // "tadi ada yang bayar" sebagai draft + pertanyaan nominal, sementara
@@ -77,6 +81,9 @@ export async function parseCatat(
       occurred_at: e.occurredAt,
       catatan: e.catatan,
       confidence: e.confidence,
+      pihak: e.pihak,
+      status_bayar: e.statusBayar,
+      items: e.items,
     })),
     ctx.today,
   );
@@ -86,6 +93,22 @@ export async function parseCatat(
     tidakDikenali: entries.length === 0 ? fb.tidakDikenali : null,
     parsedBy: "fallback",
   };
+}
+
+/**
+ * Pagar kasbon di jalur LLM: "belum" hanya dipercaya bila kalimatnya memang
+ * menyinggung kasbon (kosakata dipinjam dari parser fallback). Model yang
+ * keliru menandai "jual 3 nasi goreng 45rb" sebagai kasbon akan memindahkan
+ * penjualan tunai keluar dari laporan — kesalahan yang tidak terlihat oleh
+ * pengguna sampai angkanya tidak cocok dengan laci. Arah sebaliknya (model
+ * bilang "lunas" pada kalimat kasbon) dibiarkan: itu termasuk pelunasan
+ * ("Bu Ani bayar kasbon 45rb"), dan yang paling buruk hanya entri biasa.
+ */
+function pagarKasbon(entries: ValidatedEntry[], text: string): ValidatedEntry[] {
+  if (adaSinyalKasbon(text)) return entries;
+  return entries.map((e) =>
+    e.statusBayar === "belum" ? { ...e, statusBayar: "lunas" } : e,
+  );
 }
 
 /**

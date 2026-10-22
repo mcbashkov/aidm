@@ -12,6 +12,20 @@ export type TxSource = "chat" | "voice" | "manual" | "import" | "ocr";
 export type ParsedBy = "llm" | "fallback" | "manual";
 export type TxStatus = "confirmed" | "draft" | "deleted";
 
+/**
+ * Kasbon (Batch 2, migrasi 0031). "belum" = uangnya BELUM berpindah — entri
+ * itu disimpan di tabel `kasbon`, bukan `transactions`, dan tidak pernah
+ * masuk laporan sampai ditandai lunas.
+ */
+export type StatusBayar = "lunas" | "belum";
+
+/** Barang dalam satu peristiwa ("3 nasi goreng"). Hanya disimpan — tanpa UI
+ *  stok, dan tidak pernah memengaruhi nominal. */
+export interface ItemBarang {
+  nama: string;
+  jumlah: number | null;
+}
+
 export interface Transaction {
   id: string;
   jenis: Jenis;

@@ -12,8 +12,10 @@
 import {
   KATEGORI_MASUK,
   KATEGORI_KELUAR,
+  type ItemBarang,
   type Jenis,
   type PaymentMethod,
+  type StatusBayar,
 } from "@/lib/transactions";
 import { todayWib } from "@/lib/wib";
 
@@ -27,6 +29,12 @@ export interface ValidatedEntry {
   catatan: string;
   confidence: number;
   status: "confirmed" | "draft";
+  /** Nama lawan transaksi. Hanya DISIMPAN untuk kasbon — transaksi biasa
+   *  tidak menyimpan nama orang ketiga sama sekali (migrasi 0031). */
+  pihak: string | null;
+  /** "belum" → tabel `kasbon`, tidak masuk laporan sampai lunas. */
+  statusBayar: StatusBayar;
+  items: ItemBarang[] | null;
 }
 
 import type { KodeTidakDikenali, Pertanyaan } from "@/lib/catat/pesan";
@@ -70,6 +78,49 @@ function validTanggal(v: unknown, today: string): string {
   return v > today ? today : v;
 }
 
+/** Batas nama lawan transaksi — sama dengan constraint `kasbon.pihak`. */
+const PIHAK_MAKS = 60;
+/** Batas barang per entri dan panjang namanya. */
+const ITEMS_MAKS = 10;
+const NAMA_ITEM_MAKS = 60;
+
+function validPihak(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const t = v.replace(/\s+/g, " ").trim();
+  // Nama orang tidak memuat angka — "45rb" atau "Rp45.000" di field pihak
+  // adalah nominal yang salah tempat, bukan nama.
+  if (!t || /\d/.test(t)) return null;
+  return t.slice(0, PIHAK_MAKS);
+}
+
+function validStatusBayar(v: unknown): StatusBayar {
+  // Di luar enum → "lunas": perilaku sebelum kasbon ada. Salah ke arah ini
+  // hanya berarti satu entri perlu dihapus; salah ke arah "belum" berarti
+  // uang nyata hilang dari laporan.
+  return v === "belum" ? "belum" : "lunas";
+}
+
+function validItems(v: unknown): ItemBarang[] | null {
+  if (!Array.isArray(v)) return null;
+  const out: ItemBarang[] = [];
+  for (const it of v.slice(0, ITEMS_MAKS)) {
+    if (!it || typeof it !== "object") continue;
+    const o = it as { nama?: unknown; jumlah?: unknown };
+    const nama =
+      typeof o.nama === "string" ? o.nama.replace(/\s+/g, " ").trim() : "";
+    if (!nama) continue;
+    const jumlah =
+      typeof o.jumlah === "number" &&
+      Number.isFinite(o.jumlah) &&
+      o.jumlah > 0 &&
+      o.jumlah <= 1_000_000
+        ? Math.round(o.jumlah * 1000) / 1000
+        : null;
+    out.push({ nama: nama.slice(0, NAMA_ITEM_MAKS), jumlah });
+  }
+  return out.length > 0 ? out : null;
+}
+
 /** Bentuk longgar yang mungkin dikirim parser (LLM bisa saja menyimpang). */
 export interface RawEntry {
   jenis?: unknown;
@@ -82,6 +133,10 @@ export interface RawEntry {
   occurredAt?: unknown;
   catatan?: unknown;
   confidence?: unknown;
+  pihak?: unknown;
+  status_bayar?: unknown;
+  statusBayar?: unknown;
+  items?: unknown;
 }
 
 export function validateEntries(
@@ -114,6 +169,9 @@ export function validateEntries(
           ? e.confidence
           : 0.5,
       status: amount === null ? "draft" : "confirmed",
+      pihak: validPihak(e.pihak),
+      statusBayar: validStatusBayar(e.status_bayar ?? e.statusBayar),
+      items: validItems(e.items),
     });
   }
   return out;

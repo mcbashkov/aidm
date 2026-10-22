@@ -1,0 +1,704 @@
+[
+ {
+  "id": "kasbon-01",
+  "persona": "dagang",
+  "text": "Bu Ani ngebon 3 nasi goreng 45rb",
+  "note": "piutang klasik warung; 3 = porsi, bukan uang",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 45000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": "Bu Ani"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-02",
+  "persona": "dagang",
+  "text": "pelanggan ambil 2 bungkus rokok 50rb bayar besok",
+  "note": "'ambil' tapi subjeknya pelanggan → piutang",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 50000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": null
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-03",
+  "persona": "dagang",
+  "text": "Pak RT ngutang gas 3 tabung 75rb",
+  "note": "sapaan + singkatan dua huruf",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 75000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": "Pak RT"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-04",
+  "persona": "dagang",
+  "text": "kasbon Mas Joko 20rb",
+  "note": "'kasbon' ada di KUAT_KELUAR, tapi Mas Joko yang berutang",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 20000,
+     "kategori_ok": [
+      "penjualan",
+      "lainnya"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": "Mas Joko"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-05",
+  "persona": "dagang",
+  "text": "tetangga ngebon telur sekilo 30rb",
+  "note": "telur = barang dagangan, bukan belanja bahan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 30000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": null
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-06",
+  "persona": "online",
+  "text": "Kak Rina pesen 2 gamis 300rb, bayarnya minggu depan",
+  "note": "klausa 'bayarnya minggu depan' memodifikasi entri sebelumnya",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 300000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": "Kak Rina"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-07",
+  "persona": "freelance",
+  "text": "klien belum bayar invoice desain 2,5jt",
+  "note": "piutang jasa",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 2500000,
+     "kategori_ok": [
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": null
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-08",
+  "persona": "dagang",
+  "text": "Bu Siti utang dulu beras 2 kilo 30rb",
+  "note": "'utang dulu' + subjek di depan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 30000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": "Bu Siti"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-09",
+  "persona": "dagang",
+  "text": "tadi pagi ada yang ngebon 2 bungkus rokok 50rb",
+  "note": "subjek tak bernama",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 50000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": null
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-10",
+  "persona": "dagang",
+  "text": "ambil barang dari Pak Haji 500rb belum dibayar",
+  "note": "'dibayar' adalah KUAT_MASUK — arah harus dari pola kasbon",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 500000,
+     "kategori_ok": [
+      "bahan_baku",
+      "lainnya"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": "Pak Haji"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-11",
+  "persona": "dagang",
+  "text": "ngutang di toko grosir 1,2jt",
+  "note": "ngutang di <tempat> → pengguna berutang",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 1200000,
+     "kategori_ok": [
+      "bahan_baku",
+      "lainnya"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": null
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-12",
+  "persona": "dagang",
+  "text": "kulakan sembako 1,2jt bayar akhir bulan",
+  "note": "kulakan bertempo",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 1200000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": null
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-13",
+  "persona": "dagang",
+  "text": "beli gas 25rb ngutang dulu",
+  "note": "beli + ngutang dulu",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 25000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": null
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-14",
+  "persona": "online",
+  "text": "restock jilbab 800rb ke supplier, bayar bulan depan",
+  "note": "klausa modifier tempo",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 800000,
+     "kategori_ok": [
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": null
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-15",
+  "persona": "ojol",
+  "text": "ngebon bensin di warung Bu Siti 20rb",
+  "note": "pengguna subjek tersirat; pihak setelah 'di'",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 20000,
+     "kategori_ok": [
+      "operasional"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": "Bu Siti"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-16",
+  "persona": "dagang",
+  "text": "Bu Ani bayar kasbon 45rb",
+  "note": "pelunasan piutang; subjek bernama → masuk",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 45000,
+     "kategori_ok": [
+      "penjualan",
+      "lainnya"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "lunas",
+     "pihak": "Bu Ani"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-17",
+  "persona": "lainnya",
+  "text": "bayar utang ke Pak Haji 500rb",
+  "note": "pengguna melunasi utangnya → keluar",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 500000,
+     "kategori_ok": [
+      "lainnya",
+      "bahan_baku"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "lunas",
+     "pihak": "Pak Haji"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-18",
+  "persona": "dagang",
+  "text": "Mas Joko nyicil kasbon 10rb",
+  "note": "cicilan kasbon = uang masuk hari ini; Batch 2 tanpa pelunasan sebagian",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 10000,
+     "kategori_ok": [
+      "penjualan",
+      "lainnya"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "lunas",
+     "pihak": "Mas Joko"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-19",
+  "persona": "dagang",
+  "text": "kasbon Bu Ani udah lunas 45rb",
+  "note": "'udah lunas' = pelunasan",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 45000,
+     "kategori_ok": [
+      "penjualan",
+      "lainnya"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "lunas",
+     "pihak": "Bu Ani"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-20",
+  "persona": "dagang",
+  "text": "jual 3 nasi goreng 45rb",
+  "note": "penjualan tunai biasa",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 45000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "lunas",
+     "pihak": null
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-21",
+  "persona": "ojol",
+  "text": "cicilan motor 800rb",
+  "note": "cicilan = uang keluar hari ini, bukan kasbon",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 800000,
+     "kategori_ok": [
+      "operasional",
+      "pribadi",
+      "lainnya"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "lunas",
+     "pihak": null
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-22",
+  "persona": "dagang",
+  "text": "kasbon karyawan 200rb",
+  "note": "uang tunai diserahkan ke karyawan → keluar biasa",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 200000,
+     "kategori_ok": [
+      "gaji"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "lunas",
+     "pihak": null
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-23",
+  "persona": "lainnya",
+  "text": "eh bisa catat kasbon ga sih",
+  "note": "pertanyaan fitur, bukan transaksi",
+  "expect": {
+   "entries": [],
+   "pertanyaan": false,
+   "tidak_dikenali": true
+  }
+ },
+ {
+  "id": "kasbon-24",
+  "persona": "dagang",
+  "text": "beli rokok 25rb",
+  "note": "sanity: pengeluaran biasa tanpa pihak",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "keluar",
+     "amount": 25000,
+     "kategori_ok": [
+      "pribadi",
+      "lainnya"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "lunas",
+     "pihak": null
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-25",
+  "persona": "dagang",
+  "text": "Bu Ani ngebon nasi goreng",
+  "note": "tanpa angka; harus bertanya, bukan ditolak",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": null,
+     "kategori_ok": [
+      "penjualan",
+      "lainnya"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": "Bu Ani"
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-26",
+  "persona": "dagang",
+  "text": "pelanggan ngutang, belum bayar",
+  "note": "klausa kedua cuma penegas",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": null,
+     "kategori_ok": [
+      "penjualan",
+      "lainnya"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": null
+    }
+   ],
+   "pertanyaan": true,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-27",
+  "persona": "dagang",
+  "text": "jual 45rb, Bu Ani ngebon 20rb",
+  "note": "satu tunai, satu kasbon",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 45000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "lunas",
+     "pihak": null
+    },
+    {
+     "jenis": "masuk",
+     "amount": 20000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": "Bu Ani"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-28",
+  "persona": "dagang",
+  "text": "Bu Ani ngebon nasi goreng 15rb sama es teh 5rb",
+  "note": "'sama' memecah klausa; klausa kedua mewarisi kasbon",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 15000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": "Bu Ani"
+    },
+    {
+     "jenis": "masuk",
+     "amount": 5000,
+     "kategori_ok": [
+      "penjualan"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": "Bu Ani"
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ },
+ {
+  "id": "kasbon-29",
+  "persona": "freelance",
+  "text": "DP katering 500rb, sisanya 1jt nanti dibayar",
+  "note": "DP tunai + sisa jadi piutang",
+  "expect": {
+   "entries": [
+    {
+     "jenis": "masuk",
+     "amount": 500000,
+     "kategori_ok": [
+      "penjualan",
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "lunas",
+     "pihak": null
+    },
+    {
+     "jenis": "masuk",
+     "amount": 1000000,
+     "kategori_ok": [
+      "penjualan",
+      "jasa"
+     ],
+     "payment_method": "tunai",
+     "occurred_at": "2026-08-12",
+     "status_bayar": "belum",
+     "pihak": null
+    }
+   ],
+   "pertanyaan": false,
+   "tidak_dikenali": false
+  }
+ }
+]

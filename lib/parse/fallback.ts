@@ -16,7 +16,12 @@
  */
 
 import type { EarnerType } from "@/lib/earner";
-import type { Jenis, PaymentMethod } from "@/lib/transactions";
+import type {
+  ItemBarang,
+  Jenis,
+  PaymentMethod,
+  StatusBayar,
+} from "@/lib/transactions";
 import type { KodeTidakDikenali, Pertanyaan } from "@/lib/catat/pesan";
 
 export interface ParsedEntry {
@@ -27,6 +32,11 @@ export interface ParsedEntry {
   occurredAt: string; // YYYY-MM-DD
   catatan: string;
   confidence: number;
+  /** Nama lawan transaksi bila disebut dengan sapaan ("Bu Ani"). */
+  pihak: string | null;
+  statusBayar: StatusBayar;
+  /** Fallback tidak pernah mengisinya — barang hanya ditangkap parser LLM. */
+  items: ItemBarang[] | null;
 }
 
 export interface ParseResult {
@@ -512,6 +522,144 @@ function bersihkanCatatan(klausaAsli: string): string {
   return (s || klausaAsli).slice(0, 80);
 }
 
+/* ── Kasbon: uang yang BELUM berpindah (Batch 2) ─────────────────────────── */
+// Konservatif ke arah "lunas": kalimat yang tidak jelas belum dibayar tetap
+// menjadi transaksi biasa, persis seperti sebelum kasbon ada. Salah menandai
+// penjualan tunai sebagai kasbon menghilangkan uang nyata dari laporan;
+// salah ke arah sebaliknya hanya membuat pengguna perlu menghapus satu entri.
+
+/** Pelunasan kasbon/utang = uang SUDAH berpindah → entri biasa. Dicek lebih
+ *  dulu, karena "bayar kasbon" memuat kata "kasbon". Melindungi kasus lama
+ *  `dagang-17` ("pelanggan bayar kasbon") dan `lainnya-11` ("bayar utangnya"). */
+const PELUNASAN_RE =
+  /\b(?:bayar|bayarin|lunasi|lunasin|ngelunasin|nyicil|nyaur|pelunasan)\s+(?:\w+\s+){0,2}?(?:kasbon|bon|ngebon|utang|hutang)(?:nya)?\b|\b(?:udah|sudah|dah)\s+lunas\b/;
+
+/** Penanda uang belum berpindah. "cicilan" SENGAJA tidak ada: cicilan motor
+ *  adalah pembayaran yang uangnya keluar hari itu. "utang" telanjang juga
+ *  tidak — "utang ke Pak Haji 500rb" bisa berarti meminjam uang tunai. */
+const BELUM_RE =
+  /\b(?:ngebon|dibon|ngutang|ngutangin|ngehutang|kasbon|belum\s+(?:di)?bayar|belum\s+lunas|bayar(?:nya)?\s+(?:nanti|ntar|besok|lusa|minggu depan|bulan depan|akhir bulan|pas gajian)|(?:nanti|ntar)\s+(?:di)?bayar|(?:utang|hutang|bon)\s+dulu)\b/;
+
+/** Kasbon karyawan = uang tunai SUDAH diserahkan ke karyawan → transaksi
+ *  keluar biasa (kategori gaji), bukan kasbon yang menunggu. */
+const KASBON_TUNAI_RE = /\b(?:karyawan|pegawai|anak buah|kru|packer|kurir)\b/;
+
+/** Pengguna yang berutang: kata kerja kasbon lalu tempat/orang TUJUAN di
+ *  belakangnya — "ngutang di toko grosir", "ngebon bensin di warung Bu Siti". */
+const UTANG_KE_RE =
+  /\b(?:ngutang|ngebon|kasbon|utang|hutang)\b.*\b(?:ke|di|dari)\s/;
+/** Kata kerja yang menandai SIAPA mengambil barang/uang dalam kalimat kasbon. */
+const KERJA_KASBON_RE =
+  /\b(?:ngebon|dibon|ngutang|kasbon|utang|hutang|ambil|ngambil|beli|kulakan|belanja|restock|nyetok)\b/;
+/** Pengguna mengambil/membeli barang yang belum dibayar → utang. */
+const AMBIL_BARANG_RE =
+  /\b(?:ambil|ngambil|beli|kulakan|belanja|restock|nyetok)\b/;
+/** Pihak lain sebagai subjek: "Bu Ani ngebon", "pelanggan ambil rokok".
+ *  Sapaan yang juga kata biasa SENGAJA tidak ada: "teh" (es teh manis →
+ *  "Teh Manis"), "uda" (ejaan cepat "udah"), "ci"/"ko" (terlalu pendek). */
+const SAPAAN =
+  "bu|ibu|pak|bapak|mas|mbak|mba|kak|bang|abang|om|tante|cik|koh|aa|mpok|bude|pakde|bunda";
+const SUBJEK_KASBON_RE = new RegExp(
+  `\\b(?:${SAPAAN}|pelanggan|pembeli|tetangga|temen|teman|orang|langganan|klien)\\b`,
+);
+
+/** Kata yang tidak mungkin nama setelah sapaan ("ibu buat belanja"). */
+const BUKAN_NAMA = new Set([
+  "buat", "untuk", "utk", "ke", "di", "dari", "yang", "yg", "sama", "dan",
+  "tadi", "kemarin", "ngebon", "ngutang", "kasbon", "bayar", "ambil", "beli",
+  "utang", "hutang", "belum", "nanti", "dulu", "minta", "kasih", "ngasih",
+  "pesen", "pesan", "jual", "udah", "sudah", "lagi", "juga", "aja", "saja",
+  // Sapaan berulang ("ibu ibu komplek"), tempat, dan angka kata
+  // ("ngasih ibu seratus ribu") — bukan nama.
+  ...SAPAAN.split("|"), "warung", "toko", "komplek", "rumah",
+  "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan",
+  "sembilan", "sepuluh", "sebelas", "seratus", "seribu", "sejuta", "setengah",
+]);
+
+/** Apakah klausa menyatakan uangnya BELUM berpindah. */
+function kasbonBelum(k: string): boolean {
+  if (PELUNASAN_RE.test(k)) return false;
+  if (!BELUM_RE.test(k)) return false;
+  return !KASBON_TUNAI_RE.test(k);
+}
+
+/**
+ * Arah kasbon: utang (keluar) bila pengguna yang berutang, selain itu
+ * piutang (masuk). Urutannya penting:
+ *   1. Pihak lain disebut SEBELUM kata kerjanya → dia yang berutang
+ *      ("pelanggan ambil rokok bayar besok" memuat "ambil", tetapi
+ *      subjeknya pelanggan).
+ *   2. Kata kerja kasbon dengan tujuan di belakangnya → pengguna berutang
+ *      ("ngebon bensin di warung Bu Siti").
+ *   3. Pengguna mengambil/membeli barang → pengguna berutang.
+ *   4. Selain itu piutang — kasus paling umum di warung.
+ */
+function arahKasbon(k: string): Jenis {
+  const subjek = SUBJEK_KASBON_RE.exec(k);
+  const kerja = KERJA_KASBON_RE.exec(k);
+  if (subjek && (!kerja || subjek.index < kerja.index)) return "masuk";
+  if (UTANG_KE_RE.test(k)) return "keluar";
+  if (AMBIL_BARANG_RE.test(k)) return "keluar";
+  return "masuk";
+}
+
+/**
+ * Arah PELUNASAN (uang sudah berpindah). "bayar" dan "kasbon" sama-sama ada
+ * di KUAT_KELUAR, jadi tanpa ini "Bu Ani bayar kasbon 45rb" tercatat sebagai
+ * uang keluar — padahal Bu Ani yang membayar pengguna.
+ *   · "… ke/di warung|toko|<sapaan>" → pengguna membayar → keluar.
+ *   · pihak lain disebut → pihak itu membayar → masuk.
+ *   · selain itu → tidak diubah (null).
+ */
+function arahPelunasan(k: string): Jenis | null {
+  const tujuan = new RegExp(
+    `\\b(?:ke|di)\\s+(?:warung|toko|agen|grosir|supplier|${SAPAAN})\\b`,
+  );
+  if (tujuan.test(k)) return "keluar";
+  if (SUBJEK_KASBON_RE.test(k)) return "masuk";
+  return null;
+}
+
+/** Klausa yang HANYA menyatakan tempo bayar ("bayarnya minggu depan",
+ *  "belum bayar") — penanda untuk entri sebelumnya, bukan peristiwa baru.
+ *  Pola yang sama dengan KLAUSA_METODE_RE untuk alat bayar. */
+const KLAUSA_BELUM_RE =
+  /^(?:(?:bayar(?:nya)?|dibayar)\s+(?:nanti|ntar|besok|lusa|minggu depan|bulan depan|akhir bulan|pas gajian)|belum\s+(?:di)?bayar(?:nya)?|belum\s+lunas|(?:nanti|ntar)\s+(?:di)?bayar(?:nya)?|(?:utang|hutang|bon|ngutang|ngebon)\s+dulu)(?:\s+(?:ya|aja|saja|kok))?$/;
+
+/**
+ * Nama lawan transaksi yang disebut dengan sapaan: "bu ani" → "Bu Ani".
+ * Satu kata saja setelah sapaan — tanpa tahu tata bahasa, kata kedua lebih
+ * sering kata kerja daripada nama belakang. Selebihnya urusan parser LLM.
+ */
+function tebakPihak(k: string): string | null {
+  const re = new RegExp(`\\b(${SAPAAN})\\s+([a-z]{2,20})\\b`, "g");
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(k)) !== null) {
+    if (BUKAN_NAMA.has(m[2])) continue;
+    const judul = (w: string) => w[0].toUpperCase() + w.slice(1);
+    // Nama dua huruf hampir selalu singkatan jabatan ("Pak RT", "Bu RW").
+    const nama = m[2].length <= 2 ? m[2].toUpperCase() : judul(m[2]);
+    return `${judul(m[1])} ${nama}`.slice(0, 60);
+  }
+  return null;
+}
+
+/**
+ * Apakah kalimat SAMA SEKALI menyinggung kasbon. Dipakai sebagai pagar di
+ * jalur LLM (lib/parse/index.ts): model yang menandai "belum" pada kalimat
+ * tanpa satu pun jejak kasbon diturunkan ke "lunas". Lebih longgar daripada
+ * BELUM_RE karena di sini model yang memutuskan; pagar hanya memastikan
+ * kalimat penjualan biasa tidak pernah hilang dari laporan karena model
+ * keliru menebak.
+ */
+export function adaSinyalKasbon(teks: string): boolean {
+  const t = normalisasi(teks);
+  return (
+    BELUM_RE.test(t) ||
+    /\b(?:\w*utang\w*|\w*hutang\w*|bon|tempo|piutang)\b/.test(t)
+  );
+}
+
 /* ── Entri utama ─────────────────────────────────────────────────────────── */
 
 export function parseFallback(
@@ -551,6 +699,8 @@ export function parseFallback(
   }
 
   const entries: ParsedEntry[] = [];
+  // Klausa asal entri terakhir — dipakai klausa tempo bayar di bawah.
+  let klausaTerakhir = "";
   for (const k of klausa) {
     // Klausa yang hanya menyebut alat bayar → modifier entri sebelumnya;
     // "dua duanya/semuanya pake qris" → berlaku untuk SEMUA entri.
@@ -570,6 +720,18 @@ export function parseFallback(
       continue;
     }
 
+    // Klausa yang hanya menyatakan tempo bayar → entri sebelumnya menjadi
+    // kasbon. Arah dan kategori dihitung ulang dari klausa asal entri itu.
+    if (entries.length > 0 && KLAUSA_BELUM_RE.test(k)) {
+      const e = entries[entries.length - 1];
+      if (e.statusBayar !== "belum") {
+        e.statusBayar = "belum";
+        e.jenis = arahKasbon(klausaTerakhir);
+        e.kategori = tebakKategori(klausaTerakhir, e.jenis, opts.earner);
+      }
+      continue;
+    }
+
     // Anak kalimat tujuan ("biar bisa terima orderan", "buat kulakan") bukan
     // peristiwa uang — buang dari penilaian arah & kategori. Kalau kategori
     // dari inti berujung `lainnya`, coba lagi dengan klausa penuh: kadang
@@ -583,8 +745,21 @@ export function parseFallback(
       tebakan = tebakJenis(k, opts.earner);
     }
 
-    // Entri lahir hanya dari sinyal uang: nominal ATAU kata kerja uang kuat.
-    if (amount === null && !tebakan.sinyalKuat) continue;
+    // Kasbon: dari klausanya sendiri, ATAU warisan klausa sebelumnya yang
+    // kasbon bila klausa ini tidak membawa bukti arah apa pun ("Bu Ani ngebon
+    // nasi goreng 15rb sama es teh 5rb" → keduanya kasbon) — pola warisan
+    // yang sama dengan `jenis` di bawah.
+    const sebelum = entries[entries.length - 1];
+    const warisKasbon =
+      sebelum?.statusBayar === "belum" &&
+      tebakan.jenis === null &&
+      !tebakan.sinyalKuat &&
+      !PELUNASAN_RE.test(k);
+    const belum = kasbonBelum(k) || warisKasbon;
+
+    // Entri lahir hanya dari sinyal uang: nominal ATAU kata kerja uang kuat
+    // (termasuk kata kasbon — "Bu Ani ngebon" tanpa angka tetap bertanya).
+    if (amount === null && !tebakan.sinyalKuat && !belum) continue;
     // Sapaan/penyemangat/pertanyaan tanpa nominal tidak pernah jadi entri.
     if (amount === null && (SAPAAN_RE.test(k) || BUKAN_TX_RE.test(k))) continue;
 
@@ -601,6 +776,14 @@ export function parseFallback(
       jenis = "masuk";
     }
 
+    // Kasbon menentukan arahnya sendiri: "kasbon" ada di KUAT_KELUAR, tetapi
+    // "kasbon Mas Joko 20rb" berarti Mas Joko yang berutang (masuk nanti).
+    if (belum) {
+      jenis = warisKasbon ? sebelum.jenis : arahKasbon(k);
+    } else if (PELUNASAN_RE.test(k)) {
+      jenis = arahPelunasan(k) ?? jenis;
+    }
+
     let kategori = tebakKategori(inti, jenis, opts.earner);
     if (kategori === "lainnya") kategori = tebakKategori(k, jenis, opts.earner);
 
@@ -614,7 +797,11 @@ export function parseFallback(
       occurredAt: tebakTanggalMarker(k, opts.today) ?? tanggalGlobal,
       catatan: bersihkanCatatan(k),
       confidence: amount === null ? 0.4 : 0.7, // fallback selalu di bawah LLM
+      pihak: tebakPihak(k) ?? (warisKasbon ? sebelum.pihak : null),
+      statusBayar: belum ? "belum" : "lunas",
+      items: null,
     });
+    klausaTerakhir = k;
   }
 
   if (entries.length === 0) {
@@ -661,6 +848,9 @@ export function adaSinyalUang(teks: string): boolean {
 
   if (kandidatUang(t).length > 0) return true;
   if (angkaKata(t)) return true;
+  // "Bu Ani ngebon" tanpa angka adalah peristiwa uang: ia harus sampai ke
+  // parser dan memicu pertanyaan nominal, bukan ditolak sebagai obrolan.
+  if (BELUM_RE.test(t)) return true;
 
   for (const k of [...KUAT_KELUAR, ...KUAT_MASUK, ...LEMAH_KELUAR, ...LEMAH_MASUK]) {
     if (new RegExp(`\\b${k}\\b`).test(t)) return true;
