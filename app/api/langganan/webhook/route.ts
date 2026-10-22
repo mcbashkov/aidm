@@ -136,6 +136,9 @@ export async function POST(req: Request) {
     }
     const hari =
       pesanan.kode === "plus" ? (KATALOG.plus.periodeHari ?? pesanan.periode_hari) : pesanan.periode_hari;
+    if (pesanan.kode === "plus") {
+      void catatPremiumEvent(supa, { userId: pesanan.user_id, earnerType: null, kode: "plus", aksi: "bayar_sukses" });
+    }
     const berakhir = await perpanjangLangganan(
       supa,
       pesanan.user_id,

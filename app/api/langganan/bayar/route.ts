@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { currentUserId } from "@/lib/catat/server";
-import { HARGA_BULANAN_IDR, PERIODE_HARI } from "@/lib/langganan";
+import { KATALOG, PLUS_PERIODE_HARI } from "@/lib/langganan/katalog";
+import { catatPremiumEvent } from "@/lib/berkas/server";
 import { buatSnap, isMidtransConfigured } from "@/lib/langganan/midtrans";
 
 export const runtime = "nodejs";
@@ -43,8 +44,9 @@ export async function POST() {
       .from("subscription_orders")
       .insert({
         user_id: uid,
-        periode_hari: PERIODE_HARI,
-        harga_idr: HARGA_BULANAN_IDR,
+        periode_hari: PLUS_PERIODE_HARI,
+        harga_idr: KATALOG.plus.hargaIdr,
+        kode: "plus",
         midtrans_order_id: orderId,
         status: "pending",
       })
@@ -54,13 +56,15 @@ export async function POST() {
 
     const { data: user } = await supa
       .from("users")
-      .select("email")
+      .select("email, earner_type")
       .eq("id", uid)
       .maybeSingle();
 
+    void catatPremiumEvent(supa, { userId: uid, earnerType: user?.earner_type ?? null, kode: "plus", aksi: "klik_beli" });
+
     const snap = await buatSnap({
       orderId,
-      jumlahIdr: HARGA_BULANAN_IDR,
+      jumlahIdr: KATALOG.plus.hargaIdr,
       email: user?.email ?? null,
     });
 

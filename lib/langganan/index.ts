@@ -7,13 +7,10 @@
  * keputusan.
  */
 
-/** Rupiah per bulan. Angka terkunci — jangan diubah tanpa keputusan PO. */
-export const HARGA_BULANAN_IDR = 49_000;
-
-/** Hari yang ditambahkan sekali bayar. */
-export const PERIODE_HARI = 30;
 
 /** Masa coba untuk akun baru, sekali seumur akun. */
+// Harga, periode, dan nama produk hidup di lib/langganan/katalog.ts (Batch 6):
+// SKU 30 hari digantikan AIDM Plus 365 hari; Berkas Pengajuan per dokumen.
 export const MASA_COBA_HARI = 7;
 
 /**
@@ -58,4 +55,3 @@ export function sisaHari(l: Langganan | null | undefined): number | null {
   return ms <= 0 ? 0 : Math.ceil(ms / 86_400_000);
 }
 
-export const HARGA_TAMPIL = "Rp49.000";

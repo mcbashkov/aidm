@@ -30,11 +30,25 @@ export async function GET() {
   }
 
   try {
-    const [langganan, pemakaian] = await Promise.all([
+    const [langganan, pemakaian, { data: pesanan }] = await Promise.all([
       statusLangganan(supa, uid),
       pemakaianBulanIni(supa, uid),
+      // Riwayat pembelian untuk kartu "Langganan & berkas" di Akun (Batch 6).
+      supa
+        .from("subscription_orders")
+        .select("kode, harga_idr, periode_hari, paid_at")
+        .eq("user_id", uid)
+        .eq("status", "paid")
+        .order("paid_at", { ascending: false })
+        .limit(20),
     ]);
-    return NextResponse.json({ langganan, pemakaian });
+    const riwayat = ((pesanan ?? []) as { kode: string | null; harga_idr: number; periode_hari: number; paid_at: string | null }[]).map((o) => ({
+      kode: o.kode,
+      hargaIdr: o.harga_idr,
+      periodeHari: o.periode_hari,
+      paidAt: o.paid_at,
+    }));
+    return NextResponse.json({ langganan, pemakaian, riwayat });
   } catch (err) {
     // TIDAK menjawab "tidak aktif" saat pembacaan gagal — itu akan menyodorkan
     // ajakan berlangganan kepada orang yang sudah membayar.

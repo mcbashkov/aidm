@@ -3,11 +3,11 @@ import { bulanWib } from "@/lib/wib";
 import {
   KUOTA_BULANAN,
   MASA_COBA_HARI,
-  PERIODE_HARI,
   type FiturPremium,
   type Langganan,
   type StatusLangganan,
 } from "@/lib/langganan";
+import { PLUS_PERIODE_HARI } from "@/lib/langganan/katalog";
 
 /**
  * Sisi server langganan. Seluruh mutasi lewat fungsi Postgres berkunci
@@ -89,7 +89,7 @@ export async function perpanjangLangganan(
   supa: SupabaseClient,
   uid: string,
   sumber: "midtrans" | "manual",
-  hari: number = PERIODE_HARI,
+  hari: number = PLUS_PERIODE_HARI,
 ): Promise<string> {
   const { data, error } = await supa.rpc("langganan_perpanjang", {
     p_user: uid,
