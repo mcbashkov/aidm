@@ -282,3 +282,47 @@ update subscription_orders
 > terakhir ada supaya kesalahan itu terlihat — kalau `UPDATE` mengubah 0 baris,
 > berarti pesanan sudah pernah diproses dan **jangan** jalankan `SELECT
 > langganan_perpanjang` di atasnya.
+
+---
+
+## 11 · Proxy RPC same-origin (`/api/rpc/<chain>`)
+
+Sejak Batch 8 browser (sheet Tukar, dompet Privy) tidak menembak RPC publik
+langsung. Ia memanggil `POST /api/rpc/opbnb|opbnb-testnet|bsc|bsc-testnet`,
+dan server meneruskannya ke penyedia: `OPBNB_RPC_URL_SERVER` /
+`OPBNB_TESTNET_RPC_URL_SERVER` / `BSC_RPC_URL_SERVER` /
+`BSC_TESTNET_RPC_URL_SERVER` (kunci berbayar, env Vercel, **tidak pernah ke
+klien**) di depan, daftar endpoint resmi `lib/chains/*` sebagai cadangan.
+Kosong = resmi saja. Keadaan kontrak Tukar dibaca server lewat
+`GET /api/swap/keadaan` (cache 10 detik per alamat).
+
+**Pagar yang terpasang** (`lib/rpc/proxy.ts`): allowlist method (tanpa
+`eth_sendTransaction`, tanpa `debug_*`), batch ≤ 10, body ≤ 64 KB,
+`eth_getLogs` ≤ 2.000 blok dengan rentang eksplisit, timeout upstream 8 detik
+lalu pindah ke cadangan, dan **120 permintaan/menit** per sesi (atau per IP
+tanpa sesi) — tabel `rpc_rate`, fungsi `rpc_rate_inc` (migrasi 0037).
+
+Melihat siapa membentur batas (tidak destruktif):
+
+```sql
+select kunci, jml, jendela_mulai, updated_at
+  from rpc_rate
+ where jml >= 120
+ order by updated_at desc
+ limit 20;
+```
+
+`uid:<uuid>` adalah pengguna bersesi (cocokkan dengan §1); `ip:<alamat>`
+pemanggil tanpa sesi. Satu kunci yang membentur batas terus-menerus adalah
+skrip, bukan manusia — satu approve + swap dari dompet hanya ≈ 10–15
+panggilan.
+
+Melonggarkan SEMENTARA untuk satu kunci (jendela baru mulai dari nol):
+
+```sql
+delete from rpc_rate where kunci = 'uid:<uuid>';
+```
+
+Mengubah angkanya sendiri = ubah `RPC_RATE_PER_MENIT` di `lib/rpc/proxy.ts`
+lalu deploy; tidak ada tombol di database. Baris yang tidak tersentuh 24 jam
+disapu cron pemeliharaan (`rpc_rate_sapu`), tidak perlu dibersihkan manual.

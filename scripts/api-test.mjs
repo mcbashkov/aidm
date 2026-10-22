@@ -127,14 +127,20 @@ async function api(path, { method = "GET", body, cookie } = {}) {
       },
       body: body ? JSON.stringify(body) : undefined,
     });
+  // Galat TRANSPORT (soket ditutup, koneksi ditolak) diulang sampai lima
+  // kali dengan jeda 3 detik: `next dev` me-restart dirinya sendiri saat heap
+  // mendekati --max-old-space-size ("approaching the used memory threshold"),
+  // dan jendela restart itu ~6 detik — yang diuji aplikasinya, bukan soketnya.
   let res;
-  try {
-    res = await kirim();
-  } catch (err) {
-    if (!galatTransport(err)) throw err;
-    console.log(`  (soket ditutup saat ${method} ${path} — diulang sekali)`);
-    await new Promise((r) => setTimeout(r, 750));
-    res = await kirim();
+  for (let percobaan = 0; ; percobaan++) {
+    try {
+      res = await kirim();
+      break;
+    } catch (err) {
+      if (!galatTransport(err) || percobaan >= 5) throw err;
+      console.log(`  (transport gagal saat ${method} ${path} — diulang ke-${percobaan + 1})`);
+      await new Promise((r) => setTimeout(r, 3_000));
+    }
   }
   let json = null;
   try {
@@ -1187,6 +1193,76 @@ async function main() {
       Boolean(misi.complete_profile) && Boolean(misi.streak_30_days));
     cek("misi once ikut cap harian: capHarian.batas 250, capBulanan.batas 450 tidak berubah",
       r.body?.capHarian?.batas === 250 && r.body?.capBulanan?.batas === 450, JSON.stringify({ h: r.body?.capHarian, b: r.body?.capBulanan }));
+  }
+
+  console.log("\n── 21. Proxy RPC same-origin & keadaan Tukar (Batch 8, migrasi 0037) ──");
+  {
+    const rpc = (chain, body, opts = {}) => api(`/api/rpc/${chain}`, { method: "POST", body, ...opts });
+    const r0 = await rpc("solana", { jsonrpc: "2.0", id: 1, method: "eth_chainId", params: [] });
+    cek("jaringan asing → 404", r0.status === 404, `dapat ${r0.status}`);
+    const r1 = await rpc("opbnb-testnet", { jsonrpc: "2.0", id: 1, method: "eth_chainId", params: [] });
+    cek("eth_chainId opbnb-testnet dijawab lokal → 0x15eb", r1.status === 200 && r1.body?.result === "0x15eb", `${r1.status} ${JSON.stringify(r1.body)}`);
+    const r1b = await rpc("bsc", { jsonrpc: "2.0", id: 7, method: "eth_chainId", params: [] });
+    cek("eth_chainId bsc → 0x38, id dipantulkan", r1b.body?.result === "0x38" && r1b.body?.id === 7, JSON.stringify(r1b.body));
+    const r2 = await rpc("opbnb", { jsonrpc: "2.0", id: 2, method: "eth_sendTransaction", params: [{}] });
+    cek("method di luar allowlist → 400, kode -32601", r2.status === 400 && r2.body?.error?.code === -32601, `${r2.status} ${JSON.stringify(r2.body)}`);
+    const r2b = await rpc("opbnb", { jsonrpc: "2.0", id: 3, method: "debug_traceTransaction", params: [] });
+    cek("debug_* ditolak 400", r2b.status === 400, `dapat ${r2b.status}`);
+    const batch11 = Array.from({ length: 11 }, (_, i) => ({ jsonrpc: "2.0", id: i, method: "eth_chainId", params: [] }));
+    const r3 = await rpc("opbnb", batch11);
+    cek("batch 11 → 400 -32600", r3.status === 400 && r3.body?.error?.code === -32600, `${r3.status} ${JSON.stringify(r3.body)}`);
+    const sepuluh = batch11.slice(0, 10);
+    const r3b = await rpc("opbnb", sepuluh);
+    cek("batch 10 eth_chainId → 200, 10 jawaban 0xcc", r3b.status === 200 && Array.isArray(r3b.body) && r3b.body.length === 10 && r3b.body.every((x) => x.result === "0xcc"), `${r3b.status} ${JSON.stringify(r3b.body).slice(0, 80)}`);
+    const r4 = await rpc("opbnb", { jsonrpc: "2.0", id: 4, method: "eth_getLogs", params: [{ fromBlock: "0x1", toBlock: "0x1000", address: SWAP_ADDR_A }] });
+    cek("eth_getLogs rentang 4.095 blok → 400 -32602", r4.status === 400 && r4.body?.error?.code === -32602, `${r4.status} ${JSON.stringify(r4.body)}`);
+    const r4b = await rpc("opbnb", { jsonrpc: "2.0", id: 5, method: "eth_getLogs", params: [{ fromBlock: "0x1", toBlock: "latest" }] });
+    cek("eth_getLogs dengan tag 'latest' → 400 (rentang harus eksplisit)", r4b.status === 400, `dapat ${r4b.status}`);
+    const r5 = await rpc("opbnb", { jsonrpc: "2.0", id: 6, method: "eth_chainId", params: ["x".repeat(70 * 1024)] });
+    cek("body > 64 KB → 413", r5.status === 413, `dapat ${r5.status}`);
+    const r6 = await rpc("opbnb", "bukan objek");
+    cek("body JSON bukan objek → 400 -32600", r6.status === 400 && r6.body?.error?.code === -32600, `${r6.status}`);
+
+    // Batas laju per kunci sesi: 12 batch × 10 = 120 lolos, ke-13 → 429.
+    // Pengguna uji baru supaya penghitungnya mulai dari nol.
+    const uidI = sql(`insert into users (privy_did) values ('${PREFIX}I') returning id`);
+    const I = sessionCookie(uidI, `${PREFIX}I`);
+    const status = [];
+    for (let i = 0; i < 13; i++) status.push((await rpc("opbnb", sepuluh, { cookie: I })).status);
+    cek("120 permintaan/menit lolos (12 batch × 10), batch ke-13 → 429",
+      status.slice(0, 12).every((s) => s === 200) && status[12] === 429, status.join(","));
+    cek("penghitung rpc_rate kunci uid tercatat 130",
+      sql(`select coalesce(max(jml),0) from rpc_rate where kunci='uid:${uidI}'`) === "130");
+
+    const k0 = await api("/api/swap/keadaan");
+    cek("GET /api/swap/keadaan tanpa sesi → 401", k0.status === 401, `dapat ${k0.status}`);
+    const k1 = await api("/api/swap/keadaan", { cookie: I });
+    if (k1.status === 501) {
+      console.log("  · Tukar tidak dikonfigurasi di .env.local — cek keadaan dilewati (501)");
+    } else {
+      cek("sesi tanpa dompet → 404", k1.status === 404, `dapat ${k1.status}`);
+      sql(`insert into wallets (user_id, address) values ('${uidI}', '0x00000000000000000000000000000000000c3d33')`);
+      const k2 = await api("/api/swap/keadaan", { cookie: I });
+      cek("dengan dompet → 200: pada (epoch), dua kaki berstatus ok|gagal",
+        k2.status === 200 && typeof k2.body?.pada === "number" &&
+        ["ok", "gagal"].includes(k2.body?.opbnb?.status) && ["ok", "gagal"].includes(k2.body?.bsc?.status),
+        `${k2.status} ${JSON.stringify(k2.body).slice(0, 200)}`);
+      cek("respons menyebut chain burn & klaim", typeof k2.body?.burnChainId === "number" && typeof k2.body?.claimChainId === "number");
+      if (k2.body?.opbnb?.status === "ok") {
+        cek("kaki opBNB: saldo/min/jatah/izin string digit (wei), jeda boolean",
+          ["saldoIdmx", "minSwap", "sisaJatahMinggu", "izin"].every((f) => /^\d+$/.test(k2.body.opbnb[f])) && typeof k2.body.opbnb.jeda === "boolean");
+        const k3 = await api("/api/swap/keadaan", { cookie: I });
+        cek("pembacaan kedua <10 dtk dari cache (pada kaki sama)", k3.body?.opbnb?.pada === k2.body.opbnb.pada, `${k3.body?.opbnb?.pada} vs ${k2.body.opbnb.pada}`);
+      } else {
+        console.log(`  · kaki opBNB gagal dibaca dari server ini: ${k2.body?.opbnb?.galat}`);
+      }
+      if (k2.body?.bsc?.status === "ok") {
+        cek("kaki BSC: kurs & fee string digit", /^\d+$/.test(k2.body.bsc.kurs) && /^\d+$/.test(k2.body.bsc.fee));
+      } else {
+        console.log(`  · kaki BSC gagal dibaca dari server ini: ${k2.body?.bsc?.galat}`);
+      }
+    }
+    sql(`delete from rpc_rate where kunci = 'uid:${uidI}'`);
   }
 
   console.log("\n── 12. DELETE /api/akun (§12 hak penghapusan) ──");
