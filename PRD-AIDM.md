@@ -56,8 +56,10 @@ Pilar Web3 keempat yang **baru di v3.0**:
 1. **Kesenjangan kredit UMKM melebar, bukan menyempit.** Porsi kredit UMKM terhadap total kredit perbankan turun dari ±20,9% (Jan 2023) ke ±17% (2026), bahkan sempat terkontraksi saat kredit nasional tumbuh ~10%. Porsi kredit UMKM terhadap PDB turun dari 7,20% (2021) ke 6,66% (2025).
 2. **Akar masalahnya informasi, bukan modal.** Bank tidak bisa menilai apa yang tidak bisa dilihat. Korporasi datang dengan laporan teraudit; pelaku mikro datang dengan ingatan. Kredit mengalir ke yang paling mudah dibaca, bukan yang paling butuh.
 3. **Literasi keuangan bergerak terlalu lambat lewat pelatihan.** Indeks literasi keuangan nasional 66,46% vs inklusi 80,51% (SNLIK 2025) — selisih ~14 poin, naik hanya ~1 poin/tahun meski program penyuluhan sudah berjalan lebih dari satu dekade. Pendekatan kelas dan seminar tidak akan mengejar. **Literasi harus tertanam di alat kerja harian, bukan diajarkan di ruang kelas.**
-4. **Definisi UMKM sedang diperluas negara.** Perpres 27/2026 (berlaku 1 Juli 2026) menetapkan ~2,8 juta pengemudi ojol roda dua sebagai pengusaha mikro, mewajibkan pilar pelatihan **manajemen keuangan**, dan membuka akses **KUR mikro bunga 3%**. Ini menciptakan jutaan pengguna baru yang secara regulasi *diwajibkan* melek keuangan — dan belum punya alatnya.
+4. **Negara memperluas definisi pelaku mikro ke pengemudi ojek daring.** Negara memperluas definisi pelaku mikro ke pengemudi ojek daring (Perpres 27/2026 tentang Pelindungan Ekosistem Transportasi Berbasis Platform Digital, Okt 2026) dan mewajibkan aplikator menyediakan catatan biaya, pendapatan, dan bukti transaksi per layanan bagi mitranya. AIDM menyiapkan catatan harian dan bukti pendapatan dalam bentuk yang bisa langsung dibaca bank. [verifikasi naskah di JDIH Setneg — PO]
 5. **Adopsi crypto Indonesia butuh use case non-spekulatif.** Pencatatan harian memberi frekuensi pemakaian yang jauh lebih tinggi daripada riset pasar (harian vs sesekali) → metrik UAW yang sehat untuk DappBay.
+
+> **Catatan kaki §2 #4 (2026-10-22):** rumusan Perpres 27/2026 di atas bersumber dari liputan media dan umkm.go.id (Okt 2026); naskah resminya belum diperiksa — **[verifikasi naskah di JDIH Setneg — PO]**. Klaim versi sebelumnya ("berlaku 1 Juli 2026", "~2,8 juta pengemudi", "mewajibkan pilar pelatihan manajemen keuangan", "KUR mikro bunga 3%") dihapus karena tidak ditemukan di satu pun sumber (`docs/riset/fitur-premium-umkm-2026-10-22.md`).
 
 ## 3. Tujuan & Metrik Sukses
 
@@ -78,11 +80,11 @@ Pilar Web3 keempat yang **baru di v3.0**:
 
 ## 4. Target Pengguna & Persona
 
-**Sasaran resmi:** pelaku mikro dalam definisi yang diperluas negara — siapa pun yang **penghasilannya adalah usahanya**. Bukan "UMKM saja", bukan pula "semua orang untuk budgeting pribadi".
+**Sasaran resmi:** pelaku mikro dalam arti luas — termasuk pengemudi ojek daring (§2 #4) — siapa pun yang **penghasilannya adalah usahanya**. Bukan "UMKM saja", bukan pula "semua orang untuk budgeting pribadi".
 
 **P1 — Pedagang mikro ("Bu Sari", 34, warung/kuliner rumahan).** Omzet harian kecil dan sering, uang usaha bercampur uang dapur, tidak pernah tahu untung bersih. Butuh: catat cepat sambil melayani pembeli, tahu untung bulan ini, bukti untuk ajukan KUR.
 
-**P2 — Pengemudi ojol ("Pak Budi", 41, roda dua).** Baru berstatus pengusaha mikro (Perpres 27/2026). Penghasilan harian, potongan bensin/servis/pulsa. Butuh: tahu sisa bersih harian, akses KUR 3%. **Persona baru di v3.0 — sebelumnya tidak ada.**
+**P2 — Pengemudi ojol ("Pak Budi", 41, roda dua).** Diakui sebagai mitra pengemudi oleh Perpres 27/2026; aplikator wajib menyediakan catatan pendapatan per layanan baginya. Penghasilan harian, potongan bensin/servis/pulsa. Butuh: tahu sisa bersih harian, bukti pendapatan yang bisa dibawa saat mengajukan pinjaman mikro. **Persona baru di v3.0 — sebelumnya tidak ada.**
 
 **P3 — Freelancer / penjual online ("Rina", 26).** Pemasukan tidak rutin dari beberapa klien/marketplace, pengeluaran alat & iklan. Butuh: rekap arus kas, bukti penghasilan untuk pinjaman.
 

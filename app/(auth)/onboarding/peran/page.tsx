@@ -21,8 +21,10 @@ function profilLengkap(user: Me["user"]): boolean {
 
 /**
  * Layar peran v3.0 (§7.1 alur #3): "Kamu berpenghasilan dari mana?".
- * Menggantikan pilihan calon/UMKM v2.0 — definisi pelaku mikro kini diperluas
- * negara (Perpres 27/2026), sehingga ojol berdiri sebagai peran tersendiri.
+ * Menggantikan pilihan calon/UMKM v2.0. Ojol berdiri sebagai peran tersendiri
+ * karena bentuk penghasilannya berbeda (alasan produk, lihat lib/earner.ts);
+ * Perpres 27/2026 mengakui mereka sebagai mitra pengemudi, bukan mewajibkan
+ * pencatatan apa pun.
  */
 export default function PeranPage() {
   const router = useRouter();

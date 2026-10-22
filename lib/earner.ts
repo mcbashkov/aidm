@@ -1,9 +1,12 @@
 /**
  * Peran penghasilan (§7.1 layar peran, kolom `users.earner_type`).
  *
- * Menggantikan `role` v2.0 ('calon'|'umkm'). Definisi mengikuti perluasan
- * negara atas pelaku mikro (Perpres 27/2026) — karena itu ojol berdiri
- * sebagai perannya sendiri, bukan diselipkan ke "jasa".
+ * Menggantikan `role` v2.0 ('calon'|'umkm'). Ojol berdiri sebagai perannya
+ * sendiri, bukan diselipkan ke "jasa": bentuk penghasilan dan potongannya
+ * (setoran, bensin, servis, pulsa) berbeda dari dagang maupun jasa, dan
+ * Perpres 27/2026 (Pelindungan Ekosistem Transportasi Berbasis Platform
+ * Digital) mengakui mereka sebagai mitra yang berhak atas catatan pendapatan
+ * per layanan dari aplikator — bukan kewajiban pencatatan bagi UMKM.
  */
 
 import {

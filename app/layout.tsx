@@ -63,7 +63,7 @@ export const metadata: Metadata = {
     "laporan keuangan UMKM",
     "pembukuan ojol",
     "pembukuan freelancer",
-    "KUR mikro",
+    "berkas pengajuan pinjaman mikro",
     "AIDM",
   ],
   openGraph: {
