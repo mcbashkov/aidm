@@ -216,7 +216,10 @@ async function main() {
     draftId = e?.id;
     cek("tanpa nominal → status draft", e?.status === "draft", `dapat ${e?.status}`);
     cek("nominal TIDAK dikarang", e?.amount === 0 || e?.amount === null, `dapat ${e?.amount}`);
-    cek("ada SATU pertanyaan", typeof r.body?.pertanyaan === "string", String(r.body?.pertanyaan));
+    // Sejak pertanyaan menjadi BENTUK BERTIPE (lib/catat/pesan.ts) — bukan
+    // string bebas dari model — yang dijaga adalah jenisnya, bukan kalimatnya.
+    cek("ada SATU pertanyaan (bertipe: nominal)",
+      r.body?.pertanyaan?.jenis === "nominal", JSON.stringify(r.body?.pertanyaan));
     const nullDiDb = sql(`select amount is null from transactions where id='${draftId}'`);
     cek("amount NULL di DB (bukan 0)", nullDiDb === "t", `dapat ${nullDiDb}`);
   }
@@ -493,8 +496,10 @@ async function main() {
     if (teks !== null) {
       cek("kop memuat periode & tanggal cetak",
         teks.includes("Laporan Keuangan Usaha") && teks.includes("Dicetak"));
-      cek("memuat ringkasan laba KOTOR (bukan 'laba bersih')",
-        teks.includes("Sisa (laba kotor)") && !teks.includes("laba bersih"));
+      // lib/laporan/pdf.tsx melarang kata "laba" dalam bentuk apa pun: angkanya
+      // arus kas (pemasukan dikurangi SELURUH pengeluaran), bukan laba kotor.
+      cek("memuat 'Sisa uang' dan TIDAK memuat kata 'laba' (aturan pdf.tsx)",
+        teks.includes("Sisa uang") && !/\blaba\b/i.test(teks));
       cek("memuat tabel arus kas per bulan", teks.includes("Arus kas per bulan"));
       cek("memuat rincian kategori masuk & keluar",
         teks.includes("Rincian pemasukan per kategori") &&

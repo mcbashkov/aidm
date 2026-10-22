@@ -54,10 +54,11 @@ perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
 | M6 mainnet & beta | ⬜ belum mulai | tokenomics terbuka, tapi **audit pra-mainnet menemukan 1 Critical + 4 High** (semua Terbuka) — lihat Titik lanjut |
 | M7 Play & App Store | ⬜ belum mulai | — |
 
-**Gerbang otomatis terkini (2026-09-07):** `test:parser` 200/200 ·
-`test:misi` **30/30 (baru)** · `test:swap` 36/36 ·
-`test:canonical` 23/23 · `test:api` 123/123 · typecheck bersih · lint bersih ·
-build sukses **tanpa peringatan**. Uji browser produksi: 17/17 (P2-6 + guardrail)
+**Gerbang otomatis terkini (2026-10-22):** `test:parser` 200/200 + korpus
+kasbon 29/29 · `test:swap` 36/36 · `test:canonical` 27/27 · `test:api`
+**154/154** (env produksi, parser Haiku) · typecheck bersih · lint bersih ·
+build Vercel READY (`bc07dad`). `test:misi` 30/30 terakhir 2026-09-07, tidak
+dijalankan ulang. Uji browser produksi: 17/17 (P2-6 + guardrail, 2026-09-07)
 dan 11/11 (perbaikan "Menyiapkan…" + identitas ber-cache).
 
 **Produksi 2026-09-07:** 16 pengguna · 128 transaksi · 13 klaim misi ·
@@ -187,8 +188,9 @@ menunggu Business review dan melanjutkan di sandbox.
 1. ~~**F-05** + plafon global~~ ✅ **SELESAI** (§7f) — sisa: balik env Vercel.
 2. **F-07** (SwapClaim tanpa circuit breaker) — murni kode. **Berikutnya.**
    *(hapus akun §7g & "Mode demo" §7h sudah selesai 2026-09-08)*
-3. **Satu run penuh `test:api`** — angka 123/123 yang sah terakhir tercatat
-   2026-08-22, sebelum batch UI, batch langganan, dan batch dompet.
+3. ~~**Satu run penuh `test:api`**~~ ✅ **154/154 pada 2026-10-22** (§7k) —
+   angka sah pertama sejak 123/123 tanggal 2026-08-22; dua cek harness yang
+   basi disesuaikan ke kontrak yang berlaku, bukan dilonggarkan.
 4. **Bundel `/masuk` 829 KB** — sisa terakhir M5 (§6 menjelaskan kenapa
    refaktornya ditunda dan apa penggantinya yang sudah jalan).
 5. **M6 — mainnet & beta tertutup**, setelah F-01/F-08 diputuskan.
@@ -1389,9 +1391,16 @@ kalimat kasbon di Catat menjadi 500 di produksi.
        (build 102 dtk). Cek asap tanpa sesi di `ai.idmtoken.com`: `/api/kasbon`
        404 → 401 (rute ada, auth diperiksa lebih dulu), PATCH/DELETE 401,
        `/laporan` 307 ke `/masuk`, beranda 200.
-3. ⬜ 🧑 `pnpm test:api` sekali (seksi 16 baru, 30 cek + cascade kasbon di
-       hapus akun). Butuh dev server dengan env produksi dan memanggil Haiku
-       beberapa kali.
+3. [x] `pnpm test:api` 2026-10-22 dengan env produksi (dev server lokal,
+       parser Haiku, log server tanpa galat): **154/154** — seksi 16 kasbon
+       **30/30** + cascade kasbon di hapus akun. Jalan pertama mati di seksi
+       11 saat servernya terhenti; jalan kedua 153/154; jalan ketiga 154/154.
+       Dua cek harness yang BASI disesuaikan, bukan dilonggarkan: seksi 3
+       (pertanyaan kini bentuk bertipe `{jenis:"nominal"}`, bukan string —
+       perubahan batch sebelumnya) dan seksi 11 (PDF wajib "Sisa uang" tanpa
+       kata "laba", aturan `pdf.tsx`; cek lama justru menuntut "laba kotor").
+       Pengguna uji `did:privy:__test__*` dibersihkan harness — diperiksa:
+       nol tersisa.
 
 **Keputusan PO 2026-10-22 (lima rekomendasi diterima):** kartu di halaman
 Laporan yang ada, tanpa segmen baru (segmen "Usaha" tidak pernah ada) ·
@@ -1444,10 +1453,10 @@ basis kas — kasbon tidak masuk Sisa uang, PDF, maupun segel sampai lunas ·
   bergeser 16px karena ikut `space-y` kartunya.
 
 **Belum, dan terbuka:**
-- ⬜ 🧑 `test:api` seksi 16 belum pernah jalan; jalur LLM (Haiku) untuk
-      kalimat kasbon belum dicoba dengan kunci sungguhan — korpus hanya
-      menguji fallback. Belum ada satu pun kalimat kasbon dari pengguna
-      nyata (baris `kasbon` = 0 saat tayang).
+- ⬜ Belum ada satu pun kalimat kasbon dari pengguna nyata (baris `kasbon`
+      = 0 saat tayang; baris uji dibersihkan harness). Jalur Haiku teruji
+      lewat `test:api`, tetapi hanya pada tujuh kalimat seksi 16 — korpus 29
+      kasus tetap hanya menguji fallback.
 - [x] **Temuan saat verifikasi, di luar kasbon → migrasi 0033 ditulis &
       diuji, BELUM diterapkan (🧑 `pnpm db:migrate --dry-run` lalu
       `pnpm db:migrate`).** Di produksi **139 dari 139 fungsi** skema
