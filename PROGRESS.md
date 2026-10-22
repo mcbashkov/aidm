@@ -54,12 +54,12 @@ perangkat fisik) · 🤖 = bisa saya kerjakan sendiri
 | M6 mainnet & beta | ⬜ belum mulai | tokenomics terbuka, tapi **audit pra-mainnet menemukan 1 Critical + 4 High** (semua Terbuka) — lihat Titik lanjut |
 | M7 Play & App Store | ⬜ belum mulai | — |
 
-**Gerbang otomatis terkini (2026-10-22):** `test:parser` 200/200 + korpus
-kasbon 29/29 · `test:swap` 36/36 · `test:canonical` 27/27 · `test:api`
-**154/154** (env produksi, parser Haiku) · typecheck bersih · lint bersih ·
-build Vercel READY (`bc07dad`). `test:misi` 30/30 terakhir 2026-09-07, tidak
-dijalankan ulang. Uji browser produksi: 17/17 (P2-6 + guardrail, 2026-09-07)
-dan 11/11 (perbaikan "Menyiapkan…" + identitas ber-cache).
+**Gerbang otomatis terkini (2026-10-22, Batch 8):** `test:parser` 200/200 +
+korpus kasbon 29/29 · `test:swap` 36/36 · `test:canonical` 27/27 ·
+`test:kesiapan` 22/22 · `test:misi` 30/30 · `test:api` **247/247** (env
+produksi, 21 seksi) · typecheck bersih · lint bersih · build Vercel READY
+(`fb4e31e`). Uji browser produksi terakhir: 17/17 (P2-6 + guardrail,
+2026-09-07) dan 11/11 (perbaikan "Menyiapkan…" + identitas ber-cache).
 
 **Produksi 2026-09-07:** 16 pengguna · 128 transaksi · 13 klaim misi ·
 **16/16 punya `wallets`, 0 alamat ganda** (sesudah perbaikan §7d) · 2 langganan
@@ -1719,6 +1719,137 @@ pembelian Plus di produksi menjawab "sedang disiapkan" sampai itu beres.
 Uji di HP: `/premium` → kartu Berkas menautkan ke Laporan; Akun → "Langganan
 & berkas" menampilkan status + riwayat; Syarat & Ketentuan menyebut 365
 hari.
+
+### 7p. Batch 7 — Misi rantai "Siap Bank" ✅ **TAYANG 2026-10-22**
+
+Perintah: `PERINTAH-AGEN-PREMIUM` §1.4, §Batch 7. Commit `f2ffeb0` · deploy
+`dpl_EoHCNuNcH1tn9PYysn8DjZvT98Tx` READY.
+
+- [x] Migrasi **0036**: tiga misi `once` — `aktif_30` (100), `aktif_90`
+      (150), `aktif_180` (250) — `insert … on conflict (code) do update`
+      (pola 0016/0023), `aktif = true`. Dua kali di Postgres sekali pakai →
+      dry-run tepat satu → `db:migrate` sebelum push → 12 misi aktif.
+- [x] `DEFAULT_MISSIONS` + tiga misi (target 30/90/180). Progres di
+      `lib/missions/server.ts` = jumlah baris `daily_rollups` dengan
+      `jml_transaksi > 0` dalam 365 hari terakhir (definisi hari aktif §1.4,
+      sama dengan Kesiapan Catatan) — satu `count` `head: true`, bukan
+      menarik 365 baris; kumulatif, bukan runtun.
+- [x] Kartu misi 180 hari: tautan **"Buat <label peran>"** →
+      `/laporan#kesiapan` — pintu Berkas di Laporan, bukan pembelian di
+      dalam Misi. Kartu misi yang ada dipakai apa adanya.
+- [x] Klaim lewat jalur yang ada (`POST /api/missions/klaim` →
+      `mission_claims` → cron relayer → `MissionRewards`). `CAP_HARIAN_IDMX`
+      250, `CAP_BULANAN_IDMX` 450, dan kontrak **tidak diubah**.
+
+**Gerbang §0.3:** typecheck bersih · lint bersih · `test:parser` 200/200 +
+29/29 · `test:kesiapan` 22/22 · `test:misi` **30/30** (anvil lokal) ·
+`test:api` **247/247** (seksi 20: 9 cek — 40 hari seed + 1 hari ke-200
+dihitung, hari ke-400 tidak; `aktif_30` selesai & dipotong di 30; progres
+41/90 dan 41/180; cap 250/450 tidak berubah) · deploy READY · cek asap:
+`/api/missions` 401 tanpa sesi, 12 misi aktif di DB produksi.
+
+**Keputusan yang saya ambil sendiri:**
+- `PERINTAH-AGEN-FINAL` §0.1 tidak menetapkan angka untuk misi sekali-seumur-
+  akun → 100/150/250 dari perintah dipakai; jumlah 500 ≈ 9% dari 12 ×
+  CAP_BULANAN. Tidak ada selisih yang perlu dicatat.
+- Hari aktif dihitung dari `daily_rollups`, BUKAN dari RPC `misi_sinyal_harian`
+  (0032) yang mengabaikan pelunasan kasbon: bagi bank, hari pelunasan adalah
+  hari pencatatan yang nyata, dan definisinya harus sama dengan Kesiapan
+  Catatan yang menjadi pintu Berkas.
+- Misi `once` tetap di ember HARIAN (seperti `complete_profile`), bukan
+  bulanan — mengikuti `ikutCapHarian` yang ada dan cap kontrak. Akibatnya
+  klaim `aktif_180` (250 = cap harian) hanya bisa dilakukan di hari ia belum
+  mengklaim misi lain; layar menampilkan kalimat cap harian yang sudah ada
+  ("Batas 250 IDMX/hari sudah tercapai. Coba lagi besok.") dengan tombol
+  mati — bukan galat. Kalimat "Jatah bulan ini penuh" dari perintah tidak
+  berlaku karena misi ini tidak menyentuh ember bulanan.
+- Label pintu memakai `useMe()` (identitas ber-cache): sebelum terbaca,
+  label umum — sama dengan kartu Kesiapan.
+- Direktori kerja berpindah path di tengah run (19:45; `~/idmtoken` menjadi
+  symlink ke salinan di drive NTFS); berkas 0036 dan edit Batch 7 yang belum
+  ter-commit hilang dan ditulis ulang identik. `db:migrate --dry-run`
+  membuktikan 0036 sudah ter-apply di produksi.
+
+**Butuh tangan PO:** tidak ada yang memblokir. Uji di HP: Misi → tiga kartu
+"hari aktif" dengan progres N/30, N/90, N/180; kartu 180 hari → tautan
+"Buat <label>" membuka Laporan di kartu Kesiapan; klaim `aktif_30` bila
+sudah 30 hari aktif (relayer membayar ≤ 1 menit).
+
+**Catatan operasional:** sesi agen mati dua kali karena OOM killer kernel
+membunuh `next-server` (RSS 3,3–4,0 GB pada mesin 7,6 GB) dan ikut
+menjatuhkan aplikasi desktop; `pnpm install` di drive NTFS macet 24 menit;
+rute PDF menjawab 500 saat `.next` dipindah ke disk lain (paket eksternal
+`@react-pdf/renderer` diresolusi dari lokasi `.next`). Semua diselesaikan
+dengan konfigurasi LOKAL (tidak di-commit): virtual store pnpm dan `.next`
+di disk ext4 dengan symlink `node_modules` di dalamnya, dev server dari shell
+tanpa tab browser pada port 3200 dengan heap 2 GB (RSS stabil ±1 GB sepanjang
+harness), dan `api()` harness mengulang galat transport sampai 5× (jendela
+restart pengawas memori Next ±7 dtk) — penyesuaian harness, bukan pelonggaran
+assertion.
+
+### 7q. Batch 8 — Proxy RPC same-origin & pembacaan sisi server ✅ **TAYANG 2026-10-22**
+
+Perintah: `PERINTAH-AGEN-PREMIUM` §Batch 8 (utang pra-mainnet). Commit
+`21ce111` (0037 + proxy + keadaan), `771c19d` (klien Tukar + Privy lewat
+proxy), `fb4e31e` (harness seksi 21 + env + runbook) · deploy `dpl_DPAXsFCeLxw3vn3KoCoNzfDZbNsf` READY.
+
+- [x] `POST /api/rpc/<opbnb|opbnb-testnet|bsc|bsc-testnet>`: pass-through
+      JSON-RPC dengan allowlist method, batch ≤ 10, body ≤ 64 KB,
+      `eth_getLogs` ≤ 2.000 blok (rentang eksplisit), timeout upstream 8 dtk
+      lalu cadangan, batas laju **120/menit** per sesi (atau IP) lewat
+      `rpc_rate_inc` (migrasi **0037**, pola `catat_rate_inc` 0028).
+      Upstream = `*_RPC_URL_SERVER` (kunci berbayar, opsional, tidak pernah
+      ke klien) di depan `daftarRpc()` yang ada. `eth_chainId` dijawab lokal.
+- [x] `GET /api/swap/keadaan`: kedua kaki dibaca server (opBNB: saldo/
+      minimum/jatah/izin/jeda · BSC: kurs/fee/jeda), cache 10 dtk per alamat,
+      `pada` epoch + status per kaki; alamat dari dompet milik sesi.
+- [x] `swap-sheet.tsx` memakai rute itu; "Coba lagi" memanggil ulang rute;
+      cadangan pembacaan browser lewat proxy bila rutenya gagal.
+- [x] Transport klien viem (`publicClient`) dan `supportedChains`/
+      `defaultChain` Privy → chain dengan proxy same-origin di depan, daftar
+      RPC publik tetap cadangan terakhir (`lib/swap/chains-klien.ts`).
+- [x] Service worker: `/api/*` sudah `NetworkOnly` — tidak perlu aturan baru.
+- [x] `.env.local.example` (+4 env server) dan `docs/RUNBOOK-ADMIN.md` §11.
+
+**Gerbang §0.3:** typecheck bersih · lint bersih · `test:parser` 200/200 +
+29/29 · `test:swap` **36/36** (anvil; wajib: swap/chains) · `test:api`
+**247/247** (seksi 21: 20 cek — 404 jaringan asing, allowlist 400
+-32601, batch 11 → 400, batch 10 → 200, getLogs rentang/tag → 400 -32602,
+body 70 KB → 413, 120 lolos & ke-13 → 429, penghitung 130, keadaan 401/404/
+200 dua kaki berstatus, cache 10 dtk) · 0037 diterapkan sebelum push ·
+deploy READY · cek asap produksi: `eth_chainId` lewat proxy → `0xcc`,
+method asing → 400, `/api/swap/keadaan` → 401 tanpa sesi.
+
+**Keputusan yang saya ambil sendiri:**
+- Empat slug, bukan dua: dompet Privy mendaftarkan keempat jaringan dan
+  kontrak hidup di fase testnet; `opbnb` dan `bsc` dari perintah tetap sah.
+  Env server pun empat (`*_TESTNET_RPC_URL_SERVER` ditambahkan).
+- Allowlist perintah + `eth_getBlockByNumber`/`eth_getBlockByHash` (baca-
+  saja): viem memanggilnya untuk taksiran biaya EIP-1559 dan saat menunggu
+  struk — tanpa itu approve/swap dari dompet gagal di langkah pertama.
+- `eth_getLogs` dengan tag (`latest`, dll.) ditolak: rentangnya tidak bisa
+  diperiksa tanpa bertanya ke jaringan. Browser tidak pernah memanggilnya
+  (relayer di server memakai transport sendiri).
+- Batas laju dihitung SETELAH validasi (yang ditolak tidak menyentuh DB/
+  upstream); isi batch dihitung per item; penghitung tidak tersedia →
+  lewatkan, bukan tolak (pola Catat). Angka 120 dari taksiran satu menit
+  sibuk dompet (approve + swap + polling struk ≈ 40–60).
+- Tanpa header CORS: proxy untuk halaman same-origin saja; skrip luar tetap
+  bisa memanggil (CORS bukan pagar server-ke-server) dan dibatasi per IP.
+- Kegagalan kaki tidak di-cache: "Coba lagi" harus membaca ulang.
+- Relayer (`lib/swap/relayer-server.ts`) dan saldo kartu wallet
+  (`lib/token/saldo.ts`) tidak diubah — sudah sisi server, di luar perintah.
+- Baris `rpc_rate` yang tidak tersentuh 24 jam disapu cron pemeliharaan
+  (`rpc_rate_sapu`), supaya tabelnya tidak tumbuh tanpa batas.
+
+**Butuh tangan PO:** (1) **Uji approve + swap dari HP di testnet** — ini
+satu-satunya jalur yang tidak bisa saya buktikan tanpa dompet Privy
+sungguhan: bila dompet Privy ternyata memanggil RPC dari iframe-nya (bukan
+dari halaman), panggilan ke proxy same-origin gagal dan transaksi tidak
+terkirim; perbaikannya satu baris (`lib/privy/provider.tsx`: kembalikan
+`supportedChains`/`defaultChain` tanpa `denganProxy`), pembacaan sheet tidak
+terpengaruh. (2) Bila ingin kunci penyedia berbayar: isi `*_RPC_URL_SERVER`
+di env Vercel → redeploy; kosong = endpoint resmi.
 
 ### 8. 🤖 M5 — premium di balik LANGGANAN
 
