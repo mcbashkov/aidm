@@ -37,7 +37,7 @@ export async function GET() {
       supa
         .from("users")
         .select(
-          "id, role, earner_type, nama_usaha, kategori_id, sub_kategori, kota, provinsi, email, phone, gaya_bahasa, categories:kategori_id(slug)",
+          "id, role, earner_type, nama_usaha, kategori_id, sub_kategori, kota, provinsi, email, phone, gaya_bahasa, wajib_pajak_op, categories:kategori_id(slug)",
         )
         .eq("id", uid)
         .single(),
@@ -126,6 +126,9 @@ export async function PATCH(req: Request) {
   if (typeof patch.provinsi === "string") update.provinsi = patch.provinsi;
   if (typeof patch.sub_kategori === "string")
     update.sub_kategori = patch.sub_kategori;
+  // Modul Pajak OP (0038): bendera ya/tidak, bukan NPWP. Hanya boolean murni.
+  if (typeof patch.wajib_pajak_op === "boolean")
+    update.wajib_pajak_op = patch.wajib_pajak_op;
 
   try {
     const supa = createSupabaseAdminClient();

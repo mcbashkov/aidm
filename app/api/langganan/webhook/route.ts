@@ -134,6 +134,14 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: true, catatan: "dokumen menyusul" });
       }
     }
+    // Paket Pajak (Batch 9): bukan langganan Plus. Hak aksesnya dibaca dari
+    // pesanan lunas ini (lib/pajak/server.ts `bolehPajak`), jadi tidak ada
+    // yang perlu diperpanjang — jejaknya saja yang dicatat.
+    if (pesanan.kode === "pajak") {
+      void catatPremiumEvent(supa, { userId: pesanan.user_id, earnerType: null, kode: "pajak", aksi: "bayar_sukses" });
+      console.log(`[pajak] ${orderId} lunas → Paket Pajak aktif 365 hari`);
+      return NextResponse.json({ ok: true, paket: "pajak" });
+    }
     const hari =
       pesanan.kode === "plus" ? (KATALOG.plus.periodeHari ?? pesanan.periode_hari) : pesanan.periode_hari;
     if (pesanan.kode === "plus") {

@@ -6,6 +6,7 @@ import { ChevronRight, Sparkles } from "lucide-react";
 import { premiumAktif, sisaHari, type Langganan } from "@/lib/langganan";
 import { KATALOG, formatHargaIdr, kodeProdukSah } from "@/lib/langganan/katalog";
 import { BerkasList } from "@/components/account/berkas-list";
+import { DokumenPajakList } from "@/components/account/dokumen-pajak-list";
 
 interface Riwayat {
   kode: string | null;
@@ -94,6 +95,7 @@ export function LanggananBerkas() {
         ) : null}
       </div>
       <BerkasList />
+      <DokumenPajakList />
     </section>
   );
 }

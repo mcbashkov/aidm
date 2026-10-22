@@ -24,6 +24,7 @@ export interface Me {
     kategori_slug?: string;
     kota?: string;
     gaya_bahasa?: string;
+    wajib_pajak_op?: boolean;
   } | null;
   wallet?: { address?: string } | null;
   langganan?: Langganan;

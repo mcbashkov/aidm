@@ -60,7 +60,7 @@ export const KATALOG: Record<KodeProduk, Produk> = {
     nama: "Paket Pajak Tahunan",
     hargaIdr: 59_000,
     periodeHari: 365,
-    tersedia: false, // Fase B (Batch 9)
+    tersedia: true, // Fase B — Batch 9
   },
 };
 

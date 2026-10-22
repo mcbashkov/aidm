@@ -8,6 +8,7 @@ import {
   Bell,
   Shield,
   KeyRound,
+  Landmark,
   ChevronRight,
   Check,
   Briefcase,
@@ -72,6 +73,8 @@ export function SettingsList() {
         terbuka={terbuka === "notif"}
         onToggle={() => setTerbuka((t) => (t === "notif" ? null : "notif"))}
       />
+
+      <BarisPajakOp />
 
       <Link
         href="/kebijakan-privasi"
@@ -406,6 +409,76 @@ function BarisNotif({
             yang paling dekat.
           </p>
         </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * "Saya wajib pajak orang pribadi" (Batch 9, migrasi 0038). Default MATI.
+ * Hanya ya/tidak — bukan NPWP. Bila mati, baris omzet tahunan di Laporan
+ * tetap tampil tanpa kalimat pajak. Disimpan lewat PATCH /api/me yang sama
+ * dengan profil usaha, lalu identitas dibaca ulang lewat cache bersama.
+ */
+function BarisPajakOp() {
+  const me = useMe();
+  const meK = useMeKeadaan();
+  const [sibuk, setSibuk] = useState(false);
+  const [galat, setGalat] = useState<string | null>(null);
+  const aktif = Boolean(me?.user?.wajib_pajak_op);
+
+  async function ubah() {
+    if (!me) return;
+    setSibuk(true);
+    setGalat(null);
+    const hasil = await panggil("/api/me", {
+      method: "PATCH",
+      body: JSON.stringify({ wajib_pajak_op: !aktif }),
+    });
+    setSibuk(false);
+    if (!hasil.ok) {
+      setGalat(hasil.offline ? "Kamu sedang offline. Coba lagi saat tersambung." : "Belum tersimpan. Coba lagi ya.");
+      return;
+    }
+    if (meK.keadaan !== "memuat") meK.muatUlang();
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => void ubah()}
+        disabled={sibuk || !me}
+        role="switch"
+        aria-checked={aktif}
+        className="flex w-full items-center gap-3 px-5 py-4 text-left transition-colors active:bg-surface-warm disabled:opacity-60"
+      >
+        <Landmark className="h-5 w-5 shrink-0 text-ink-subtle" aria-hidden />
+        <span className="flex-1">
+          <span className="block text-[14px] text-ink">Saya wajib pajak orang pribadi</span>
+          <span className="block text-[12px] leading-snug text-ink-subtle">
+            Menampilkan kalimat PPh Final 0,5% di baris omzet Laporan. Bukan nasihat pajak.
+          </span>
+        </span>
+        <span
+          aria-hidden
+          className={cn(
+            "relative h-6 w-11 shrink-0 rounded-pill transition-colors",
+            aktif ? "bg-gold" : "bg-surface-warm",
+          )}
+        >
+          <span
+            className={cn(
+              "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
+              aktif ? "translate-x-5" : "translate-x-0.5",
+            )}
+          />
+        </span>
+      </button>
+      {galat ? (
+        <p role="alert" className="px-5 pb-4 text-[12.5px] text-ink-muted">
+          {galat}
+        </p>
       ) : null}
     </div>
   );

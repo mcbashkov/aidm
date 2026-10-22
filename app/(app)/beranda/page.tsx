@@ -18,6 +18,7 @@ import { useKueri } from "@/components/providers/kueri-provider";
 import { ambilKesiapan, type KesiapanResponse } from "@/lib/kesiapan/client";
 import { JENDELA_6 } from "@/lib/kesiapan/hitung";
 import { BelumTersinkron } from "@/components/ui/belum-tersinkron";
+import { PengingatPajak } from "@/components/beranda/pengingat-pajak";
 import type { ApiHasil } from "@/lib/api/panggil";
 import { DEFAULT_MISSIONS } from "@/lib/missions";
 import { ringkasHariIni, transaksiTerakhir } from "@/lib/mock/finance";
@@ -145,6 +146,9 @@ export default function BerandaPage() {
           <BelumTersinkron className="mt-2" />
         ) : null}
       </header>
+
+      {/* Pengingat setoran PPh Final (Batch 9) — hanya tampil bila relevan. */}
+      <PengingatPajak />
 
       {keadaan.keadaan === "gagal" ? (
         /* Keadaan gagal menggantikan SELURUH blok berdata: kartu hari ini,

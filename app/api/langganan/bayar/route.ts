@@ -18,9 +18,20 @@ export const dynamic = "force-dynamic";
  * ada jejak untuk menelusurinya. Pesanan yatim yang tidak pernah dibayar jauh
  * lebih murah daripada pembayaran yatim yang tidak pernah tercatat.
  */
-export async function POST() {
+export async function POST(req: Request) {
   const uid = currentUserId();
   if (!uid) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+
+  // Produk: `plus` (bawaan) atau `pajak` (Paket Pajak Tahunan, Batch 9).
+  // Berkas dipesan lewat /api/berkas/pesan karena punya syarat tingkat.
+  let kode: "plus" | "pajak" = "plus";
+  try {
+    const b = (await req.json()) as { kode?: unknown };
+    if (b?.kode === "pajak") kode = "pajak";
+  } catch {
+    /* tanpa body = plus */
+  }
+  const produk = KATALOG[kode];
 
   if (!isMidtransConfigured()) {
     return NextResponse.json(
@@ -44,9 +55,9 @@ export async function POST() {
       .from("subscription_orders")
       .insert({
         user_id: uid,
-        periode_hari: PLUS_PERIODE_HARI,
-        harga_idr: KATALOG.plus.hargaIdr,
-        kode: "plus",
+        periode_hari: produk.periodeHari ?? PLUS_PERIODE_HARI,
+        harga_idr: produk.hargaIdr,
+        kode,
         midtrans_order_id: orderId,
         status: "pending",
       })
@@ -60,11 +71,11 @@ export async function POST() {
       .eq("id", uid)
       .maybeSingle();
 
-    void catatPremiumEvent(supa, { userId: uid, earnerType: user?.earner_type ?? null, kode: "plus", aksi: "klik_beli" });
+    void catatPremiumEvent(supa, { userId: uid, earnerType: user?.earner_type ?? null, kode, aksi: "klik_beli" });
 
     const snap = await buatSnap({
       orderId,
-      jumlahIdr: KATALOG.plus.hargaIdr,
+      jumlahIdr: produk.hargaIdr,
       email: user?.email ?? null,
     });
 

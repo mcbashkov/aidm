@@ -9,6 +9,7 @@ import { CategoryBreakdown } from "@/components/laporan/category-breakdown";
 import { VerifiedShare } from "@/components/laporan/verified-share";
 import { SealCard } from "@/components/laporan/seal-card";
 import { KesiapanCard } from "@/components/laporan/kesiapan-card";
+import { PajakCard } from "@/components/laporan/pajak-card";
 import { KasbonCard } from "@/components/laporan/kasbon-card";
 import { PERIOD_OPTIONS, laporanDemo } from "@/lib/mock/finance";
 import { periodeSekarang } from "@/lib/catat/client";
@@ -245,6 +246,9 @@ export function LaporanView() {
               usaha: valuasi adalah Fase 3 dan terlalu dekat dengan "kelayakan";
               slotnya lebih berguna untuk kelengkapan catatan. */}
           <KesiapanCard />
+          {/* Modul Pajak OP (Batch 9): omzet tahun ini vs batas bebas Rp500
+              juta (gratis), dokumen pajak di balik Paket Pajak / Plus. */}
+          <PajakCard />
         </>
       ) : null}
     </div>

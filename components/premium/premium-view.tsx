@@ -167,6 +167,8 @@ export function PremiumView() {
         />
       )}
 
+      {KATALOG.pajak.tersedia ? <KartuPajak /> : null}
+
       {galat ? (
         <p role="alert" className="rounded-card bg-gold-tint px-4 py-3 text-center text-[13px] text-ink-muted">
           {galat}
@@ -248,6 +250,26 @@ function KartuBerkas({ earnerType }: { earnerType: string | null }) {
         Lihat pratinjau di Laporan
       </Link>
     </div>
+  );
+}
+
+/** Paket Pajak Tahunan (Fase B, Batch 9) — termasuk dalam Plus. */
+function KartuPajak() {
+  return (
+    <Link href="/laporan#pajak" className="card block space-y-2 p-5 transition-shadow hover:shadow-float">
+      <div className="flex items-center justify-between gap-3">
+        <h3>{KATALOG.pajak.nama}</h3>
+        <span className="tnum shrink-0 rounded-pill bg-gold-tint px-3 py-1 text-[12px] font-semibold text-gold-deep">
+          {formatHargaIdr(KATALOG.pajak.hargaIdr)}/tahun pajak
+        </span>
+      </div>
+      <p className="text-[13px] leading-relaxed text-ink-muted">
+        Untuk wajib pajak orang pribadi: kalkulator setoran PPh Final 0,5% setelah omzet melewati Rp500 juta, pengingat
+        tanggal 15, PDF Rincian Peredaran Bruto per Bulan (bahan pengisian SPT), dan Surat Pernyataan Omzet di Bawah
+        Rp500 Juta — keduanya ter-notarisasi. Termasuk dalam Plus. Baris omzet tahun ini di Laporan tetap gratis.
+      </p>
+      <p className="text-[12px] text-ink-subtle">Bukan nasihat pajak. Cocokkan dengan Coretax atau konsultan pajak.</p>
+    </Link>
   );
 }
 
