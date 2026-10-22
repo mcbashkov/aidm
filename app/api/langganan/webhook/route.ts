@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { perpanjangLangganan } from "@/lib/langganan/server";
+import { KATALOG, kodeBerkasSah } from "@/lib/langganan/katalog";
+import { buatBerkas, catatPremiumEvent } from "@/lib/berkas/server";
 import {
   gagalFinal,
   lunas,
@@ -53,7 +55,7 @@ export async function POST(req: Request) {
 
   const { data: pesanan } = await supa
     .from("subscription_orders")
-    .select("id, user_id, periode_hari, status, harga_idr")
+    .select("id, user_id, periode_hari, status, harga_idr, kode")
     .eq("midtrans_order_id", orderId)
     .maybeSingle();
 
@@ -116,11 +118,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, catatan: "akun sudah dihapus" });
     }
 
+    // Produk per `kode` (0035). NULL = pesanan lama 30 hari: jalur lama utuh.
+    if (kodeBerkasSah(pesanan.kode)) {
+      // Dokumen dibuat SEKARANG dan hasil apa pun dijawab 200: Midtrans
+      // mengulang notifikasi yang dijawab selain 200, dan baris pesanan
+      // sudah `paid`. Render yang gagal tinggal berstatus `gagal` dan
+      // dicoba ulang cron pemeliharaan (maks 3×).
+      void catatPremiumEvent(supa, { userId: pesanan.user_id, earnerType: null, kode: pesanan.kode, aksi: "bayar_sukses" });
+      try {
+        const b = await buatBerkas(supa, { userId: pesanan.user_id, kode: pesanan.kode, orderId: pesanan.id, did: null });
+        console.log(`[berkas] ${orderId} lunas → ${b.nomor_dokumen} (${b.status})`);
+        return NextResponse.json({ ok: true, berkas: b.nomor_dokumen, status: b.status });
+      } catch (err) {
+        console.error(`[berkas] ${orderId} lunas tapi dokumen gagal dibuat:`, err);
+        return NextResponse.json({ ok: true, catatan: "dokumen menyusul" });
+      }
+    }
+    const hari =
+      pesanan.kode === "plus" ? (KATALOG.plus.periodeHari ?? pesanan.periode_hari) : pesanan.periode_hari;
     const berakhir = await perpanjangLangganan(
       supa,
       pesanan.user_id,
       "midtrans",
-      pesanan.periode_hari,
+      hari,
     );
     console.log(`[langganan] ${orderId} lunas → aktif sampai ${berakhir}`);
     return NextResponse.json({ ok: true, berakhir });

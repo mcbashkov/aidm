@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { cocokCronSecret, TIDAK_DITEMUKAN } from "@/lib/api/cron";
+import { sapuBerkas } from "@/lib/berkas/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -121,6 +122,19 @@ async function purge(req: Request) {
     }
   }
 
+  // Berkas Pengajuan (0035): render yang gagal dicoba ulang (maks 3×) dan
+  // notarisasi yang menggantung dituntaskan. Sama seperti yang lain: gagal
+  // di sini dicatat, tidak menggagalkan jalan.
+  let berkas: { dicoba: number; segel: number } | null = null;
+  try {
+    berkas = await sapuBerkas(supa);
+    if (berkas.dicoba > 0 || berkas.segel > 0) {
+      console.log(`[pemeliharaan] berkas: ${berkas.dicoba} dicoba ulang, ${berkas.segel} segel dicek`);
+    }
+  } catch (err) {
+    console.error("[pemeliharaan] sapu berkas gagal:", err);
+  }
+
   return NextResponse.json({
     ok: true,
     retensiHari: RETENSI_HARI,
@@ -128,6 +142,7 @@ async function purge(req: Request) {
     sisa: sisa ?? null,
     kasbonDibersihkan,
     langgananDisapu,
+    berkas,
   });
 }
 
