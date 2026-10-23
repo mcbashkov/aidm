@@ -42,3 +42,6 @@ whitepaper/node_modules/
 whitepaper/build/
 whitepaper/.docusaurus/
 whitepaper/.env
+
+# Claude Code (konfigurasi lokal)
+/.claude/

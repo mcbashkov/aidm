@@ -19,6 +19,7 @@ import { ambilKesiapan, type KesiapanResponse } from "@/lib/kesiapan/client";
 import { JENDELA_6 } from "@/lib/kesiapan/hitung";
 import { BelumTersinkron } from "@/components/ui/belum-tersinkron";
 import { PengingatPajak } from "@/components/beranda/pengingat-pajak";
+import { KartuPremium } from "@/components/beranda/kartu-premium";
 import type { ApiHasil } from "@/lib/api/panggil";
 import { DEFAULT_MISSIONS } from "@/lib/missions";
 import { ringkasHariIni, transaksiTerakhir } from "@/lib/mock/finance";
@@ -271,6 +272,10 @@ export default function BerandaPage() {
           ) : null}
         </section>
       ) : null}
+
+      {/* Pintu katalog premium (/premium bukan tab). Satu baris, bukan blok
+          berdata — tidak mengganggu aturan hierarki 4 blok. */}
+      <KartuPremium />
 
       {/* Blok 3 — misi hari ini. Ikut disembunyikan saat gagal: judulnya
           menjanjikan keadaan HARI INI, dan kita tidak sedang bisa memastikan
