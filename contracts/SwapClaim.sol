@@ -100,6 +100,16 @@ contract SwapClaim {
     /// nonce comes from SwapInitiator's single global counter.
     mapping(uint256 => bool) public nonceUsed;
 
+    /// Claim-side circuit breaker (audit F-07). Weekly aggregate of IDMX
+    /// redeemed here, in IDMX units for the same reason as maxIdmxPerVoucher.
+    /// At 70% an alert event fires; at 100% the contract pauses itself. It
+    /// bounds the damage of a leaked swapSigner to roughly one week of
+    /// expected volume instead of the whole pool, independent of the burn side.
+    uint256 public claimThreshold;
+    uint256 private constant UTC7_OFFSET = 7 hours;
+    /// UTC+7 week => aggregate IDMX redeemed that week.
+    mapping(uint256 => uint256) public claimedThisWeek;
+
     event SwapClaimed(
         address indexed user,
         uint256 idmxBurned,
@@ -110,6 +120,11 @@ contract SwapClaim {
     event SignerChanged(address indexed signer);
     event MaxIdmxPerVoucherChanged(uint256 max);
     event PausedSet(bool paused);
+    event ClaimThresholdChanged(uint256 threshold);
+    /// Weekly redeemed total crossed 70% of the threshold — monitoring should page.
+    event BreakerAlert(uint256 week, uint256 totalAfter, uint256 threshold);
+    /// Weekly redeemed total reached the threshold — the contract paused itself.
+    event BreakerTripped(uint256 week, uint256 totalAfter, uint256 threshold);
     event OwnershipTransferStarted(address indexed to);
     event OwnershipTransferred(address indexed from, address indexed to);
 
@@ -130,13 +145,19 @@ contract SwapClaim {
         _;
     }
 
-    constructor(address idm_, address swapSigner_, uint256 maxIdmxPerVoucher_) {
+    constructor(
+        address idm_,
+        address swapSigner_,
+        uint256 maxIdmxPerVoucher_,
+        uint256 claimThreshold_
+    ) {
         if (idm_ == address(0) || swapSigner_ == address(0)) revert ZeroAddress();
         owner = msg.sender;
         idm = IIDM(idm_);
         swapSigner = swapSigner_;
         rateIdmxPerIdm = 50;
         maxIdmxPerVoucher = maxIdmxPerVoucher_;
+        claimThreshold = claimThreshold_;
 
         domainSeparator = keccak256(
             abi.encode(
@@ -153,6 +174,7 @@ contract SwapClaim {
         emit SignerChanged(swapSigner_);
         emit RateChanged(50);
         emit MaxIdmxPerVoucherChanged(maxIdmxPerVoucher_);
+        emit ClaimThresholdChanged(claimThreshold_);
     }
 
     /* ── Administration ──────────────────────────────────────────────────── */
@@ -181,6 +203,16 @@ contract SwapClaim {
         emit MaxIdmxPerVoucherChanged(max);
     }
 
+    /// Keep at or above the burn side's globalThreshold, or honest vouchers
+    /// (burns already done) could be held back longer than the burn side
+    /// would have allowed them to accumulate. Also the manual un-pause path
+    /// is `setPaused(false)` after the breaker has tripped.
+    function setClaimThreshold(uint256 threshold) external onlyOwner {
+        claimThreshold = threshold;
+        emit ClaimThresholdChanged(threshold);
+    }
+
+    /// Also the manual un-pause after the circuit breaker has tripped.
     function setPaused(bool paused_) external onlyOwner {
         paused = paused_;
         emit PausedSet(paused_);
@@ -202,6 +234,11 @@ contract SwapClaim {
         emit OwnershipTransferred(owner, pendingOwner);
         owner = pendingOwner;
         pendingOwner = address(0);
+    }
+
+    /// Week index in UTC+7, derived on-chain (same boundary as SwapInitiator).
+    function weekUtc7(uint256 timestamp) public pure returns (uint256) {
+        return (timestamp + UTC7_OFFSET) / 7 days;
     }
 
     /* ── Claiming ────────────────────────────────────────────────────────── */
@@ -247,6 +284,22 @@ contract SwapClaim {
         // token calls below cannot re-enter this function before the state
         // reflects the payout.
         nonceUsed[v.nonce] = true;
+
+        // Circuit breaker. The claim that crosses the threshold is allowed
+        // THROUGH and paid in full — its burn already happened on opBNB, and
+        // reverting here would undo the very pause being set. The NEXT claim
+        // hits the ContractPaused check above. Overshoot is bounded by
+        // maxIdmxPerVoucher. Vouchers refused while paused are not lost: the
+        // nonce stays unused and the relayer renews expiring vouchers.
+        uint256 week = weekUtc7(block.timestamp);
+        uint256 totalAfter = claimedThisWeek[week] + v.idmxBurned;
+        claimedThisWeek[week] = totalAfter;
+        if (totalAfter >= claimThreshold) {
+            paused = true;
+            emit BreakerTripped(week, totalAfter, claimThreshold);
+        } else if (totalAfter * 10 >= claimThreshold * 7) {
+            emit BreakerAlert(week, totalAfter, claimThreshold);
+        }
 
         // The fee burn really reduces IDM totalSupply; it is never collected.
         idm.burn(FEE_IDM);

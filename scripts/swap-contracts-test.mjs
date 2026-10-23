@@ -94,7 +94,7 @@ const idmx = await deploy(wDeployer, idmxArt, [deployer.address, E("50000000000"
 const idm = await deploy(wDeployer, idmArt, [deployer.address]);
 // parameter testnet §10.5: weekly 2000, ambang 100k, plafon 200k
 const init = await deploy(wDeployer, initArt, [idmx, E("2000"), E("100000"), E("200000")]);
-const claim = await deploy(wDeployer, claimArt, [idm, signer.address, E("2000")]);
+const claim = await deploy(wDeployer, claimArt, [idm, signer.address, E("2000"), E("100000")]);
 
 await write(wDeployer, idmx, idmxArt.abi, "transfer", [user.address, E("100000")]);
 await write(wDeployer, idm, idmArt.abi, "transfer", [claim, E("150000000")]);
@@ -200,6 +200,36 @@ await write(wDeployer, claim, claimArt.abi, "setPaused", [true]);
 const v6 = { user: user.address, idmxBurned: E("500"), nonce: 6n, deadline: now + 86400n };
 await reverts(async () => wUser.writeContract({ address: claim, abi: claimArt.abi, functionName: "claim", args: [v6, await sign(v6)] }), "ContractPaused", "claim saat pause revert");
 await write(wDeployer, claim, claimArt.abi, "setPaused", [false]);
+
+/* F-07: circuit breaker klaim. Total minggu ini = 500 (v1) + 2000 (v5) = 2500 IDMX. */
+const sigClaimAlert = keccak256(toHex("BreakerAlert(uint256,uint256,uint256)"));
+const sigClaimTrip = keccak256(toHex("BreakerTripped(uint256,uint256,uint256)"));
+const far = now + 60n * 86400n;
+const vb = (n, amt) => ({ user: user.address, idmxBurned: E(amt), nonce: n, deadline: far });
+ok(await read(claim, claimArt.abi, "claimThreshold") === E("100000"), "claimThreshold awal = 100.000 IDMX");
+await reverts(() => wUser.writeContract({ address: claim, abi: claimArt.abi, functionName: "setClaimThreshold", args: [E("1")] }), "NotOwner", "setClaimThreshold oleh non-owner revert");
+await write(wDeployer, claim, claimArt.abi, "setClaimThreshold", [E("4000")]);
+const v7 = vb(7n, "1000");
+r = await write(wUser, claim, claimArt.abi, "claim", [v7, await sign(v7)]);
+topics = r.logs.map((l) => l.topics[0]);
+ok(topics.includes(sigClaimAlert) && !topics.includes(sigClaimTrip), "klaim 70%: BreakerAlert ter-emit, belum trip");
+ok(await read(claim, claimArt.abi, "paused") === false, "klaim 70%: belum pause");
+const idmBeforeTrip = await read(idm, idmArt.abi, "balanceOf", [user.address]);
+const v8 = vb(8n, "500");
+r = await write(wUser, claim, claimArt.abi, "claim", [v8, await sign(v8)]);
+topics = r.logs.map((l) => l.topics[0]);
+ok(r.status === "success" && topics.includes(sigClaimTrip), "klaim 100%: tx pemicu LOLOS + BreakerTripped");
+ok(await read(idm, idmArt.abi, "balanceOf", [user.address]) > idmBeforeTrip, "klaim 100%: tx pemicu tetap DIBAYAR penuh");
+ok(await read(claim, claimArt.abi, "paused") === true, "klaim 100%: paused tersimpan");
+const v9 = vb(9n, "500");
+await reverts(async () => wUser.writeContract({ address: claim, abi: claimArt.abi, functionName: "claim", args: [v9, await sign(v9)] }), "ContractPaused", "klaim berikutnya revert ContractPaused");
+ok(await read(claim, claimArt.abi, "nonceUsed", [9n]) === false, "voucher yang ditolak saat pause TIDAK hangus (nonce tidak terpakai)");
+await write(wDeployer, claim, claimArt.abi, "setPaused", [false]);
+await test.increaseTime({ seconds: 7 * 86400 });
+await test.mine({ blocks: 1 });
+r = await write(wUser, claim, claimArt.abi, "claim", [v9, await sign(v9)]);
+ok(r.status === "success", "minggu baru + unpause: voucher yang tadi ditolak tertebus");
+ok(await read(claim, claimArt.abi, "claimedThisWeek", [await read(claim, claimArt.abi, "weekUtc7", [(await pub.getBlock()).timestamp])]) === E("500"), "akumulator minggu baru mulai dari 0 (500 = v9)");
 
 await reverts(() => wUser.writeContract({ address: claim, abi: claimArt.abi, functionName: "sweep", args: [user.address, E("1")] }), "NotOwner", "sweep oleh non-owner revert");
 await write(wDeployer, claim, claimArt.abi, "transferOwnership", [user.address]);

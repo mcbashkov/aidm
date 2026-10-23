@@ -50,6 +50,9 @@ const dryRun = process.argv.includes("--dry-run");
 
 // Cermin cap mingguan SwapInitiator (§0) — naikkan hanya bila cap itu naik.
 const MAX_IDMX_PER_VOUCHER = 2_000n * 10n ** 18n;
+// Ambang circuit breaker klaim mingguan (F-07), satuan IDMX. Harus ≥ ambang
+// global SwapInitiator (SWAP_GLOBAL_THRESHOLD_IDMX); testnet §10.5 = 100.000.
+const CLAIM_THRESHOLD = BigInt(env.SWAP_CLAIM_THRESHOLD_IDMX ?? "100000") * 10n ** 18n;
 
 /* ── 1. Kompilasi ────────────────────────────────────────────────────────── */
 
@@ -169,6 +172,7 @@ console.log(`  deployer            : ${account.address}`);
 console.log(`  IDM Reborn          : ${idm}`);
 console.log(`  swapSigner          : ${swapSigner}`);
 console.log(`  maxIdmxPerVoucher   : ${MAX_IDMX_PER_VOUCHER / 10n ** 18n} IDMX`);
+console.log(`  claimThreshold      : ${CLAIM_THRESHOLD / 10n ** 18n} IDMX/minggu`);
 
 if ((await publik.getBalance({ address: account.address })) === 0n) {
   console.error(
@@ -180,7 +184,7 @@ if ((await publik.getBalance({ address: account.address })) === 0n) {
 const hash = await wallet.deployContract({
   abi: swapClaim.abi,
   bytecode: `0x${swapClaim.evm.bytecode.object}`,
-  args: [idm, swapSigner, MAX_IDMX_PER_VOUCHER],
+  args: [idm, swapSigner, MAX_IDMX_PER_VOUCHER, CLAIM_THRESHOLD],
 });
 console.log(`  SwapClaim tx: ${hash} — menunggu receipt…`);
 const receipt = await publik.waitForTransactionReceipt({ hash, timeout: 120_000 });
