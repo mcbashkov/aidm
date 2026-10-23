@@ -102,7 +102,7 @@ kunci, aturan operasional): **`contracts/ALAMAT-DAN-CATATAN.md`**
 | MissionRewards | opBNB testnet 5611 | `0xbc6f412024cee7e8117bd1ee35759d027fce11e5` | Sourcify `exact_match` |
 | SwapInitiator | opBNB testnet 5611 | `0xa4f00039540dfdd040635a17090bf4e797168b63` | Sourcify `exact_match` |
 | IDMReborn | BSC testnet 97 | `0x78c7e68142e7e1b564c0fd342954aa515a3d2f5b` | ✅ BscScan |
-| SwapClaim | BSC testnet 97 | `0xccf9551396cb559e5c2caa1006485d051b7cf09a` | ✅ BscScan |
+| SwapClaim | BSC testnet 97 | `0xdfab10bf0d189eab0ec3712fbbe8677bfdb49ac8` (redeploy 2026-10-23, F-07; lama `0xccf9…` kosong) | ⬜ belum diverifikasi |
 
 Keempat kontrak opBNB **tidak berbadge di explorer** — Sourcify layanan
 terpisah dan BscScan tidak menariknya. Bukan kesalahan konfigurasi kita; lihat
@@ -2041,9 +2041,15 @@ Commit `52e19b7` (F-07) dan `ec3c624` (Beranda + `.gitignore`). Belum di-push:
       dibayar penuh, klaim berikutnya `ContractPaused`, voucher yang tertolak
       tidak hangus. `test:swap` **47/47** (11 baru); uji mutasi: pause dimatikan →
       3 gagal. Rincian dan konsekuensi tata kelola: audit §0.3.2.
-      **Sisa: redeploy SwapClaim testnet** (konstruktor berubah → alamat baru →
-      `NEXT_PUBLIC_SWAP_CLAIM_ADDRESS` dan kolam 150 jt diisi ulang; butuh kunci
-      deployer, tangan PO). `contracts/ALAMAT-DAN-CATATAN.md` sudah diberi
+      **SwapClaim DI-REDEPLOY di BSC testnet 2026-10-23:**
+      `0xdfab10bf0d189eab0ec3712fbbe8677bfdb49ac8`; kolam 150 jt dipindah dari
+      `0xccf9…` lewat `sweep` (lama 0, baru 150.000.000; `nonceCounter`
+      SwapInitiator = 0 saat itu). `.env.local` sudah diganti.
+      **Sisa (butuh tangan PO): ganti `NEXT_PUBLIC_SWAP_CLAIM_ADDRESS` di Vercel
+      (preview+production) lalu redeploy** — sampai itu, produksi masih menunjuk
+      kontrak lama yang kosong, sehingga klaim Tukar akan gagal (belum ada
+      swap sama sekali, jadi tidak ada voucher yang terdampak). Verifikasi
+      source BscScan alamat baru: `ETHERSCAN_API_KEY=… node scripts/verify-contracts.mjs SwapClaim`. `contracts/ALAMAT-DAN-CATATAN.md` sudah diberi
       peringatan bahwa sumber ≠ deploy sekarang.
 - [x] **Pintu `/premium` dari Beranda.** `components/beranda/kartu-premium.tsx`:
       satu baris, status Plus/masa coba hanya bila server memastikannya

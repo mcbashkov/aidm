@@ -175,11 +175,16 @@ tidak menerima angka pasokan.
 
 ### `SwapClaim` — `constructor(address idm_, address swapSigner_, uint256 maxIdmxPerVoucher_)`
 
-> ⚠️ **Sumber di repo sudah berubah (F-07, `52e19b7`): konstruktor kini punya
-> argumen ke-4 `claimThreshold_`.** Deploy testnet di bawah masih kode lama dan
-> hanya punya tiga argumen; verifikasi bytecode ↔ sumber akan tidak cocok
-> sampai SwapClaim di-redeploy. Gunakan commit sebelum `52e19b7` untuk
-> memverifikasi alamat `0xccf9…` yang sekarang.
+> ✅ **SwapClaim DI-REDEPLOY 2026-10-23 (F-07, `52e19b7`)** ke
+> **`0xdfab10bf0d189eab0ec3712fbbe8677bfdb49ac8`** (BSC Testnet 97), tx
+> `0x79dfcd1b…056d36`, konstruktor kini 4 argumen
+> (`claimThreshold_` = 100.000 IDMX/minggu). Kolam 150 juta IDM dipindah dari
+> kontrak lama lewat `sweep` oleh `owner` (tx `0xc283554d…323e4e`): lama = 0,
+> baru = 150.000.000. Saat itu `SwapInitiator.nonceCounter` = 0 → tidak ada burn
+> yang tertinggal. **Kontrak lama `0xccf9…09a` sudah kosong dan tidak dipakai
+> lagi** (bytecode-nya = kode sebelum `52e19b7`). Bagian rincian di bawah masih
+> menggambarkan deploy 2026-08-21 (tiga argumen). Belum dilakukan: verifikasi
+> source di BscScan untuk alamat baru, dan penggantian env di Vercel.
 ```
 idm_              0x78c7e68142e7e1b564c0fd342954aa515a3d2f5b   (IDMReborn)
 swapSigner_       0xbc2bfb1a2765700b846abad68328b15093763c97
