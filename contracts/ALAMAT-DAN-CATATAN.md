@@ -174,6 +174,12 @@ Pasokan 1 miliar di-hardcode sebagai `INITIAL_SUPPLY`, jadi konstruktornya
 tidak menerima angka pasokan.
 
 ### `SwapClaim` — `constructor(address idm_, address swapSigner_, uint256 maxIdmxPerVoucher_)`
+
+> ⚠️ **Sumber di repo sudah berubah (F-07, `52e19b7`): konstruktor kini punya
+> argumen ke-4 `claimThreshold_`.** Deploy testnet di bawah masih kode lama dan
+> hanya punya tiga argumen; verifikasi bytecode ↔ sumber akan tidak cocok
+> sampai SwapClaim di-redeploy. Gunakan commit sebelum `52e19b7` untuk
+> memverifikasi alamat `0xccf9…` yang sekarang.
 ```
 idm_              0x78c7e68142e7e1b564c0fd342954aa515a3d2f5b   (IDMReborn)
 swapSigner_       0xbc2bfb1a2765700b846abad68328b15093763c97

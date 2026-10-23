@@ -76,7 +76,8 @@ di sini supaya auditor menerima kode berikut alasan perubahannya.
 |---|---|---|
 | F-05 | 🟢 **DIPERBAIKI** (belum di-redeploy) | Niatnya memang **bulanan**; kodenya yang kurang. Keputusan PO 2026-09-07. |
 | F-03 | 🟡 **DIMITIGASI SEBAGIAN** | Plafon global harian ditambahkan — membatasi radius, bukan menutup temuan. Lihat §0.3.1. |
-| Lainnya | **Terbuka** | F-01, F-02, F-04, F-06, F-07, F-08 tidak disentuh. |
+| F-07 | 🟢 **DIPERBAIKI** (belum di-redeploy) | Circuit breaker klaim mingguan ditambahkan di `SwapClaim` — 2026-10-23, lihat §0.3.2. |
+| Lainnya | **Terbuka** | F-01, F-02, F-04, F-06, F-08 tidak disentuh. |
 
 **F-05 — apa yang berubah.** `claimedOnDay[user][bucket][day]` memakai indeks
 HARI untuk kedua ember, sehingga cap "bulanan" reset tiap malam dan reward
@@ -96,6 +97,34 @@ kunci bocor, yaitu tepat saat selisih 450 itu nyata.
 Diuji `pnpm test:misi` (anvil, 30 pemeriksaan). Uji F-05 diverifikasi lewat
 **mutasi**: cacatnya dikembalikan satu baris, dan uji yang bersangkutan gagal
 3 dari 3 — uji regresi yang tidak pernah gagal tidak membuktikan apa pun.
+
+### 0.3.2 F-07 — circuit breaker klaim (2026-10-23, belum di-redeploy)
+
+`SwapClaim` kini menyimpan akumulator mingguan UTC+7 `claimedThisWeek` (satuan
+**IDMX**, seperti `maxIdmxPerVoucher`, supaya tidak bergeser saat rate turun)
+dan ambang `claimThreshold` (argumen konstruktor ke-4, `setClaimThreshold`
+untuk `owner`). Pada 70% ter-emit `BreakerAlert`; pada 100% kontrak mem-pause
+dirinya (`BreakerTripped`). Pola sengaja disamakan dengan `SwapInitiator`:
+**klaim yang melewati ambang tetap DIBAYAR penuh** — burn-nya sudah terjadi di
+opBNB dan revert akan membatalkan pause itu sendiri — dan klaim berikutnya
+yang ditolak `ContractPaused`. Voucher yang ditolak saat pause tidak hangus:
+nonce tetap bebas, dan relayer memperpanjang voucher yang mendekati kedaluwarsa.
+Kelebihan di atas ambang dibatasi `maxIdmxPerVoucher`.
+
+Yang TIDAK diklaim: ini bukan penutup F-02/F-01. Pemegang `swapSigner` tetap
+bisa menguras sampai satu ambang mingguan sebelum berhenti, dan `owner` tetap
+bisa `sweep`. Ia mengubah "dihentikan reaksi manusia" menjadi "dihentikan aturan
+on-chain setelah paling banyak satu ambang". Konsekuensi tata kelola: `setClaimThreshold`
+adalah kapabilitas istimewa baru pada `owner` SwapClaim (menaikkannya tinggi
+melumpuhkan breaker) — ikut daftar yang ditinjau di F-08. Operasional: `claimThreshold`
+harus ≥ `globalThreshold` SwapInitiator, atau voucher sah bisa tertahan lebih
+lama daripada burn-nya diizinkan menumpuk.
+
+Diuji `pnpm test:swap` (anvil, 47 pemeriksaan, 11 baru untuk breaker SwapClaim).
+Diverifikasi lewat **mutasi**: baris `paused = true` dimatikan, 3 uji gagal.
+Deploy testnet lama (`0xccf9…`) masih kode lama sampai redeploy; konstruktor
+berubah, jadi `scripts/deploy-swap-bsc.mjs` kini memakai
+`SWAP_CLAIM_THRESHOLD_IDMX` (bawaan 100.000 untuk testnet).
 
 ### 0.3.1 Plafon global harian — konsekuensi tata kelola yang DITERIMA SADAR
 
@@ -1767,8 +1796,8 @@ sebagai jaminan menyeluruh.
 | **Severity** | **Informational** |
 | **Kontrak:baris** | `SwapClaim.sol:226-260` (tidak ada akumulator laju), bandingkan `SwapInitiator.sol:243-248` |
 | **Sumber** | Fase 1 — pertanyaan penyerang (§3.5) |
-| **Status** | Terbuka |
-| **Commit perbaikan** | — |
+| **Status** | 🟢 Diperbaiki, belum di-redeploy (§0.3.2) |
+| **Commit perbaikan** | `52e19b7` |
 
 **Deskripsi.**
 Kedua sisi jembatan memiliki profil pertahanan yang asimetris.

@@ -4,7 +4,7 @@ Pelacak pekerjaan lintas sesi. **README** menjelaskan produk & cara menjalankan;
 berkas ini menjawab satu pertanyaan saja: *apa yang sudah beres, apa berikutnya,
 dan siapa yang mengerjakan.*
 
-Diperbarui: **2026-10-22** · cabang `main`
+Diperbarui: **2026-10-23** · cabang `main`
 
 > ⚠️ **Sisi token digantikan `docs/PERINTAH-AGEN-FINAL.md`.** Untuk apa pun yang
 > menyangkut IDMX/IDM Reborn/swap/kurs/tokenomics, dokumen itu sumber kebenaran
@@ -138,8 +138,14 @@ ada — karena itu ia sengaja TIDAK dipasang di Vercel.
 Ringkasan satu layar untuk sesi berikutnya. Rinciannya di bagian bernomor
 di bawah; ini hanya menjawab *"mulai dari mana"*.
 
-**Keadaan: M5 tuntas kecuali kunci Midtrans. M6 terbuka tapi punya syarat
-keamanan baru.**
+**Keadaan (2026-10-23): Perintah Premium Batch 3–11 tayang semuanya (§7l–§7t).
+M5 tuntas kecuali kunci Midtrans. M6 terbuka tapi punya syarat keamanan.**
+
+> 🟢 **Terakhir dikerjakan (2026-10-23, lokal — BELUM di-push):** F-07 (circuit
+> breaker klaim di `SwapClaim`, §7u), kartu pintu "AIDM Plus" di Beranda menuju
+> `/premium`, `.claude/` diabaikan git. Lihat §7u untuk bukti dan keputusan.
+> Sisa terbuka yang butuh keputusan/tangan PO ada di tabel di bawah dan §7u.
+
 
 > 🔴 **Terakhir dikerjakan (2026-09-07): jalur pembuatan dompet ternyata MATI
 > sejak 28 Agustus** — tujuh akun mendaftar tanpa dompet selama sepuluh hari,
@@ -186,7 +192,8 @@ sisanya. Dua yang pertama SELESAI. **Jangan sentuh jalur Midtrans** — PO sedan
 menunggu Business review dan melanjutkan di sandbox.
 
 1. ~~**F-05** + plafon global~~ ✅ **SELESAI** (§7f) — sisa: balik env Vercel.
-2. **F-07** (SwapClaim tanpa circuit breaker) — murni kode. **Berikutnya.**
+2. ~~**F-07** (SwapClaim tanpa circuit breaker)~~ ✅ **kode SELESAI 2026-10-23**
+   (§7u) — menunggu redeploy SwapClaim testnet.
    *(hapus akun §7g & "Mode demo" §7h sudah selesai 2026-09-08)*
 3. ~~**Satu run penuh `test:api`**~~ ✅ **154/154 pada 2026-10-22** (§7k) —
    angka sah pertama sejak 123/123 tanggal 2026-08-22; dua cek harness yang
@@ -2023,6 +2030,50 @@ diterapkan sebelum push · deploy READY · asap: `/api/invoice`,
 
 **Butuh tangan PO:** UI Batch 9–11 belum diperiksa visual (diuji di API).
 
+### 7u. Pemeriksaan 2026-10-23 — F-07, pintu premium di Beranda, utang kecil 🟡 **LOKAL, belum di-push**
+
+Commit `52e19b7` (F-07) dan `ec3c624` (Beranda + `.gitignore`). Belum di-push:
+`main` auto-deploy ke produksi, dan push adalah keputusan PO.
+
+- [x] **F-07 — circuit breaker klaim di `SwapClaim`.** `claimedThisWeek`
+      (minggu UTC+7, satuan IDMX) + `claimThreshold` (argumen konstruktor ke-4,
+      `setClaimThreshold`). Alert 70%, pause sendiri 100%; klaim pemicu tetap
+      dibayar penuh, klaim berikutnya `ContractPaused`, voucher yang tertolak
+      tidak hangus. `test:swap` **47/47** (11 baru); uji mutasi: pause dimatikan →
+      3 gagal. Rincian dan konsekuensi tata kelola: audit §0.3.2.
+      **Sisa: redeploy SwapClaim testnet** (konstruktor berubah → alamat baru →
+      `NEXT_PUBLIC_SWAP_CLAIM_ADDRESS` dan kolam 150 jt diisi ulang; butuh kunci
+      deployer, tangan PO). `contracts/ALAMAT-DAN-CATATAN.md` sudah diberi
+      peringatan bahwa sumber ≠ deploy sekarang.
+- [x] **Pintu `/premium` dari Beranda.** `components/beranda/kartu-premium.tsx`:
+      satu baris, status Plus/masa coba hanya bila server memastikannya
+      (gagal/demo → tautan polos). Diperiksa visual di mode demo (390 px): rapi.
+      Latar: `/premium` bukan tab, dan satu-satunya jalan tetapnya lewat Akun.
+      Keputusan lebih besar (jadikan tab?) ditunda sampai data `premium_events`
+      terbaca.
+- [x] **`.claude/` masuk `.gitignore`.**
+- [x] **Tinjauan `POST /api/wallet/backfill`** (butir §P0-2 B3). Dibaca ulang
+      2026-10-23: dijaga `cocokCronSecret` (tanpa `CRON_SECRET` → tertutup,
+      perbandingan `timingSafeEqual`, penyusup dijawab 404), memakai
+      `alamatWalletUser` yang sama dengan jalur klaim (bukan jalur kedua),
+      idempoten, dipagari 500 user per jalan, dan melaporkan kegagalan per
+      user. Tidak ada celah yang saya temukan. **Rekomendasi: pertahankan** —
+      invarian dompet (§7e) sudah punya alarm, dan endpoint ini obat resminya
+      bila kelas celah §7d terulang. Keputusan akhir tetap milik PO.
+- [ ] **Bundel `/masuk` TIDAK dikerjakan — sengaja.** Terukur ulang (build
+      2026-10-23): `/masuk` 847 kB, `/akun` 862 kB, `/beranda` 118 kB. Perbaikan
+      yang aman butuh memecah `login-panel.tsx` (usePrivy ringan tetap statis;
+      `useLoginWithOAuth`/`useLoginWithEmail` dimuat dinamis). Tapi kembalinya
+      OAuth Google di `/masuk` dan OTP email tidak bisa saya uji tanpa akun dan
+      sesi sungguhan, sedangkan syarat PO (§6) adalah sesi hidup tidak boleh
+      terputus dan jalur masuk pernah mati diam-diam (§7d). **Butuh PO:** izin
+      mengerjakannya + satu giliran uji login nyata (Google dan OTP) di
+      perangkat sebelum push.
+- [ ] **UI Batch 9–11 tetap belum diperiksa visual.** Mode demo tidak punya
+      backend, jadi kartu Pajak/Klien/Invoice tidak bisa dirender; yang bisa
+      dilihat (Beranda, Laporan kosong, Akun, Premium gagal-muat) tidak
+      memperlihatkan pecah tata letak. Butuh sesi nyata (PO atau akun uji).
+
 ### 8. 🤖 M5 — premium di balik LANGGANAN
 
 Model kredit **dibatalkan sebelum sempat rilis** (keputusan PO 2026-08-28).
@@ -2150,6 +2201,15 @@ yang menyandingkan keduanya seolah satu suplai adalah dokumen yang salah.
 ---
 
 ## Catatan yang menghemat waktu nanti
+
+- **`node_modules` bisa tiba-tiba kosong di checkout NTFS ini** (terjadi
+  2026-10-23 di tengah sesi; penyebabnya tidak teridentifikasi). Pemulihan:
+  `pnpm install --frozen-lockfile --config.virtual-store-dir=$HOME/.cache/aidm-pnpm-virtual --config.package-import-method=copy`
+  (~10 menit, butuh jaringan; mode `--offline` gagal karena store lokal tidak
+  lengkap). `next build` lokal juga butuh `~/.cache/node_modules` →
+  `<repo>/node_modules` sementara (distDir `.next` ada di `~/.cache/aidm-next`,
+  di luar repo, sehingga paket server eksternal seperti `@react-pdf/renderer`
+  tidak ditemukan); hapus tautannya setelah build.
 
 - **Source `ReportAttestation.sol` di repo ≠ byte-per-byte dengan yang live di
   testnet** (`0xa83c...84c4`). Penyelarasan 2026-08-20 (banner + komentar
